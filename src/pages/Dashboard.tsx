@@ -22,10 +22,10 @@ const C = {
 
 const STATUS_CONFIG: Record<string, { label: string; bg: string; text: string; dot: string }> = {
   abierto:      { label: "Abierto",        bg:"#fee2e2", text:"#dc2626", dot:"#ef4444" },
-  analisis:     { label: "En Análisis",    bg:"#fef3c7", text:"#d97706", dot:"#f59e0b" },
-  plan_accion:  { label: "Plan de Acción", bg:"#ede9fe", text:"#7c3aed", dot:"#8b5cf6" },
-  en_ejecucion: { label: "En Ejecución",   bg:"#dbeafe", text:"#1d4ed8", dot:"#3b82f6" },
-  verificacion: { label: "Verificación",   bg:"#fce7f3", text:"#db2777", dot:"#ec4899" },
+  analisis:     { label: "En Analisis",    bg:"#fef3c7", text:"#d97706", dot:"#f59e0b" },
+  plan_accion:  { label: "Plan de Accion", bg:"#ede9fe", text:"#7c3aed", dot:"#8b5cf6" },
+  en_ejecucion: { label: "En Ejecucion",   bg:"#dbeafe", text:"#1d4ed8", dot:"#3b82f6" },
+  verificacion: { label: "Verificacion",   bg:"#fce7f3", text:"#db2777", dot:"#ec4899" },
   cerrado:      { label: "Cerrado",        bg:"#d1fae5", text:"#059669", dot:"#10b981" },
 };
 
@@ -36,48 +36,48 @@ const TYPE_CONFIG: Record<string, { label: string; bg: string; text: string }> =
 };
 
 const NAV_GROUPS = [
-  { group:"Estrategia", icon:"◈", items:[
-    { id:"dashboard",  label:"Dashboard",         icon:"▣", badge:null },
-    { id:"context",    label:"Análisis Contexto", icon:"◎", badge:null },
-    { id:"review",     label:"Revisión Dirección",icon:"◇", badge:null },
+  { group:"Estrategia", icon:"*", items:[
+    { id:"dashboard",  label:"Dashboard",         icon:"-", badge:null },
+    { id:"context",    label:"Analisis Contexto", icon:"o", badge:null },
+    { id:"review",     label:"Revision Direccion",icon:"<>", badge:null },
   ]},
-  { group:"SGI Trinorma", icon:"⬡", items:[
-    { id:"findings",  label:"Hallazgos / NC",     icon:"⚡", badge:"findings" },
-    { id:"risks",     label:"Matriz de Riesgos",  icon:"⊛", badge:null },
-    { id:"documents", label:"Documentos",         icon:"◫", badge:null },
-    { id:"legal",     label:"Requisitos Legales", icon:"⊡", badge:"legal" },
-    { id:"scope",     label:"Alcance SGI",        icon:"⬚", badge:null },
+  { group:"SGI Trinorma", icon:"#", items:[
+    { id:"findings",  label:"Hallazgos / NC",     icon:"!", badge:"findings" },
+    { id:"risks",     label:"Matriz de Riesgos",  icon:"*", badge:null },
+    { id:"documents", label:"Documentos",         icon:"=", badge:null },
+    { id:"legal",     label:"Requisitos Legales", icon:"@", badge:"legal" },
+    { id:"scope",     label:"Alcance SGI",        icon:"[]", badge:null },
   ]},
-  { group:"Operaciones", icon:"⊕", items:[
-    { id:"gate",      label:"Control Portería",   icon:"⊞", badge:null },
-    { id:"machinery", label:"Maquinaria",         icon:"⊗", badge:null },
-    { id:"suppliers", label:"Proveedores",        icon:"⊜", badge:null },
-    { id:"purchases", label:"Compras",            icon:"⊟", badge:null },
+  { group:"Operaciones", icon:"+", items:[
+    { id:"gate",      label:"Control Porteria",   icon:"+", badge:null },
+    { id:"machinery", label:"Maquinaria",         icon:"X", badge:null },
+    { id:"suppliers", label:"Proveedores",        icon:"=", badge:null },
+    { id:"purchases", label:"Compras",            icon:"-", badge:null },
   ]},
-  { group:"Capital Humano", icon:"⊙", items:[
-    { id:"trainings", label:"Capacitaciones",     icon:"◉", badge:null },
-    { id:"myteam",    label:"Mi Equipo",          icon:"◎", badge:null },
+  { group:"Capital Humano", icon:"o", items:[
+    { id:"trainings", label:"Capacitaciones",     icon:"%", badge:null },
+    { id:"myteam",    label:"Mi Equipo",          icon:"o", badge:null },
   ]},
 ];
 
 const PAGE_META: Record<string, [string,string]> = {
   dashboard:  ["Dashboard",           "Resumen ejecutivo del SIG Trinorma"],
-  findings:   ["Hallazgos / NC",      "Gestión de no conformidades y oportunidades de mejora"],
-  risks:      ["Matriz de Riesgos",   "Evaluación AMFE — Probabilidad × Severidad × Detección"],
+  findings:   ["Hallazgos / NC",      "Gestion de no conformidades y oportunidades de mejora"],
+  risks:      ["Matriz de Riesgos",   "Evaluacion AMFE -- Probabilidad x Severidad x Deteccion"],
   documents:  ["Documentos",          "Biblioteca documental del SGI"],
   legal:      ["Requisitos Legales",  "Cumplimiento normativo y control de vencimientos"],
-  trainings:  ["Capacitaciones",      "Plan anual de formación y evidencias"],
-  context:    ["Análisis de Contexto","FODA y estrategias cruzadas"],
-  purchases:  ["Compras",             "Workflow de solicitudes y ejecución"],
-  gate:       ["Control de Portería", "Registro de ingresos y egresos de vehículos"],
-  machinery:  ["Maquinaria",          "Fichas técnicas y plan de mantenimiento"],
-  suppliers:  ["Proveedores",         "Evaluación y homologación de proveedores"],
+  trainings:  ["Capacitaciones",      "Plan anual de formacion y evidencias"],
+  context:    ["Analisis de Contexto","FODA y estrategias cruzadas"],
+  purchases:  ["Compras",             "Workflow de solicitudes y ejecucion"],
+  gate:       ["Control de Porteria", "Registro de ingresos y egresos de vehiculos"],
+  machinery:  ["Maquinaria",          "Fichas tecnicas y plan de mantenimiento"],
+  suppliers:  ["Proveedores",         "Evaluacion y homologacion de proveedores"],
   myteam:     ["Mi Equipo",           "Personas, roles y responsabilidades"],
-  scope:      ["Alcance SGI",         "Definición y alcance del sistema integrado"],
-  review:     ["Revisión por la Dirección", "Actas y compromisos de revisión gerencial"],
+  scope:      ["Alcance SGI",         "Definicion y alcance del sistema integrado"],
+  review:     ["Revision por la Direccion", "Actas y compromisos de revision gerencial"],
 };
 
-// ─── Helpers ──────────────────────────────────────────────────
+// --- Helpers --------------------------------------------------
 const Avatar = ({ initials, size=28, bg=C.primary }: { initials:string; size?:number; bg?:string }) => (
   <div style={{ width:size, height:size, borderRadius:"50%", background:bg, color:"#fff",
     fontSize:size*0.35, fontWeight:700, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
@@ -107,7 +107,7 @@ const KPICard = ({ label, value, sub, color, icon, alert=false }: {
   </div>
 );
 
-// ─── Sidebar ──────────────────────────────────────────────────
+// --- Sidebar --------------------------------------------------
 function Sidebar({ current, onNav, findingCount, legalAlerts }: {
   current:string; onNav:(id:string)=>void; findingCount:number; legalAlerts:number;
 }) {
@@ -129,7 +129,7 @@ function Sidebar({ current, onNav, findingCount, legalAlerts }: {
           </div>
         </div>
         <div style={{ marginTop:10, padding:"5px 10px", background:"#0ea5e918", borderRadius:6,
-          fontSize:11, color:"#38bdf8", fontWeight:500 }}>ISO 9001 · 14001 · 45001</div>
+          fontSize:11, color:"#38bdf8", fontWeight:500 }}>ISO 9001 . 14001 . 45001</div>
       </div>
 
       {/* Nav */}
@@ -142,7 +142,7 @@ function Sidebar({ current, onNav, findingCount, legalAlerts }: {
                 fontSize:11, fontWeight:700, textTransform:"uppercase", letterSpacing:"0.08em" }}>
               <span>{g.icon}</span>
               <span style={{ flex:1, textAlign:"left" }}>{g.group}</span>
-              <span style={{ fontSize:9, opacity:0.4 }}>{exp[g.group]?"▲":"▼"}</span>
+              <span style={{ fontSize:9, opacity:0.4 }}>{exp[g.group]?"^":"v"}</span>
             </button>
             {exp[g.group] && g.items.map(item => {
               const active = current === item.id;
@@ -175,14 +175,14 @@ function Sidebar({ current, onNav, findingCount, legalAlerts }: {
           <div style={{ fontSize:12, fontWeight:600, color:C.sidebarTextActive, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{profile?.full_name ?? "Usuario"}</div>
           <div style={{ fontSize:10, color:C.sidebarText }}>SGI DASSA</div>
         </div>
-        <button onClick={signOut} title="Cerrar sesión"
-          style={{ background:"none", border:"none", color:C.sidebarText, cursor:"pointer", fontSize:14, padding:4, borderRadius:4 }}>⏻</button>
+        <button onClick={signOut} title="Cerrar sesion"
+          style={{ background:"none", border:"none", color:C.sidebarText, cursor:"pointer", fontSize:14, padding:4, borderRadius:4 }}>X</button>
       </div>
     </div>
   );
 }
 
-// ─── Dashboard Home ────────────────────────────────────────────
+// --- Dashboard Home --------------------------------------------
 function DashboardHome() {
   const { data: stats } = useDashboardStats();
   const { findings } = useFindings();
@@ -203,23 +203,23 @@ function DashboardHome() {
     <div style={{ padding:28, display:"flex", flexDirection:"column", gap:22 }}>
       {/* KPIs */}
       <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:14 }}>
-        <KPICard label="NC Abiertas" value={stats?.openFindings ?? "—"} sub="hallazgos sin cerrar" color={C.danger} icon="⚡" alert={(stats?.openFindings ?? 0) > 2} />
-        <KPICard label="Riesgos Altos" value={stats?.highRisks ?? "—"} sub="NPR > 16 — requieren acción" color={C.warning} icon="⊛" alert={(stats?.highRisks ?? 0) > 0} />
-        <KPICard label="Legal por Vencer" value={stats?.expiringLegal ?? "—"} sub="próximos 90 días" color={C.warning} icon="⊡" alert={(stats?.expiringLegal ?? 0) > 0} />
-        <KPICard label="Capacitaciones" value={stats?.upcomingTrainings ?? "—"} sub="próximos 30 días" color={C.success} icon="◉" />
+        <KPICard label="NC Abiertas" value={stats?.openFindings ?? "--"} sub="hallazgos sin cerrar" color={C.danger} icon="!" alert={(stats?.openFindings ?? 0) > 2} />
+        <KPICard label="Riesgos Altos" value={stats?.highRisks ?? "--"} sub="NPR > 16 -- requieren accion" color={C.warning} icon="*" alert={(stats?.highRisks ?? 0) > 0} />
+        <KPICard label="Legal por Vencer" value={stats?.expiringLegal ?? "--"} sub="proximos 90 dias" color={C.warning} icon="@" alert={(stats?.expiringLegal ?? 0) > 0} />
+        <KPICard label="Capacitaciones" value={stats?.upcomingTrainings ?? "--"} sub="proximos 30 dias" color={C.success} icon="%" />
       </div>
       <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:14 }}>
-        <KPICard label="Docs Pendientes" value={stats?.pendingDocs ?? "—"} sub="borrador o en aprobación" color={C.sky} icon="◫" />
-        <KPICard label="Módulos ISO 9001" value="10/12" sub="procedimientos aprobados" color={C.success} icon="✓" />
-        <KPICard label="Módulos ISO 14001" value="6/8" sub="aspectos documentados" color={C.purple} icon="♻" />
-        <KPICard label="Módulos ISO 45001" value="8/10" sub="riesgos identificados" color={C.sky} icon="⛑" />
+        <KPICard label="Docs Pendientes" value={stats?.pendingDocs ?? "--"} sub="borrador o en aprobacion" color={C.sky} icon="=" />
+        <KPICard label="Modulos ISO 9001" value="10/12" sub="procedimientos aprobados" color={C.success} icon="OK" />
+        <KPICard label="Modulos ISO 14001" value="6/8" sub="aspectos documentados" color={C.purple} icon="[R]" />
+        <KPICard label="Modulos ISO 45001" value="8/10" sub="riesgos identificados" color={C.sky} icon="[H]" />
       </div>
 
       {/* Charts */}
       <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:16 }}>
         <div style={{ background:C.card, borderRadius:12, padding:22, border:`1px solid ${C.border}`, boxShadow:"0 1px 4px rgba(0,0,0,0.06)", gridColumn:"span 2" }}>
-          <div style={{ fontSize:13, fontWeight:700, color:C.text, marginBottom:3 }}>Evolución de No Conformidades</div>
-          <div style={{ fontSize:12, color:C.faint, marginBottom:18 }}>Últimos 6 meses — abiertas vs cerradas</div>
+          <div style={{ fontSize:13, fontWeight:700, color:C.text, marginBottom:3 }}>Evolucion de No Conformidades</div>
+          <div style={{ fontSize:12, color:C.faint, marginBottom:18 }}>Ultimos 6 meses -- abiertas vs cerradas</div>
           <ResponsiveContainer width="100%" height={200}>
             <BarChart data={monthlyData} barGap={4}>
               <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
@@ -232,7 +232,7 @@ function DashboardHome() {
           </ResponsiveContainer>
         </div>
         <div style={{ background:C.card, borderRadius:12, padding:22, border:`1px solid ${C.border}`, boxShadow:"0 1px 4px rgba(0,0,0,0.06)" }}>
-          <div style={{ fontSize:13, fontWeight:700, color:C.text, marginBottom:3 }}>Distribución de Riesgos</div>
+          <div style={{ fontSize:13, fontWeight:700, color:C.text, marginBottom:3 }}>Distribucion de Riesgos</div>
           <div style={{ fontSize:12, color:C.faint, marginBottom:8 }}>Por nivel de NPR</div>
           <ResponsiveContainer width="100%" height={130}>
             <PieChart><Pie data={riskDist} cx="50%" cy="50%" innerRadius={38} outerRadius={56} paddingAngle={3} dataKey="value">
@@ -255,7 +255,7 @@ function DashboardHome() {
       <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:16 }}>
         {/* Active findings */}
         <div style={{ background:C.card, borderRadius:12, padding:22, border:`1px solid ${C.border}`, boxShadow:"0 1px 4px rgba(0,0,0,0.06)" }}>
-          <div style={{ fontSize:13, fontWeight:700, color:C.text, marginBottom:14 }}>Hallazgos Más Urgentes</div>
+          <div style={{ fontSize:13, fontWeight:700, color:C.text, marginBottom:14 }}>Hallazgos Mas Urgentes</div>
           <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
             {findings.filter(f => f.status !== "cerrado").slice(0,5).map(f => {
               const sc = STATUS_CONFIG[f.status];
@@ -282,14 +282,14 @@ function DashboardHome() {
               );
             })}
             {findings.filter(f => f.status !== "cerrado").length === 0 && (
-              <div style={{ textAlign:"center", padding:24, color:C.faint, fontSize:13 }}>✓ Sin hallazgos activos</div>
+              <div style={{ textAlign:"center", padding:24, color:C.faint, fontSize:13 }}>OK Sin hallazgos activos</div>
             )}
           </div>
         </div>
 
         {/* Legal alerts */}
         <div style={{ background:C.card, borderRadius:12, padding:22, border:`1px solid ${C.border}`, boxShadow:"0 1px 4px rgba(0,0,0,0.06)" }}>
-          <div style={{ fontSize:13, fontWeight:700, color:C.text, marginBottom:14 }}>⚠️ Vencimientos Legales</div>
+          <div style={{ fontSize:13, fontWeight:700, color:C.text, marginBottom:14 }}>! Vencimientos Legales</div>
           {requirements.filter(r => {
             const d = getDaysLeft(r.expiration_date);
             return d !== null && d <= 120;
@@ -301,7 +301,7 @@ function DashboardHome() {
                 padding:"9px 0", borderBottom:`1px solid ${C.border}` }}>
                 <div>
                   <div style={{ fontSize:12, fontWeight:600, color:C.text }}>{r.title}</div>
-                  <div style={{ fontSize:11, color:C.faint, marginTop:2 }}>{r.applicable_area} · {r.expiration_date}</div>
+                  <div style={{ fontSize:11, color:C.faint, marginTop:2 }}>{r.applicable_area} . {r.expiration_date}</div>
                 </div>
                 <div style={{ background:s.bg, color:s.color, padding:"4px 10px", borderRadius:999, fontSize:11, fontWeight:700, flexShrink:0, marginLeft:12 }}>
                   {days}d
@@ -310,7 +310,7 @@ function DashboardHome() {
             );
           })}
           {requirements.filter(r => { const d = getDaysLeft(r.expiration_date); return d !== null && d <= 120; }).length === 0 && (
-            <div style={{ textAlign:"center", padding:24, color:C.faint, fontSize:13 }}>✓ Sin vencimientos próximos</div>
+            <div style={{ textAlign:"center", padding:24, color:C.faint, fontSize:13 }}>OK Sin vencimientos proximos</div>
           )}
         </div>
       </div>
@@ -318,7 +318,7 @@ function DashboardHome() {
   );
 }
 
-// ─── Findings Kanban ──────────────────────────────────────────
+// --- Findings Kanban ------------------------------------------
 function FindingsPage() {
   const { findings, stats, createFinding, updateStatus } = useFindings();
   const [showForm, setShowForm] = useState(false);
@@ -406,7 +406,7 @@ function FindingsPage() {
             <div style={{ fontSize:16, fontWeight:800, color:C.text, marginBottom:20 }}>Nueva NC / Hallazgo</div>
             <form onSubmit={handleCreate} style={{ display:"flex", flexDirection:"column", gap:14 }}>
               <div>
-                <label style={{ fontSize:11, fontWeight:600, color:C.muted, display:"block", marginBottom:5, textTransform:"uppercase", letterSpacing:"0.05em" }}>Título *</label>
+                <label style={{ fontSize:11, fontWeight:600, color:C.muted, display:"block", marginBottom:5, textTransform:"uppercase", letterSpacing:"0.05em" }}>Titulo *</label>
                 <input value={form.title} onChange={e => setForm(p => ({...p, title:e.target.value}))} required
                   style={{ width:"100%", padding:"9px 12px", border:`1px solid ${C.border}`, borderRadius:7, fontSize:13, outline:"none", boxSizing:"border-box" }} />
               </div>
@@ -421,14 +421,14 @@ function FindingsPage() {
                   </select>
                 </div>
                 <div>
-                  <label style={{ fontSize:11, fontWeight:600, color:C.muted, display:"block", marginBottom:5, textTransform:"uppercase", letterSpacing:"0.05em" }}>Área</label>
+                  <label style={{ fontSize:11, fontWeight:600, color:C.muted, display:"block", marginBottom:5, textTransform:"uppercase", letterSpacing:"0.05em" }}>Area</label>
                   <input value={form.area} onChange={e => setForm(p => ({...p, area:e.target.value}))}
                     placeholder="Ej: Operaciones"
                     style={{ width:"100%", padding:"9px 12px", border:`1px solid ${C.border}`, borderRadius:7, fontSize:13, outline:"none", boxSizing:"border-box" }} />
                 </div>
               </div>
               <div>
-                <label style={{ fontSize:11, fontWeight:600, color:C.muted, display:"block", marginBottom:5, textTransform:"uppercase", letterSpacing:"0.05em" }}>Descripción *</label>
+                <label style={{ fontSize:11, fontWeight:600, color:C.muted, display:"block", marginBottom:5, textTransform:"uppercase", letterSpacing:"0.05em" }}>Descripcion *</label>
                 <textarea value={form.description} onChange={e => setForm(p => ({...p, description:e.target.value}))} required rows={3}
                   style={{ width:"100%", padding:"9px 12px", border:`1px solid ${C.border}`, borderRadius:7, fontSize:13, outline:"none", resize:"vertical", boxSizing:"border-box" }} />
               </div>
@@ -450,21 +450,21 @@ function FindingsPage() {
   );
 }
 
-// ─── Risks Page ────────────────────────────────────────────────
+// --- Risks Page ------------------------------------------------
 function RisksPage() {
   const { risks, isLoading, riskLevel, stats } = useRisks();
   return (
     <div style={{ padding:28 }}>
       <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:14, marginBottom:20 }}>
-        <KPICard label="Riesgos Significativos" value={stats.significant} sub="NPR > 16 — requieren control" color={C.danger} icon="🔴" alert={stats.significant > 0} />
-        <KPICard label="Riesgos Moderados" value={stats.moderate} sub="NPR 9–16 — monitorear" color={C.warning} icon="🟡" />
-        <KPICard label="Riesgos Aceptables" value={stats.acceptable} sub="NPR ≤ 8 — bajo control" color={C.success} icon="🟢" />
+        <KPICard label="Riesgos Significativos" value={stats.significant} sub="NPR > 16 -- requieren control" color={C.danger} icon="[!]" alert={stats.significant > 0} />
+        <KPICard label="Riesgos Moderados" value={stats.moderate} sub="NPR 9-16 -- monitorear" color={C.warning} icon="[?]" />
+        <KPICard label="Riesgos Aceptables" value={stats.acceptable} sub="NPR <= 8 -- bajo control" color={C.success} icon="[OK]" />
       </div>
       {isLoading ? <div style={{ textAlign:"center", padding:40, color:C.faint }}>Cargando riesgos...</div> : (
         <div style={{ background:C.card, borderRadius:12, border:`1px solid ${C.border}`, overflow:"hidden" }}>
           <table style={{ width:"100%", borderCollapse:"collapse" }}>
             <thead><tr style={{ background:C.bg }}>
-              {["Código","Peligro / Aspecto","Área","P","S","D","NPR","Nivel"].map(h => (
+              {["Codigo","Peligro / Aspecto","Area","P","S","D","NPR","Nivel"].map(h => (
                 <th key={h} style={{ padding:"11px 16px", textAlign:"left", fontSize:11, fontWeight:700,
                   color:C.muted, textTransform:"uppercase", letterSpacing:"0.06em", borderBottom:`1px solid ${C.border}` }}>{h}</th>
               ))}
@@ -499,7 +499,7 @@ function RisksPage() {
   );
 }
 
-// ─── Legal Page ────────────────────────────────────────────────
+// --- Legal Page ------------------------------------------------
 function LegalPage() {
   const { requirements, isLoading, getDaysLeft, getStatus } = useLegal();
   return (
@@ -521,7 +521,7 @@ function LegalPage() {
         <div style={{ background:C.card, borderRadius:12, border:`1px solid ${C.border}`, overflow:"hidden" }}>
           <table style={{ width:"100%", borderCollapse:"collapse" }}>
             <thead><tr style={{ background:C.bg }}>
-              {["Código","Requisito Legal","Categoría","Área","Vencimiento","Días restantes","Estado"].map(h => (
+              {["Codigo","Requisito Legal","Categoria","Area","Vencimiento","Dias restantes","Estado"].map(h => (
                 <th key={h} style={{ padding:"11px 16px", textAlign:"left", fontSize:11, fontWeight:700,
                   color:C.muted, textTransform:"uppercase", letterSpacing:"0.06em", borderBottom:`1px solid ${C.border}` }}>{h}</th>
               ))}
@@ -538,9 +538,9 @@ function LegalPage() {
                     <td style={{ padding:"11px 16px", fontSize:13, fontWeight:500, color:C.text }}>{r.title}</td>
                     <td style={{ padding:"11px 16px", fontSize:12, color:C.muted }}>{r.category}</td>
                     <td style={{ padding:"11px 16px", fontSize:12, color:C.muted }}>{r.applicable_area}</td>
-                    <td style={{ padding:"11px 16px", fontSize:12, color:C.text }}>{r.expiration_date ?? "—"}</td>
+                    <td style={{ padding:"11px 16px", fontSize:12, color:C.text }}>{r.expiration_date ?? "--"}</td>
                     <td style={{ padding:"11px 16px", textAlign:"center" }}>
-                      {days !== null ? <span style={{ background:s.bg, color:s.color, padding:"3px 10px", borderRadius:999, fontSize:12, fontWeight:700 }}>{days}d</span> : <span style={{ color:C.faint }}>—</span>}
+                      {days !== null ? <span style={{ background:s.bg, color:s.color, padding:"3px 10px", borderRadius:999, fontSize:12, fontWeight:700 }}>{days}d</span> : <span style={{ color:C.faint }}>--</span>}
                     </td>
                     <td style={{ padding:"11px 16px" }}><Badge label={s.label} bg={s.bg} text={s.color} /></td>
                   </tr>
@@ -556,13 +556,13 @@ function LegalPage() {
 
 const StubPage = ({ title }: { title:string }) => (
   <div style={{ padding:60, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:14, color:C.faint }}>
-    <div style={{ fontSize:52 }}>⬡</div>
-    <div style={{ fontSize:16, fontWeight:700, color:C.muted }}>Módulo en desarrollo</div>
-    <div style={{ fontSize:13 }}>{title} — próximamente disponible</div>
+    <div style={{ fontSize:52 }}>#</div>
+    <div style={{ fontSize:16, fontWeight:700, color:C.muted }}>Modulo en desarrollo</div>
+    <div style={{ fontSize:13 }}>{title} -- proximamente disponible</div>
   </div>
 );
 
-// ─── MAIN DASHBOARD CONTAINER ──────────────────────────────────
+// --- MAIN DASHBOARD CONTAINER ----------------------------------
 export default function Dashboard() {
   const [page, setPage] = useState("dashboard");
   const { findings } = useFindings();
@@ -600,7 +600,7 @@ export default function Dashboard() {
             <div style={{ fontSize:12, color:C.faint, textTransform:"capitalize" }}>{now}</div>
             {(findingCount + legalAlerts) > 0 && (
               <div style={{ padding:"6px 12px", borderRadius:8, background:C.dangerLight, color:C.danger, fontSize:12, fontWeight:600 }}>
-                🔔 {findingCount + legalAlerts} alertas
+                [!] {findingCount + legalAlerts} alertas
               </div>
             )}
           </div>

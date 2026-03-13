@@ -11,7 +11,7 @@ export default function Register() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (form.password !== form.confirm) { setError("Las contraseñas no coinciden"); return; }
+    if (form.password !== form.confirm) { setError("Las contrasenas no coinciden"); return; }
     setLoading(true); setError("");
     const { error } = await signUp(form.email, form.password, form.fullName);
     if (error) { setError(error.message); setLoading(false); }
@@ -29,10 +29,10 @@ export default function Register() {
         </div>
         <form onSubmit={handleSubmit} style={{ display:"flex", flexDirection:"column", gap:14 }}>
           {[
-            { label:"NOMBRE COMPLETO", key:"fullName", type:"text", placeholder:"Juan García" },
+            { label:"NOMBRE COMPLETO", key:"fullName", type:"text", placeholder:"Juan Garcia" },
             { label:"EMAIL", key:"email", type:"email", placeholder:"usuario@dassa.com.ar" },
-            { label:"CONTRASEÑA", key:"password", type:"password", placeholder:"Mínimo 8 caracteres" },
-            { label:"CONFIRMAR CONTRASEÑA", key:"confirm", type:"password", placeholder:"Repetir contraseña" },
+            { label:"CONTRASENA", key:"password", type:"password", placeholder:"Minimo 8 caracteres" },
+            { label:"CONFIRMAR CONTRASENA", key:"confirm", type:"password", placeholder:"Repetir contrasena" },
           ].map(f => (
             <div key={f.key}>
               <label style={{ fontSize:11, fontWeight:600, color:"#94a3b8", display:"block", marginBottom:5, letterSpacing:"0.05em" }}>{f.label}</label>
@@ -50,10 +50,10 @@ export default function Register() {
           >{loading ? "Registrando..." : "Crear cuenta"}</button>
         </form>
         <div style={{ textAlign:"center", marginTop:16, fontSize:12, color:"#475569" }}>
-          ¿Ya tenés cuenta? <Link to="/login" style={{ color:"#38bdf8", textDecoration:"none", fontWeight:600 }}>Iniciar sesión</Link>
+          ?Ya tenes cuenta? <Link to="/login" style={{ color:"#38bdf8", textDecoration:"none", fontWeight:600 }}>Iniciar sesion</Link>
         </div>
         <div style={{ marginTop:16, padding:"10px 14px", background:"#0c1a2e", borderRadius:8, fontSize:11, color:"#475569", textAlign:"center" }}>
-          Tu cuenta quedará pendiente de asignación de roles por el administrador.
+          Tu cuenta quedara pendiente de asignacion de roles por el administrador.
         </div>
       </div>
     </div>

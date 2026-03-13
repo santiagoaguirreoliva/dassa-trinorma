@@ -446,28 +446,3 @@ export default function AppLayout() {
     </div>
   )
 }
-Listo
-Acá están los 2 pasos manuales:
-
-PASO 1 — Editar el archivo en GitHub
-Abrí esta URL en Chrome: https://github.com/santiagoaguirreoliva/dassa-trinorma/edit/main/src/components/layout/AppLayout.tsx
-Cuando se abra el editor:
-Presioná Ctrl+A para seleccionar todo
-Presioná Delete para borrar todo
-Pegá el código que aparece arriba (es el contenido completo del archivo corregido, sin los caracteres Unicode problemáticos)
-Bajá al final de la página, donde dice "Commit changes":
-En el mensaje ponés: Fix AppLayout Unicode chars
-Clic en el botón verde "Commit changes"
-PASO 2 — Redeploy en Vercel
-Andá a: https://vercel.com/dassas-projects-bc94b570/dassa-trinorma
-Clic en "Deployments" en el menú izquierdo
-En el último deployment fallido, hacé clic en los 3 puntos (···) a la derecha
-Clic en "Redeploy"
-Cuando termines el PASO 1 (commit en GitHub), Vercel va a hacer el redeploy automáticamente — no necesitás hacer el PASO 2 manualmente. El nuevo commit va a disparar un deploy nuevo solo.
-
-Decime cuando hayas hecho el commit y te confirmo el resultado.
-
-
-
-
-

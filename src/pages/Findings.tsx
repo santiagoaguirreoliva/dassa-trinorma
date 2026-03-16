@@ -148,7 +148,7 @@ function FindingCard({ finding, onAdvance }: { finding: any; onAdvance: (id: str
             border: `1px solid ${DS.border}`, background: '#f8fafc',
             fontSize: 10, fontWeight: 600, color: DS.textSecondary, cursor: 'pointer',
           }}
-        >-> Avanzar a {STATUS_CONFIG[s.next]?.label}</button>
+        > Avanzar a {STATUS_CONFIG[s.next]?.label}</button>
       )}
     </div>
   )

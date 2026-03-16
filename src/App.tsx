@@ -2,7 +2,7 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthProvider } from "./contexts/AuthContext";
 import AppLayout from "./components/layout/AppLayout";
-import LoadingScreen from "./components/common/LoadingScreen";
+import { LoadingScreen } from "./components/common/LoadingScreen";
 import { useAuth } from "./contexts/AuthContext";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
@@ -13,7 +13,6 @@ import Legal from "./pages/Legal";
 import Trainings from "./pages/Trainings";
 import Purchases from "./pages/Purchases";
 import Documents from "./pages/Documents";
-import OtherPages from "./pages/OtherPages";
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { staleTime: 60_000, retry: 1 } },
@@ -21,7 +20,7 @@ const queryClient = new QueryClient({
 
 function AppRoutes() {
   const { user, loading } = useAuth();
-  if (loading) return <LoadingScreen />;
+  if (isLoading) return <LoadingScreen />;
   if (!user) return <Routes><Route path="/register" element={<Register />} /><Route path="*" element={<Login />} /></Routes>;
   return (
     <AppLayout>
@@ -43,11 +42,11 @@ function AppRoutes() {
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <PagesRouter>
+      <AppRoutes>
         <AuthProvider>
-          <AppRouter />
+          <AppRoutes />
         </AuthProvider>
-      </PagesRouter>
+      </AppRoutes>
     </QueryClientProvider>
   );
 }

@@ -1,8 +1,8 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthProvider } from "./contexts/AuthContext";
-import { AppLayout } from "./components/layout/AppLayout";
-import { LoadingScreen } from "./components/common/LoadingScreen";
+import AppLayout from "./components/layout/AppLayout";
+import LoadingScreen from "./components/common/LoadingScreen";
 import { useAuth } from "./contexts/AuthContext";
 import Login from "./pages/Login";
 import Register from "./pages/Register";

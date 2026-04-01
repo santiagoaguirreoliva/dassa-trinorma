@@ -21,7 +21,8 @@ export async function apiCall<T>(
 
   if (!response.ok) {
     const error = await response.json();
-    throw new Error(error.error || 'Error en la solicitud');
+    const msg = error.detail ? `${error.error}: ${error.detail}` : (error.error || 'Error en la solicitud');
+    throw new Error(msg);
   }
 
   return response.json();

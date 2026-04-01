@@ -169,7 +169,10 @@ export function Compras() {
       else { await api.createPurchase(payload); }
       setShowDialog(false);
       loadPurchases(); loadStats();
-    } catch (e: any) { alert(e.message); }
+    } catch (e: any) {
+      const msg = e?.response?.detail || e?.detail || e.message || 'Error desconocido';
+      alert('Error: ' + msg);
+    }
   };
 
   const handleDelete = async (id: number) => {

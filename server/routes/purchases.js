@@ -92,7 +92,10 @@ router.post('/', authenticateToken, async (req, res) => {
        date || new Date().toISOString().split('T')[0], req.userId, notes||null]
     );
     res.status(201).json(rows[0]);
-  } catch (err) { res.status(500).json({ error: 'Error al crear solicitud de compra' }); }
+  } catch (err) {
+    console.error('Error POST /purchases:', err.message, err.stack);
+    res.status(500).json({ error: 'Error al crear solicitud de compra', detail: err.message });
+  }
 });
 
 router.put('/:id', authenticateToken, async (req, res) => {

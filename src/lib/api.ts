@@ -171,4 +171,49 @@ export const api = {
     }),
   deleteTrainingEmployee: (trainingId: string | number, empId: string | number) =>
     apiCall(`/trainings/${trainingId}/employees/${empId}`, { method: 'DELETE' }),
+
+  // Purchases
+  getPurchases: (params?: Record<string, string>) => {
+    const query = new URLSearchParams(params).toString();
+    return apiCall(`/purchases${query ? '?' + query : ''}`);
+  },
+  getPurchase: (id: string | number) => apiCall(`/purchases/${id}`),
+  createPurchase: (data: any) =>
+    apiCall('/purchases', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+  updatePurchase: (id: string | number, data: any) =>
+    apiCall(`/purchases/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }),
+  deletePurchase: (id: string | number) =>
+    apiCall(`/purchases/${id}`, { method: 'DELETE' }),
+  updatePurchaseStatus: (id: string | number, data: any) =>
+    apiCall(`/purchases/${id}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    }),
+  getPurchaseStats: () => apiCall('/purchases/stats'),
+  getPurchaseReports: () => apiCall('/purchases/reports/monthly'),
+
+  // Suppliers
+  getSuppliers: (params?: Record<string, string>) => {
+    const query = new URLSearchParams(params).toString();
+    return apiCall(`/suppliers${query ? '?' + query : ''}`);
+  },
+  getSupplier: (id: string | number) => apiCall(`/suppliers/${id}`),
+  createSupplier: (data: any) =>
+    apiCall('/suppliers', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+  updateSupplier: (id: string | number, data: any) =>
+    apiCall(`/suppliers/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }),
+  deleteSupplier: (id: string | number) =>
+    apiCall(`/suppliers/${id}`, { method: 'DELETE' }),
 };

@@ -12,6 +12,7 @@ import { EnvironmentalAspects } from './pages/EnvironmentalAspects';
 import { CustomerSatisfaction } from './pages/CustomerSatisfaction';
 import { Employees } from './pages/Employees';
 import { Trainings } from './pages/Trainings';
+import { Compras } from './pages/Compras';
 import { PlaceholderPage } from './pages/PlaceholderPage';
 import { NotFound } from './pages/NotFound';
 
@@ -127,7 +128,7 @@ function App() {
             path="/compras"
             element={
               <ProtectedRoute>
-                <PlaceholderPage title="Gestión de Compras" />
+                <Compras />
               </ProtectedRoute>
             }
           />

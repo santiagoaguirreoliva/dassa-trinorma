@@ -164,16 +164,36 @@ export async function initializeDatabase() {
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
 
+    CREATE TABLE IF NOT EXISTS suppliers (
+      id SERIAL PRIMARY KEY,
+      name TEXT NOT NULL,
+      cuit TEXT,
+      type TEXT,
+      contact_name TEXT,
+      email TEXT,
+      phone TEXT,
+      address TEXT,
+      status TEXT NOT NULL DEFAULT 'activo' CHECK(status IN ('activo', 'inactivo', 'suspendido')),
+      notes TEXT,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+
     CREATE TABLE IF NOT EXISTS purchases (
       id SERIAL PRIMARY KEY,
       code TEXT UNIQUE NOT NULL,
-      supplier TEXT NOT NULL,
+      supplier_id INTEGER REFERENCES suppliers(id),
+      supplier_name TEXT NOT NULL,
       description TEXT,
       amount REAL,
-      date DATE NOT NULL,
-      status TEXT NOT NULL CHECK(status IN ('pendiente', 'aprobada', 'recibida', 'cerrada')),
+      category TEXT NOT NULL DEFAULT 'estandar' CHECK(category IN ('estandar','servicios','materiales','equipamiento','otros')),
+      date DATE NOT NULL DEFAULT CURRENT_DATE,
+      status TEXT NOT NULL DEFAULT 'solicitud' CHECK(status IN ('solicitud','autorizada','rechazada','en_ejecucion','recibida','cerrada')),
+      requested_by INTEGER REFERENCES users(id),
       approved_by TEXT,
-      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      rejection_reason TEXT,
+      notes TEXT,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
 
     CREATE TABLE IF NOT EXISTS profiles (
@@ -328,6 +348,24 @@ async function seedDatabase() {
       `INSERT INTO trainings (title, type, date, duration_hours, instructor, status, department, max_participants)
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
       [title, type, date, hours, instructor, status, dept, maxp]
+    );
+  }
+
+  // Seed suppliers (real DASSA suppliers)
+  const suppliersData = [
+    ['GRUAS ANTOG SRL',         'Grúas y Equipamiento', null, null, null, 'activo'],
+    ['TRANSPORTE ANDRESITO',    'Transporte',           null, null, null, 'activo'],
+    ['NUEVO ESTIBAJE SRL',      'Servicios Portuarios', null, null, null, 'activo'],
+    ['MENDEZ RUBEN',            'Servicios',            null, null, null, 'activo'],
+    ['EL VISOR SRL',            'Insumos',              null, null, null, 'activo'],
+    ['COSTAS NORBERTO GENARO',  'Servicios',            null, null, null, 'activo'],
+    ['CENTRO MEDICO SARANDI SA','Salud Ocupacional',    null, null, null, 'activo'],
+    ['PONZI FERNANDO',          'Servicios',            null, null, null, 'activo'],
+  ];
+  for (const [name, type, cuit, contact_name, email, status] of suppliersData) {
+    await pool.query(
+      `INSERT INTO suppliers (name, type, cuit, contact_name, email, status) VALUES ($1,$2,$3,$4,$5,$6) ON CONFLICT DO NOTHING`,
+      [name, type, cuit, contact_name, email, status]
     );
   }
 

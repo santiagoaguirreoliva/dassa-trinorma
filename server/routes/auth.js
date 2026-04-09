@@ -1,55 +1,82 @@
-import express from 'express';
-import bcryptjs from 'bcryptjs';
-import { query } from '../db.js';
-import { generateToken, authenticateToken } from '../middleware/auth.js';
+import { Router } from 'express';
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
+import { query } from '../db/db.js';
+import { authenticate } from '../middleware/auth.js';
 
-const router = express.Router();
+const router = Router();
 
+// POST /api/auth/login
 router.post('/login', async (req, res) => {
   const { email, password } = req.body;
   if (!email || !password) {
-    return res.status(400).json({ error: 'Email y contraseña son requeridos' });
+    return res.status(400).json({ error: 'Email y contraseña requeridos' });
   }
   try {
-    const { rows } = await query('SELECT * FROM users WHERE email = $1', [email]);
+    const { rows } = await query(
+      'SELECT * FROM users WHERE email = $1 AND is_active = true',
+      [email.toLowerCase().trim()]
+    );
     const user = rows[0];
-    if (!user) return res.status(401).json({ error: 'Email o contraseña incorrectos' });
+    if (!user) return res.status(401).json({ error: 'Credenciales incorrectas' });
 
-    const passwordMatch = bcryptjs.compareSync(password, user.password_hash);
-    if (!passwordMatch) return res.status(401).json({ error: 'Email o contraseña incorrectos' });
+    const ok = await bcrypt.compare(password, user.password_hash);
+    if (!ok) return res.status(401).json({ error: 'Credenciales incorrectas' });
 
-    const token = generateToken(user.id);
-    res.json({ token, user: { id: user.id, email: user.email, name: user.name, role: user.role } });
+    // Update last_login
+    await query('UPDATE users SET last_login = NOW() WHERE id = $1', [user.id]);
+
+    const token = jwt.sign(
+      { userId: user.id, role: user.role },
+      process.env.JWT_SECRET,
+      { expiresIn: '7d' }
+    );
+
+    const { password_hash, ...safe } = user;
+    res.json({ token, user: safe });
   } catch (err) {
+    console.error('Login error:', err);
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
 
-router.post('/register', async (req, res) => {
-  const { email, password, name } = req.body;
-  if (!email || !password || !name) {
-    return res.status(400).json({ error: 'Email, contraseña y nombre son requeridos' });
-  }
+// GET /api/auth/me
+router.get('/me', authenticate, async (req, res) => {
   try {
-    const passwordHash = bcryptjs.hashSync(password, 10);
     const { rows } = await query(
-      `INSERT INTO users (email, password_hash, name, role) VALUES ($1,$2,$3,'usuario') RETURNING id`,
-      [email, passwordHash, name]
+      `SELECT u.id, u.email, u.full_name, u.role, u.position, u.department,
+              u.avatar_url, u.phone, u.last_login, u.created_at,
+              jp.responsibilities, jp.objectives, jp.kpis
+         FROM users u
+         LEFT JOIN job_profiles jp ON jp.user_id = u.id
+        WHERE u.id = $1`,
+      [req.user.id]
     );
-    const token = generateToken(rows[0].id);
-    res.status(201).json({ token, user: { id: rows[0].id, email, name, role: 'usuario' } });
-  } catch (error) {
-    res.status(400).json({ error: 'El email ya está registrado' });
-  }
-});
-
-router.get('/me', authenticateToken, async (req, res) => {
-  try {
-    const { rows } = await query('SELECT id, email, name, role FROM users WHERE id = $1', [req.userId]);
-    if (!rows[0]) return res.status(404).json({ error: 'Usuario no encontrado' });
     res.json(rows[0]);
   } catch (err) {
-    res.status(500).json({ error: 'Error interno del servidor' });
+    res.status(500).json({ error: 'Error al obtener perfil' });
+  }
+});
+
+// POST /api/auth/change-password
+router.post('/change-password', authenticate, async (req, res) => {
+  const { currentPassword, newPassword } = req.body;
+  if (!currentPassword || !newPassword) {
+    return res.status(400).json({ error: 'Campos requeridos' });
+  }
+  if (newPassword.length < 8) {
+    return res.status(400).json({ error: 'La contraseña debe tener al menos 8 caracteres' });
+  }
+  try {
+    const { rows } = await query('SELECT password_hash FROM users WHERE id = $1', [req.user.id]);
+    const ok = await bcrypt.compare(currentPassword, rows[0].password_hash);
+    if (!ok) return res.status(400).json({ error: 'Contraseña actual incorrecta' });
+
+    const hash = await bcrypt.hash(newPassword, 10);
+    await query('UPDATE users SET password_hash = $1 WHERE id = $2', [hash, req.user.id]);
+    res.json({ message: 'Contraseña actualizada correctamente' });
+  } catch (err) {
+    res.status(500).json({ error: 'Error al cambiar contraseña' });
   }
 });
 

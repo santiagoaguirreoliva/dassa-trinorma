@@ -1,137 +1,193 @@
-# Trinorma Manager — Sistema de Gestión Integrado (SGI)
+# DASSA SGI — Sistema de Gestión Integrado
+## ISO 9001 · ISO 14001 · ISO 45001
 
-Sistema completo de gestión para la certificación ISO 9001 (Calidad), ISO 14001 (Gestión Ambiental) e ISO 45001 (Seguridad y Salud en el Trabajo) de DASSA.
+---
 
-## Características
+## SETUP LOCAL (10 minutos)
 
-- **Dashboard**: Visión general con KPIs
-- **Sistema de Gestión**: Misión, visión, valores y políticas
-- **Documentos ISO**: CRUD con auto-código (P-TRI-XX, I-TRI-XX)
-- **Incidentes y Accidentes**: Registro con severidad y estados
-- **Aspectos Ambientales**: Matriz F×S×D para significancia
-- **Satisfacción del Cliente**: Cálculo automático de NPS
-- **Gestión de Empleados**: Directorio con departamentos
-- **Capacitaciones**: Planificación y seguimiento
-- **Autenticación**: JWT con roles (admin, usuario, auditor)
-- **Base de datos**: SQLite con 20 tablas
-
-## Requisitos
-
-- Node.js 16+
-- npm o yarn
-
-## Instalación y Ejecución
-
-### Opción 1: Ejecución Rápida (Recomendado)
+### 1. Instalar dependencias
 
 ```bash
-cd dassa-trinorma
+cd dassa-sgi
 npm install
-npm run build
-npm start
 ```
 
-El servidor estará disponible en `http://localhost:3000`
-
-### Opción 2: Desarrollo
-
-Para desarrollo con hot reload:
+### 2. Configurar variables de entorno
 
 ```bash
-cd dassa-trinorma
-npm install
+cp .env.example .env
+```
+
+Editar `.env` con tus valores:
+
+```
+DATABASE_URL=postgresql://user:password@localhost:5432/dassa_sgi
+JWT_SECRET=genera_un_secret_largo_aqui
+```
+
+**Generar JWT_SECRET:**
+```bash
+node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
+```
+
+### 3. Crear la base de datos PostgreSQL
+
+**Opción A — PostgreSQL local:**
+```bash
+createdb dassa_sgi
+psql dassa_sgi -f server/db/schema.sql
+psql dassa_sgi -f server/db/seed.sql
+```
+
+**Opción B — Railway (recomendado para producción):**
+- Crear proyecto en railway.app
+- Agregar servicio PostgreSQL
+- Copiar DATABASE_URL al .env
+- Ejecutar los SQL desde el panel de Railway o via `psql`
+
+### 4. Generar contraseñas reales para los usuarios seed
+
+Los usuarios del seed tienen `placeholder_hash_change_me` como hash.
+Ejecutar este script para generar los hashes reales:
+
+```bash
+node -e "
+const bcrypt = require('bcryptjs');
+const password = 'Dassa2026!';
+bcrypt.hash(password, 10).then(h => {
+  console.log('Hash para contraseña Dassa2026!:');
+  console.log(h);
+  console.log('\nSQL para actualizar:');
+  console.log(\"UPDATE users SET password_hash = '\" + h + \"';\");
+});
+"
+```
+
+Luego ejecutar el SQL resultante en la base de datos.
+
+### 5. Correr en desarrollo
+
+```bash
 npm run dev
 ```
 
-El frontend estará en `http://localhost:5173`
-El backend en `http://localhost:3000`
+- Frontend: http://localhost:5173
+- Backend: http://localhost:3000
 
-## Cuentas de Prueba
+### 6. Login
 
-| Rol    | Email                          | Contraseña |
-|--------|--------------------------------|------------|
-| Admin  | santiago@dassa.com.ar          | Admin123!  |
-| Usuario| operaciones@dassa.com.ar       | User123!   |
-| Auditor| auditor@dassa.com.ar           | Audit123!  |
+| Usuario | Email | Contraseña |
+|---------|-------|------------|
+| Santiago (Admin) | santiago@dassa.com.ar | Dassa2026! |
+| Manuel (SGI) | manuel@dassa.com.ar | Dassa2026! |
+| María (RRHH) | maria@dassa.com.ar | Dassa2026! |
+| Fernando (HyS) | fernando@dassa.com.ar | Dassa2026! |
+| Christian (Ops) | christian@dassa.com.ar | Dassa2026! |
+| NIXA (Auditor) | nixa@nixa.com.ar | Dassa2026! |
 
-## Estructura del Proyecto
+---
+
+## SUBIR A GITHUB
+
+```bash
+# 1. Inicializar git (si no está inicializado)
+git init
+
+# 2. Agregar todos los archivos
+git add .
+
+# 3. Primer commit
+git commit -m "feat: DASSA SGI Phase 1 — base completa"
+
+# 4. Conectar al repo de GitHub
+# Opción A: reemplazar el repo actual (dassa-trinorma)
+git remote add origin https://github.com/santiagoaguirreoliva/dassa-trinorma.git
+git push --force origin main
+
+# Opción B: nuevo repo
+# Crear repo en github.com, luego:
+git remote add origin https://github.com/santiagoaguirreoliva/dassa-sgi.git
+git push -u origin main
+```
+
+---
+
+## DEPLOY EN RAILWAY
+
+1. Ir a railway.app → New Project → Deploy from GitHub
+2. Seleccionar el repositorio
+3. Agregar servicio PostgreSQL al proyecto
+4. En Variables de entorno agregar:
+   - `DATABASE_URL` → Railway lo completa automáticamente
+   - `JWT_SECRET` → el que generaste
+   - `NODE_ENV` → `production`
+   - `CORS_ORIGIN` → la URL de tu app en Railway
+5. El deploy arranca solo
+
+**Importante:** Después del primer deploy, ejecutar el schema en la DB de Railway:
+```bash
+# Con railway CLI:
+railway run psql $DATABASE_URL -f server/db/schema.sql
+railway run psql $DATABASE_URL -f server/db/seed.sql
+```
+
+---
+
+## ESTRUCTURA DEL PROYECTO
 
 ```
-dassa-trinorma/
+dassa-sgi/
 ├── server/
-│   ├── index.js              # Express app principal
-│   ├── db.js                 # SQLite setup y seed
+│   ├── index.js              # Express app
+│   ├── db/
+│   │   ├── db.js             # Pool PostgreSQL
+│   │   ├── schema.sql        # 31 tablas completas
+│   │   └── seed.sql          # Datos reales DASSA
 │   ├── middleware/
-│   │   └── auth.js           # JWT auth
-│   └── routes/               # API endpoints
+│   │   └── auth.js           # JWT + roles
+│   └── routes/
+│       ├── auth.js           # Login, me, change-password
+│       ├── dashboard.js      # Stats, tareas, calendario
+│       ├── findings.js       # NC CRUD + acciones + comentarios
+│       └── misc.js           # Users, risks, legal, tasks
 ├── src/
-│   ├── main.tsx              # React entry point
-│   ├── App.tsx               # Router y componentes
+│   ├── App.tsx               # Router
+│   ├── main.tsx
+│   ├── index.css
+│   ├── contexts/
+│   │   └── AuthContext.tsx   # Auth + roles
+│   ├── hooks/                # (próxima fase)
 │   ├── lib/
-│   │   ├── api.ts            # API client
-│   │   └── auth.tsx          # Auth context
-│   ├── components/           # UI components
-│   └── pages/                # Page components
+│   │   └── api.ts            # Fetch wrapper tipado
+│   ├── components/
+│   │   ├── layout/           # AppLayout, Sidebar, Header
+│   │   └── ui/               # KPICard, Badge, Avatar, etc.
+│   └── pages/
+│       ├── Login.tsx
+│       ├── Dashboard.tsx     # Dashboard completo con gráficos
+│       └── [otros módulos]   # Stubs listos para implementar
+├── railway.json
+├── nixpacks.toml
 ├── package.json
-├── tsconfig.json
 ├── vite.config.ts
-├── tailwind.config.js
-└── index.html
+└── .env.example
 ```
 
-## API Endpoints
+---
 
-### Autenticación
-- `POST /api/auth/login` - Ingresar
-- `POST /api/auth/register` - Registrar
-- `GET /api/auth/me` - Datos del usuario
+## MÓDULOS IMPLEMENTADOS EN FASE 1
 
-### Recursos
-- `/api/sistema-gestion` - Sistema de Gestión
-- `/api/documents` - Documentos ISO
-- `/api/incidents` - Incidentes
-- `/api/environmental` - Aspectos Ambientales
-- `/api/satisfaction` - Satisfacción del Cliente
-- `/api/employees` - Empleados
-- `/api/trainings` - Capacitaciones
+- ✅ Auth (login, JWT, 8 roles)
+- ✅ Dashboard ejecutivo con KPIs reales
+- ✅ Schema completo (31 tablas, triggers, auto-códigos)
+- ✅ Seed data real (30 riesgos F-TRI-42, 10 req. legales, FODA)
+- ✅ API REST: auth, dashboard, findings, users, risks, legal, tasks
+- ✅ Sidebar con navegación completa
+- ✅ Stubs para todos los módulos restantes
+- ✅ Deploy Railway ready
 
-## Tecnologías
+## PRÓXIMA FASE
 
-**Frontend:**
-- React 18
-- Vite
-- TypeScript
-- Tailwind CSS
-- React Router
-- Lucide Icons
-
-**Backend:**
-- Express.js
-- SQLite (better-sqlite3)
-- JWT
-- bcryptjs
-
-## Base de Datos
-
-La base de datos SQLite (`trinorma.db`) se crea automáticamente en la primera ejecución con:
-- 20 tablas
-- Datos de prueba (usuarios, documentos, incidentes, aspectos, etc.)
-- Relaciones y constraints
-
-## Configuración
-
-Variables de entorno (opcional):
-- `PORT`: Puerto del servidor (default: 3000)
-- `JWT_SECRET`: Clave secreta JWT (auto-generada si no se proporciona)
-
-## Notas
-
-- El frontend compilado se sirve desde Express como archivos estáticos
-- Todos los datos están en SQLite local
-- No requiere servicios externos
-- Compatible con ~8 usuarios concurrentes
-- Interfaz completamente en español (argentino)
-
-## Licencia
-
-DASSA — 2026
+- Findings Kanban (6 columnas drag & drop)
+- Comité Mixto + IA extrae tareas
+- Capacitaciones + calendario + emails

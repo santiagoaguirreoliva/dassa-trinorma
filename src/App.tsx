@@ -7,23 +7,35 @@ import Register from '@/pages/Register';
 import Dashboard from '@/pages/Dashboard';
 import Findings from '@/pages/Findings';
 import Risks from '@/pages/Risks';
+import Legal from '@/pages/Legal';
 import Purchases from '@/pages/Purchases';
 import Committee from '@/pages/Committee';
 import Users from '@/pages/Users';
 import Profile from '@/pages/Profile';
+import Trainings from '@/pages/Trainings';
+import Employees from '@/pages/Employees';
+import Incidents from '@/pages/Incidents';
+import Environmental from '@/pages/Environmental';
+import Documents from '@/pages/Documents';
+import CustomerSatisfaction from '@/pages/CustomerSatisfaction';
+import SistemaGestion from '@/pages/SistemaGestion';
+import Suppliers from '@/pages/Suppliers';
+import Context from '@/pages/Context';
+import Calendar from '@/pages/Calendar';
 import PublicNC from '@/pages/PublicNC';
 import { Spinner } from '@/components/ui';
 import { lazy, Suspense } from 'react';
+import ForgotPassword from '@/pages/ForgotPassword';
+import ResetPassword from '@/pages/ResetPassword';
+import RequestAccess from '@/pages/RequestAccess';
+import Auditor from '@/pages/Auditor';
+import MisPendientes from '@/pages/MisPendientes';
 
 const qc = new QueryClient({
   defaultOptions: { queries: { staleTime: 30_000, retry: 1, refetchOnWindowFocus: false } },
 });
 
-const Legal        = lazy(() => import('@/pages/Placeholder').then(m => ({ default: m.Legal })));
-const Trainings    = lazy(() => import('@/pages/Placeholder').then(m => ({ default: m.Trainings })));
-const Employees    = lazy(() => import('@/pages/Placeholder').then(m => ({ default: m.Employees })));
-const Incidents    = lazy(() => import('@/pages/Placeholder').then(m => ({ default: m.Incidents })));
-const Environmental= lazy(() => import('@/pages/Placeholder').then(m => ({ default: m.Environmental })));
+// Lazy-load modules that still use the old pattern (to be refactored later)
 const Placeholder  = lazy(() => import('@/pages/Placeholder'));
 
 function LoadingScreen() {
@@ -54,29 +66,38 @@ export default function App() {
       <AuthProvider>
         <BrowserRouter>
           <Routes>
-            {/* Públicas */}
             <Route path="/login"      element={<Login />} />
             <Route path="/register"   element={<Register />} />
             <Route path="/reporte-nc" element={<PublicNC />} />
             <Route path="/"           element={<Navigate to="/dashboard" replace />} />
-
-            {/* Privadas */}
             <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
-              <Route path="/dashboard"     element={<Dashboard />} />
-              <Route path="/findings/*"    element={<Findings />} />
-              <Route path="/risks"         element={<Risks />} />
-              <Route path="/purchases"     element={<Purchases />} />
-              <Route path="/committee"     element={<Committee />} />
-              <Route path="/users"         element={<Users />} />
-              <Route path="/profile"       element={<Profile />} />
-              <Route path="/legal"         element={<Suspense fallback={<PageFallback />}><Legal /></Suspense>} />
-              <Route path="/trainings"     element={<Suspense fallback={<PageFallback />}><Trainings /></Suspense>} />
-              <Route path="/employees/*"   element={<Suspense fallback={<PageFallback />}><Employees /></Suspense>} />
-              <Route path="/incidents"     element={<Suspense fallback={<PageFallback />}><Incidents /></Suspense>} />
-              <Route path="/environmental" element={<Suspense fallback={<PageFallback />}><Environmental /></Suspense>} />
-              <Route path="/:slug"         element={<Suspense fallback={<PageFallback />}><Placeholder /></Suspense>} />
+              <Route path="/dashboard"      element={<Dashboard />} />
+              <Route path="/findings/*"     element={<Findings />} />
+              <Route path="/risks"          element={<Risks />} />
+              <Route path="/legal"          element={<Legal />} />
+              <Route path="/purchases"      element={<Purchases />} />
+              <Route path="/committee"      element={<Committee />} />
+              <Route path="/trainings"      element={<Trainings />} />
+              <Route path="/users"          element={<Users />} />
+              <Route path="/profile"        element={<Profile />} />
+              <Route path="/employees"      element={<Employees />} />
+              <Route path="/incidents"      element={<Incidents />} />
+              <Route path="/environmental"  element={<Environmental />} />
+              <Route path="/documents"      element={<Documents />} />
+              <Route path="/satisfaction"   element={<CustomerSatisfaction />} />
+              <Route path="/sistema-gestion" element={<SistemaGestion />} />
+              <Route path="/suppliers"      element={<Suppliers />} />
+              <Route path="/context"        element={<Context />} />
+              <Route path="/calendar"       element={<Calendar />} />
+              {/* Catch-all for pages still in development */}
+              <Route path="/:slug"          element={<Suspense fallback={<PageFallback />}><Placeholder /></Suspense>} />
             </Route>
-          </Routes>
+                  <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/request-access" element={<RequestAccess />} />
+              <Route path="/auditor" element={<Auditor />} />
+        <Route path="/mis-pendientes" element={<MisPendientes />} />
+      </Routes>
         </BrowserRouter>
       </AuthProvider>
     </QueryClientProvider>

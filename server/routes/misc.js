@@ -1,7 +1,7 @@
 import { Router as UserRouter } from 'express';
 import { Router as RiskRouter } from 'express';
 import { Router as LegalRouter } from 'express';
-import { Router as TaskRouter } from 'express';
+// TaskRouter moved to tasks.js
 import bcrypt from 'bcryptjs';
 import { query } from '../db/db.js';
 import { authenticate, requireRole } from '../middleware/auth.js';
@@ -173,37 +173,4 @@ legalRouter.patch('/:id', requireRole('master_admin','sgi_leader'), async (req, 
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// ─── TASKS ──────────────────────────────────────────────────
-export const tasksRouter = TaskRouter();
-tasksRouter.use(authenticate);
-
-tasksRouter.get('/', async (req, res) => {
-  try {
-    const mine = req.query.mine === 'true';
-    let q = `SELECT t.*, u.full_name as assigned_name, c.full_name as creator_name
-               FROM tasks t
-               LEFT JOIN users u ON u.id = t.assigned_to
-               LEFT JOIN users c ON c.id = t.created_by
-              WHERE 1=1`;
-    const params = [];
-    if (mine) { q += ` AND t.assigned_to = $${params.length + 1}`; params.push(req.user.id); }
-    if (req.query.status) { q += ` AND t.status = $${params.length + 1}`; params.push(req.query.status); }
-    q += ' ORDER BY CASE t.priority WHEN \'urgente\' THEN 1 WHEN \'alta\' THEN 2 WHEN \'media\' THEN 3 ELSE 4 END, t.due_date ASC NULLS LAST';
-    const { rows } = await query(q, params);
-    res.json(rows);
-  } catch (err) { res.status(500).json({ error: err.message }); }
-});
-
-tasksRouter.patch('/:id', async (req, res) => {
-  const { status, completed_at } = req.body;
-  try {
-    const updates = [`status = $1`];
-    const values = [status];
-    if (status === 'completada') { updates.push(`completed_at = $2`); values.push(completed_at || new Date()); values.push(req.params.id); }
-    else { values.push(req.params.id); }
-    const { rows } = await query(
-      `UPDATE tasks SET ${updates.join(', ')} WHERE id = $${values.length} RETURNING *`, values
-    );
-    res.json(rows[0]);
-  } catch (err) { res.status(500).json({ error: err.message }); }
-});
+// Tasks router moved to server/routes/tasks.js

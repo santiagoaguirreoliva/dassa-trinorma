@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 200" role="img" aria-label="DASSA">
+  <title>DASSA</title>
+  <defs><style>
+    .s-red{stroke:#BF1E2E;fill:none;stroke-width:9;stroke-linecap:round;stroke-linejoin:round}
+    .s-cel{stroke:#5BBDC9;fill:none;stroke-width:9;stroke-linecap:round;stroke-linejoin:round}
+    .s-cube{stroke:#BF1E2E;fill:none;stroke-width:6;stroke-linecap:round;stroke-linejoin:round}
+    .s-word{font-family:'Montserrat Alternates','Montserrat',system-ui,sans-serif;font-weight:900;font-size:150px;letter-spacing:-2px;fill:#BF1E2E}
+  </style></defs>
+  <path class="s-red" d="M 30 60 V 30 H 60"/>
+  <path class="s-cel" d="M 140 30 H 170 V 60"/>
+  <path class="s-red" d="M 170 140 V 170 H 140"/>
+  <path class="s-cel" d="M 60 170 H 30 V 140"/>
+  <g class="s-cube" transform="translate(100,100)">
+    <path d="M 0 -36 L 32 -18 L 0 0 L -32 -18 Z"/>
+    <line x1="0" y1="0" x2="0" y2="36"/>
+    <line x1="32" y1="-18" x2="32" y2="18"/>
+    <line x1="-32" y1="-18" x2="-32" y2="18"/>
+    <path d="M -32 18 L 0 36 L 32 18"/>
+  </g>
+  <text x="220" y="135" class="s-word">DASSA</text>
+</svg>

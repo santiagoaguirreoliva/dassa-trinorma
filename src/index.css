@@ -3,17 +3,68 @@
 @tailwind utilities;
 
 * { box-sizing: border-box; }
-body { font-family: 'Manrope', system-ui, sans-serif; }
+
+body {
+  font-family: 'Montserrat', 'Helvetica Neue', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
 ::-webkit-scrollbar { width: 5px; height: 5px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 99px; }
+::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 99px; }
+::-webkit-scrollbar-thumb:hover { background: #9ca3af; }
+
+/* Safe areas for notch / home indicator */
+.safe-top    { padding-top:    env(safe-area-inset-top); }
+.safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
+.safe-left   { padding-left:   env(safe-area-inset-left); }
+.safe-right  { padding-right:  env(safe-area-inset-right); }
 
 @layer components {
+  /* ── Form fields ── */
   .input-field {
-    @apply w-full px-3 py-2 border border-slate-200 rounded-lg text-sm text-slate-800
-           placeholder-slate-400 focus:outline-none focus:border-blue-400 transition-colors;
+    @apply w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm text-slate-800
+           placeholder-slate-400 focus:outline-none focus:border-dassa-red focus:ring-2
+           focus:ring-dassa-red/10 transition-colors font-sans;
+    /* Prevents iOS auto-zoom on focus */
+    font-size: 16px;
   }
   .label-field {
     @apply block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1;
+  }
+
+  /* ── DASSA eyebrow ── */
+  .dassa-eyebrow {
+    @apply text-[11px] font-bold text-dassa-red uppercase tracking-widest;
+  }
+
+  /* ── DASSA page header ── */
+  .page-heading {
+    @apply text-2xl font-extrabold text-slate-900 tracking-tight;
+  }
+
+  /* ── ISO badge ── */
+  .iso-badge {
+    @apply inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold
+           tracking-widest uppercase border border-dassa-celeste
+           bg-dassa-celeste-tint text-dassa-celeste-deep;
+  }
+
+  /* ── Status badge ── */
+  .status-badge-success { @apply bg-emerald-100 text-emerald-700 border border-emerald-200; }
+  .status-badge-warning { @apply bg-amber-100 text-amber-700 border border-amber-200; }
+  .status-badge-danger  { @apply bg-dassa-red-tint text-dassa-red-deep border border-dassa-red/20; }
+  .status-badge-info    { @apply bg-dassa-celeste-tint text-dassa-celeste-deep border border-dassa-celeste/30; }
+
+  /* ── Mobile card row (replaces table row on small screens) ── */
+  .mobile-card-row {
+    @apply bg-white rounded-xl border border-slate-200 p-4 space-y-2 shadow-sm;
+  }
+  .mobile-card-label {
+    @apply text-[10px] font-bold text-slate-400 uppercase tracking-wider;
+  }
+  .mobile-card-value {
+    @apply text-[13px] font-semibold text-slate-800;
   }
 }

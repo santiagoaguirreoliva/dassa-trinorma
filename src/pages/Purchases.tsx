@@ -34,12 +34,12 @@ interface Perms { can_request: boolean; can_authorize: boolean; can_execute: boo
 
 // ─── Constantes ──────────────────────────────────────────────
 const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
-  borrador:      { label: 'Solicitud',    color: 'text-slate-600',  bg: 'bg-slate-100' },
-  aprobada:      { label: 'Autorizada',   color: 'text-blue-700',   bg: 'bg-blue-100' },
+  borrador:      { label: 'Solicitud',    color: 'text-gray-600',  bg: 'bg-gray-100' },
+  aprobada:      { label: 'Autorizada',   color: 'text-dassa-red-deep',   bg: 'bg-dassa-red-tint' },
   rechazada:     { label: 'Rechazada',    color: 'text-red-700',    bg: 'bg-red-100' },
   en_ejecucion:  { label: 'En Ejecución', color: 'text-violet-700', bg: 'bg-violet-100' },
   completada:    { label: 'Recibida',     color: 'text-emerald-700',bg: 'bg-emerald-100' },
-  cancelada:     { label: 'Cerrada',      color: 'text-slate-500',  bg: 'bg-slate-100' },
+  cancelada:     { label: 'Cerrada',      color: 'text-gray-500',  bg: 'bg-gray-100' },
 };
 
 const CATEGORIES = ['general', 'servicios', 'materiales', 'equipamiento', 'otros'];
@@ -51,7 +51,7 @@ const PRIORITY_CONFIG: Record<string, { label: string; dot: string }> = {
   urgente: { label: 'Urgente', dot: 'bg-red-500' },
   alta:    { label: 'Alta',    dot: 'bg-orange-400' },
   media:   { label: 'Media',   dot: 'bg-amber-400' },
-  baja:    { label: 'Baja',    dot: 'bg-slate-300' },
+  baja:    { label: 'Baja',    dot: 'bg-gray-300' },
 };
 
 const CAT_COLORS: Record<string, string> = {
@@ -97,8 +97,8 @@ function NewPurchaseModal({ onClose }: { onClose: () => void }) {
     <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={onClose}>
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between px-6 py-4 border-b">
-          <h3 className="text-[15px] font-extrabold text-slate-900">Nueva Solicitud de Compra</h3>
-          <button onClick={onClose}><X size={18} className="text-slate-400" /></button>
+          <h3 className="text-[15px] font-extrabold text-gray-900">Nueva Solicitud de Compra</h3>
+          <button onClick={onClose}><X size={18} className="text-gray-400" /></button>
         </div>
         <div className="p-6 space-y-4 max-h-[75vh] overflow-y-auto">
           <div>
@@ -149,10 +149,10 @@ function NewPurchaseModal({ onClose }: { onClose: () => void }) {
           {error && <p className="text-xs text-red-500 bg-red-50 px-3 py-2 rounded-lg">{error}</p>}
         </div>
         <div className="px-6 pb-5 flex justify-end gap-2">
-          <button onClick={onClose} className="px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-100 rounded-lg">Cancelar</button>
+          <button onClick={onClose} className="px-4 py-2 text-sm font-semibold text-gray-600 hover:bg-gray-100 rounded-lg">Cancelar</button>
           <button onClick={() => !create.isPending && create.mutate()}
             disabled={!form.description || create.isPending}
-            className="flex items-center gap-2 px-5 py-2 bg-blue-700 text-white font-bold text-sm rounded-lg hover:bg-blue-600 disabled:opacity-50">
+            className="flex items-center gap-2 px-5 py-2 bg-dassa-red-deep text-white font-bold text-sm rounded-lg hover:bg-dassa-red disabled:opacity-50">
             {create.isPending && <Loader2 size={14} className="animate-spin" />}
             Crear Solicitud
           </button>
@@ -183,14 +183,14 @@ function AuthorizeModal({ purchase, onClose }: { purchase: Purchase; onClose: ()
     <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={onClose}>
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between px-6 py-4 border-b">
-          <h3 className="text-[15px] font-extrabold text-slate-900">Autorizar / Rechazar</h3>
-          <button onClick={onClose}><X size={18} className="text-slate-400" /></button>
+          <h3 className="text-[15px] font-extrabold text-gray-900">Autorizar / Rechazar</h3>
+          <button onClick={onClose}><X size={18} className="text-gray-400" /></button>
         </div>
         <div className="p-6 space-y-4">
-          <div className="bg-slate-50 rounded-xl p-4 border border-slate-200">
-            <p className="text-xs font-bold text-slate-500 mb-1">{purchase.code}</p>
-            <p className="text-sm font-semibold text-slate-800">{purchase.description}</p>
-            <div className="flex items-center gap-3 mt-2 text-xs text-slate-400">
+          <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
+            <p className="text-xs font-bold text-gray-500 mb-1">{purchase.code}</p>
+            <p className="text-sm font-semibold text-gray-800">{purchase.description}</p>
+            <div className="flex items-center gap-3 mt-2 text-xs text-gray-400">
               <span>Solicitante: {purchase.requested_by_name}</span>
               <span>Presupuesto: {fmt(purchase.estimated_budget)}</span>
             </div>
@@ -201,7 +201,7 @@ function AuthorizeModal({ purchase, onClose }: { purchase: Purchase; onClose: ()
                 className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-sm border-2 transition-colors
                   ${approve === v
                     ? v ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 'border-red-400 bg-red-50 text-red-700'
-                    : 'border-slate-200 text-slate-400 hover:border-slate-300'}`}>
+                    : 'border-gray-200 text-gray-400 hover:border-gray-300'}`}>
                 {v ? <><CheckCircle2 size={16} /> Autorizar</> : <><XCircle size={16} /> Rechazar</>}
               </button>
             ))}
@@ -209,7 +209,7 @@ function AuthorizeModal({ purchase, onClose }: { purchase: Purchase; onClose: ()
           {approve && (
             <label className="flex items-center gap-2 cursor-pointer">
               <input type="checkbox" checked={deferred} onChange={e => setDeferred(e.target.checked)} className="w-4 h-4 rounded" />
-              <span className="text-sm text-slate-700">Autorización diferida a fecha futura</span>
+              <span className="text-sm text-gray-700">Autorización diferida a fecha futura</span>
             </label>
           )}
           {approve && deferred && (
@@ -226,7 +226,7 @@ function AuthorizeModal({ purchase, onClose }: { purchase: Purchase; onClose: ()
           </div>
         </div>
         <div className="px-6 pb-5 flex justify-end gap-2">
-          <button onClick={onClose} className="px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-100 rounded-lg">Cancelar</button>
+          <button onClick={onClose} className="px-4 py-2 text-sm font-semibold text-gray-600 hover:bg-gray-100 rounded-lg">Cancelar</button>
           <button onClick={() => mutate.mutate()}
             disabled={(!approve && !notes) || mutate.isPending}
             className={`flex items-center gap-2 px-5 py-2 font-bold text-sm rounded-lg text-white disabled:opacity-50
@@ -257,8 +257,8 @@ function ReceiveModal({ purchase, onClose }: { purchase: Purchase; onClose: () =
     <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={onClose}>
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between px-6 py-4 border-b">
-          <h3 className="text-[15px] font-extrabold text-slate-900">Registrar Recepción</h3>
-          <button onClick={onClose}><X size={18} className="text-slate-400" /></button>
+          <h3 className="text-[15px] font-extrabold text-gray-900">Registrar Recepción</h3>
+          <button onClick={onClose}><X size={18} className="text-gray-400" /></button>
         </div>
         <div className="p-6 space-y-4">
           <div className="grid grid-cols-2 gap-3">
@@ -290,9 +290,9 @@ function ReceiveModal({ purchase, onClose }: { purchase: Purchase; onClose: () =
           </div>
         </div>
         <div className="px-6 pb-5 flex justify-end gap-2">
-          <button onClick={onClose} className="px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-100 rounded-lg">Cancelar</button>
+          <button onClick={onClose} className="px-4 py-2 text-sm font-semibold text-gray-600 hover:bg-gray-100 rounded-lg">Cancelar</button>
           <button onClick={() => mutate.mutate()} disabled={mutate.isPending}
-            className="flex items-center gap-2 px-5 py-2 bg-blue-700 text-white font-bold text-sm rounded-lg hover:bg-blue-600 disabled:opacity-50">
+            className="flex items-center gap-2 px-5 py-2 bg-dassa-red-deep text-white font-bold text-sm rounded-lg hover:bg-dassa-red disabled:opacity-50">
             {mutate.isPending && <Loader2 size={14} className="animate-spin" />}
             Registrar recepción
           </button>
@@ -329,17 +329,17 @@ function PermissionsTab() {
   if (isLoading) return <div className="flex justify-center py-12"><Spinner size={24} /></div>;
 
   return (
-    <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-      <div className="flex items-center justify-between px-5 py-3 bg-slate-50 border-b border-slate-200">
-        <p className="text-xs font-bold text-slate-600 uppercase tracking-wider">Permisos de Compras por Usuario</p>
+    <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+      <div className="flex items-center justify-between px-5 py-3 bg-gray-50 border-b border-gray-200">
+        <p className="text-xs font-bold text-gray-600 uppercase tracking-wider">Permisos de Compras por Usuario</p>
         <button onClick={() => save.mutate()} disabled={save.isPending || Object.keys(local).length === 0}
-          className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-700 text-white rounded-lg text-xs font-bold hover:bg-blue-600 disabled:opacity-50">
+          className="flex items-center gap-1.5 px-3 py-1.5 bg-dassa-red-deep text-white rounded-lg text-xs font-bold hover:bg-dassa-red disabled:opacity-50">
           {save.isPending ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />}
           Guardar permisos
         </button>
       </div>
       <table className="w-full text-sm">
-        <thead className="border-b border-slate-100">
+        <thead className="border-b border-gray-100">
           <tr>
             <th className="th-cell">Usuario</th>
             <th className="th-cell">Rol</th>
@@ -353,18 +353,18 @@ function PermissionsTab() {
             const cur = { ...p, ...(local[p.id] || {}) };
             const isAdmin = ['master_admin', 'director'].includes(p.role);
             return (
-              <tr key={p.id} className="border-b border-slate-100 hover:bg-slate-50">
+              <tr key={p.id} className="border-b border-gray-100 hover:bg-gray-50">
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-2">
                     <Avatar name={p.full_name} size={26} />
                     <div>
-                      <p className="text-xs font-semibold text-slate-800">{p.full_name}</p>
-                      <p className="text-[10px] text-slate-400">{p.email}</p>
+                      <p className="text-xs font-semibold text-gray-800">{p.full_name}</p>
+                      <p className="text-[10px] text-gray-400">{p.email}</p>
                     </div>
                   </div>
                 </td>
                 <td className="px-4 py-3">
-                  <span className="text-[10px] text-slate-500 capitalize">{p.role?.replace(/_/g,' ')}</span>
+                  <span className="text-[10px] text-gray-500 capitalize">{p.role?.replace(/_/g,' ')}</span>
                 </td>
                 {(['can_request','can_authorize','can_execute'] as const).map(field => (
                   <td key={field} className="px-4 py-3 text-center">
@@ -373,7 +373,7 @@ function PermissionsTab() {
                       checked={isAdmin ? true : !!cur[field]}
                       disabled={isAdmin}
                       onChange={e => setP(p.id, field, e.target.checked)}
-                      className="w-4 h-4 rounded text-blue-600 cursor-pointer disabled:cursor-not-allowed"
+                      className="w-4 h-4 rounded text-dassa-red cursor-pointer disabled:cursor-not-allowed"
                     />
                   </td>
                 ))}
@@ -413,9 +413,9 @@ function ReportsTab({ purchases }: { purchases: Purchase[] }) {
         <KPICard label="Pendientes Autorizar" value={pendienteAutorizar} sub="En borrador" alert={pendienteAutorizar > 0} />
         <KPICard label="En Ejecución" value={enEjecucion} sub="Compras en proceso" />
       </div>
-      <div className="bg-white rounded-xl border border-slate-200 p-5">
-        <p className="text-[13px] font-bold text-slate-800 mb-1">Gasto Mensual por Categoría</p>
-        <p className="text-[11px] text-slate-400 mb-4">Solo órdenes en ejecución o recibidas</p>
+      <div className="bg-white rounded-xl border border-gray-200 p-5">
+        <p className="text-[13px] font-bold text-gray-800 mb-1">Gasto Mensual por Categoría</p>
+        <p className="text-[11px] text-gray-400 mb-4">Solo órdenes en ejecución o recibidas</p>
         {chartData.length > 0 ? (
           <ResponsiveContainer width="100%" height={240}>
             <BarChart data={chartData} barGap={2} barCategoryGap="25%">
@@ -432,7 +432,7 @@ function ReportsTab({ purchases }: { purchases: Purchase[] }) {
             </BarChart>
           </ResponsiveContainer>
         ) : (
-          <div className="flex items-center justify-center h-40 text-slate-300">
+          <div className="flex items-center justify-center h-40 text-gray-300">
             <p className="text-sm">Sin datos para mostrar</p>
           </div>
         )}
@@ -486,7 +486,7 @@ export default function Purchases() {
         actions={
           myPerms?.can_request && (
             <button onClick={() => setShowNew(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-700 text-white rounded-lg text-xs font-bold hover:bg-blue-600">
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-dassa-red-deep text-white rounded-lg text-xs font-bold hover:bg-dassa-red">
               <Plus size={14} /> Nueva Solicitud
             </button>
           )
@@ -494,7 +494,7 @@ export default function Purchases() {
       />
 
       {/* Tabs */}
-      <div className="bg-white border-b border-slate-200 px-6 flex gap-1">
+      <div className="bg-white border-b border-gray-200 px-6 flex gap-1">
         {[
           { key: 'solicitudes', label: 'Solicitudes', icon: <ShoppingCart size={13} /> },
           { key: 'reportes',    label: 'Reportes',    icon: <BarChart3 size={13} /> },
@@ -502,7 +502,7 @@ export default function Purchases() {
         ].map((t: any) => (
           <button key={t.key} onClick={() => setTab(t.key)}
             className={`flex items-center gap-1.5 px-4 py-3 text-xs font-bold border-b-2 transition-colors
-              ${tab === t.key ? 'border-blue-600 text-blue-700' : 'border-transparent text-slate-400 hover:text-slate-700'}`}>
+              ${tab === t.key ? 'border-dassa-red text-dassa-red-deep' : 'border-transparent text-gray-400 hover:text-gray-700'}`}>
             {t.icon}{t.label}
             {t.key === 'solicitudes' && pendingAuth > 0 && (
               <span className="ml-1 bg-red-500 text-white text-[9px] font-bold rounded-full px-1.5 py-0.5">{pendingAuth}</span>
@@ -521,30 +521,30 @@ export default function Purchases() {
         ) : (
           <div className="space-y-4">
             {/* Filters */}
-            <div className="bg-white rounded-xl border border-slate-200 px-4 py-3 flex items-center gap-3 flex-wrap">
+            <div className="bg-white rounded-xl border border-gray-200 px-4 py-3 flex items-center gap-3 flex-wrap">
               <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)}
-                className="border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs focus:outline-none">
+                className="border border-gray-200 rounded-lg px-2.5 py-1.5 text-xs focus:outline-none">
                 <option value="">Todos los estados</option>
                 {Object.entries(STATUS_CONFIG).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
               </select>
               <select value={filterCat} onChange={e => setFilterCat(e.target.value)}
-                className="border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs focus:outline-none">
+                className="border border-gray-200 rounded-lg px-2.5 py-1.5 text-xs focus:outline-none">
                 <option value="">Todas las categorías</option>
                 {CATEGORIES.map(c => <option key={c} value={c}>{CAT_LABELS[c]}</option>)}
               </select>
               {(filterStatus || filterCat) && (
                 <button onClick={() => { setFilterStatus(''); setFilterCat(''); }}
-                  className="text-xs text-slate-400 hover:text-red-500 flex items-center gap-1">
+                  className="text-xs text-gray-400 hover:text-red-500 flex items-center gap-1">
                   <X size={12} /> Limpiar
                 </button>
               )}
-              <span className="ml-auto text-xs text-slate-400">{filtered.length} órdenes</span>
+              <span className="ml-auto text-xs text-gray-400">{filtered.length} órdenes</span>
             </div>
 
             {/* Table */}
-            <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
               <table className="w-full text-sm">
-                <thead className="bg-slate-50 border-b border-slate-200">
+                <thead className="bg-gray-50 border-b border-gray-200">
                   <tr>
                     <th className="th-cell w-24">Código</th>
                     <th className="th-cell">Descripción</th>
@@ -560,25 +560,25 @@ export default function Purchases() {
                   {filtered.map(p => {
                     const pr = PRIORITY_CONFIG[p.priority];
                     return (
-                      <tr key={p.id} className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
+                      <tr key={p.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-1.5">
-                            <div className={`w-2 h-2 rounded-full flex-shrink-0 ${pr?.dot ?? 'bg-slate-300'}`} />
-                            <code className="text-[10px] font-extrabold text-blue-700">{p.code}</code>
+                            <div className={`w-2 h-2 rounded-full flex-shrink-0 ${pr?.dot ?? 'bg-gray-300'}`} />
+                            <code className="text-[10px] font-extrabold text-dassa-red-deep">{p.code}</code>
                           </div>
                         </td>
                         <td className="px-4 py-3 max-w-[240px]">
-                          <p className="text-xs font-semibold text-slate-800 truncate">{p.description}</p>
-                          {p.purpose && <p className="text-[10px] text-slate-400 truncate">{p.purpose}</p>}
+                          <p className="text-xs font-semibold text-gray-800 truncate">{p.description}</p>
+                          {p.purpose && <p className="text-[10px] text-gray-400 truncate">{p.purpose}</p>}
                         </td>
                         <td className="px-4 py-3 hidden lg:table-cell">
-                          <span className="text-xs font-bold text-slate-700">{fmt(p.amount || p.estimated_budget)}</span>
+                          <span className="text-xs font-bold text-gray-700">{fmt(p.amount || p.estimated_budget)}</span>
                           {p.amount && p.estimated_budget && p.amount !== p.estimated_budget && (
-                            <p className="text-[9px] text-slate-400">Est: {fmt(p.estimated_budget)}</p>
+                            <p className="text-[9px] text-gray-400">Est: {fmt(p.estimated_budget)}</p>
                           )}
                         </td>
                         <td className="px-4 py-3 hidden md:table-cell">
-                          <span className="text-[10px] text-slate-500">{CAT_LABELS[p.category] || p.category}</span>
+                          <span className="text-[10px] text-gray-500">{CAT_LABELS[p.category] || p.category}</span>
                         </td>
                         <td className="px-4 py-3">
                           <StatusBadge status={p.status} />
@@ -591,11 +591,11 @@ export default function Purchases() {
                         <td className="px-4 py-3 hidden lg:table-cell">
                           <div className="flex items-center gap-1.5">
                             <Avatar name={p.requested_by_name} size={20} />
-                            <span className="text-[10px] text-slate-600 truncate max-w-[80px]">{p.requested_by_name}</span>
+                            <span className="text-[10px] text-gray-600 truncate max-w-[80px]">{p.requested_by_name}</span>
                           </div>
                         </td>
                         <td className="px-4 py-3 hidden xl:table-cell">
-                          <span className="text-[10px] text-slate-400">
+                          <span className="text-[10px] text-gray-400">
                             {new Date(p.created_at).toLocaleDateString('es-AR', { day:'2-digit', month:'2-digit', year:'2-digit' })}
                           </span>
                         </td>
@@ -619,7 +619,7 @@ export default function Purchases() {
                             {/* Recibir */}
                             {p.status === 'en_ejecucion' && myPerms?.can_execute && (
                               <button onClick={() => setReceiving(p)}
-                                className="flex items-center gap-1 px-2 py-1.5 bg-blue-600 text-white rounded-lg text-[10px] font-bold hover:bg-blue-700">
+                                className="flex items-center gap-1 px-2 py-1.5 bg-dassa-red text-white rounded-lg text-[10px] font-bold hover:bg-dassa-red-deep">
                                 <Package size={11} /> Recibir
                               </button>
                             )}
@@ -631,7 +631,7 @@ export default function Purchases() {
                 </tbody>
               </table>
               {filtered.length === 0 && (
-                <div className="text-center py-12 text-slate-400">
+                <div className="text-center py-12 text-gray-400">
                   <ShoppingCart size={28} className="mx-auto mb-2 opacity-30" />
                   <p className="text-sm">Sin órdenes de compra</p>
                 </div>

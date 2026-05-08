@@ -23,7 +23,7 @@ const KANBAN_COLS = [
   { key: 'abierto',      label: 'Detectado',    color: 'bg-red-500' },
   { key: 'analisis',     label: 'En Análisis',  color: 'bg-amber-500' },
   { key: 'plan_accion',  label: 'Plan de AC',   color: 'bg-violet-500' },
-  { key: 'en_ejecucion', label: 'En Ejecución', color: 'bg-blue-500' },
+  { key: 'en_ejecucion', label: 'En Ejecución', color: 'bg-dassa-red' },
   { key: 'verificacion', label: 'Verificación', color: 'bg-pink-500' },
   { key: 'cerrado',      label: 'Cerrado',       color: 'bg-emerald-500' },
 ];
@@ -46,30 +46,30 @@ function NCCard({ finding, onClick }: { finding: Finding; onClick: () => void })
     <div
       onClick={onClick}
       className={`bg-white rounded-xl border p-3 cursor-pointer hover:shadow-md transition-all group
-        ${overdue ? 'border-red-200 bg-red-50' : 'border-slate-200'}`}
+        ${overdue ? 'border-red-200 bg-red-50' : 'border-gray-200'}`}
     >
       <div className="flex items-start justify-between gap-1 mb-2">
-        <code className="text-[9px] font-extrabold text-blue-700 bg-blue-100 px-1.5 py-0.5 rounded">
+        <code className="text-[9px] font-extrabold text-dassa-red-deep bg-dassa-red-tint px-1.5 py-0.5 rounded">
           {finding.code}
         </code>
         {tc && <Badge label={tc.label} variant={tc.variant} size="sm" />}
       </div>
-      <p className="text-[12px] font-semibold text-slate-800 leading-snug mb-2 line-clamp-2">
+      <p className="text-[12px] font-semibold text-gray-800 leading-snug mb-2 line-clamp-2">
         {finding.title}
       </p>
       {finding.area && (
-        <p className="text-[10px] text-slate-400 mb-2 truncate">{finding.area}</p>
+        <p className="text-[10px] text-gray-400 mb-2 truncate">{finding.area}</p>
       )}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-1.5">
           {finding.assigned_to_name && <Avatar name={finding.assigned_to_name} size={18} />}
           {finding.actions_count > 0 && (
-            <span className="text-[10px] text-slate-400">{finding.actions_count} AC</span>
+            <span className="text-[10px] text-gray-400">{finding.actions_count} AC</span>
           )}
         </div>
         <div className="flex items-center gap-2">
           {overdue && <AlertTriangle size={11} className="text-red-500" />}
-          <span className={`text-[10px] font-bold ${finding.days_open > 15 ? 'text-red-500' : 'text-slate-400'}`}>
+          <span className={`text-[10px] font-bold ${finding.days_open > 15 ? 'text-red-500' : 'text-gray-400'}`}>
             {finding.days_open}d
           </span>
         </div>
@@ -101,8 +101,8 @@ function NewFindingModal({ onClose, users }: { onClose: () => void; users: any[]
     <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={onClose}>
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between px-6 py-4 border-b">
-          <h3 className="text-[15px] font-extrabold text-slate-900">Nueva No Conformidad</h3>
-          <button onClick={onClose}><X size={18} className="text-slate-400" /></button>
+          <h3 className="text-[15px] font-extrabold text-gray-900">Nueva No Conformidad</h3>
+          <button onClick={onClose}><X size={18} className="text-gray-400" /></button>
         </div>
         <div className="p-6 space-y-4 max-h-[75vh] overflow-y-auto">
           <div>
@@ -167,11 +167,11 @@ function NewFindingModal({ onClose, users }: { onClose: () => void; users: any[]
           {error && <p className="text-xs text-red-500 bg-red-50 px-3 py-2 rounded-lg">{error}</p>}
         </div>
         <div className="px-6 pb-5 flex justify-end gap-2">
-          <button onClick={onClose} className="px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-100 rounded-lg">Cancelar</button>
+          <button onClick={onClose} className="px-4 py-2 text-sm font-semibold text-gray-600 hover:bg-gray-100 rounded-lg">Cancelar</button>
           <button
             onClick={() => !create.isPending && create.mutate()}
             disabled={!form.title || !form.description || create.isPending}
-            className="flex items-center gap-2 px-5 py-2 bg-blue-700 text-white font-bold text-sm rounded-lg hover:bg-blue-600 disabled:opacity-50"
+            className="flex items-center gap-2 px-5 py-2 bg-dassa-red-deep text-white font-bold text-sm rounded-lg hover:bg-dassa-red disabled:opacity-50"
           >
             {create.isPending && <Loader2 size={14} className="animate-spin" />}
             Registrar NC
@@ -224,20 +224,20 @@ export default function Findings() {
         alerts={overdueCount}
         actions={
           <div className="flex items-center gap-2">
-            <div className="flex bg-slate-100 rounded-lg p-0.5">
+            <div className="flex bg-gray-100 rounded-lg p-0.5">
               <button onClick={() => setView('kanban')}
-                className={`p-1.5 rounded-md transition-colors ${view === 'kanban' ? 'bg-white shadow-sm text-blue-600' : 'text-slate-400'}`}>
+                className={`p-1.5 rounded-md transition-colors ${view === 'kanban' ? 'bg-white shadow-sm text-dassa-red' : 'text-gray-400'}`}>
                 <LayoutGrid size={15} />
               </button>
               <button onClick={() => setView('table')}
-                className={`p-1.5 rounded-md transition-colors ${view === 'table' ? 'bg-white shadow-sm text-blue-600' : 'text-slate-400'}`}>
+                className={`p-1.5 rounded-md transition-colors ${view === 'table' ? 'bg-white shadow-sm text-dassa-red' : 'text-gray-400'}`}>
                 <List size={15} />
               </button>
             </div>
             {isAdmin && (
               <button
                 onClick={() => setShowNew(true)}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-700 text-white rounded-lg text-xs font-bold hover:bg-blue-600 transition-colors"
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-dassa-red-deep text-white rounded-lg text-xs font-bold hover:bg-dassa-red transition-colors"
               >
                 <Plus size={14} /> Nueva NC
               </button>
@@ -247,30 +247,30 @@ export default function Findings() {
       />
 
       {/* Filters bar */}
-      <div className="bg-white border-b border-slate-200 px-6 py-2.5 flex items-center gap-3 flex-wrap">
+      <div className="bg-white border-b border-gray-200 px-6 py-2.5 flex items-center gap-3 flex-wrap">
         <div className="relative flex-1 min-w-[180px] max-w-xs">
-          <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
+          <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
           <input
             value={search} onChange={e => setSearch(e.target.value)}
             placeholder="Buscar por código, título, área..."
-            className="w-full pl-7 pr-3 py-1.5 border border-slate-200 rounded-lg text-xs focus:outline-none focus:border-blue-400"
+            className="w-full pl-7 pr-3 py-1.5 border border-gray-200 rounded-lg text-xs focus:outline-none focus:border-blue-400"
           />
         </div>
         <select value={filterType} onChange={e => setFilterType(e.target.value)}
-          className="border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs focus:outline-none">
+          className="border border-gray-200 rounded-lg px-2.5 py-1.5 text-xs focus:outline-none">
           {TIPOS.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
         </select>
         <select value={filterArea} onChange={e => setFilterArea(e.target.value)}
-          className="border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs focus:outline-none">
+          className="border border-gray-200 rounded-lg px-2.5 py-1.5 text-xs focus:outline-none">
           {AREAS.map(a => <option key={a} value={a}>{a || 'Todos los sectores'}</option>)}
         </select>
         {(search || filterType || filterArea) && (
           <button onClick={() => { setSearch(''); setFilterType(''); setFilterArea(''); }}
-            className="text-xs text-slate-400 hover:text-red-500 flex items-center gap-1">
+            className="text-xs text-gray-400 hover:text-red-500 flex items-center gap-1">
             <X size={12} /> Limpiar
           </button>
         )}
-        <span className="ml-auto text-xs text-slate-400">{filtered.length} resultados</span>
+        <span className="ml-auto text-xs text-gray-400">{filtered.length} resultados</span>
       </div>
 
       <PageContent>
@@ -286,8 +286,8 @@ export default function Findings() {
                 <div key={col.key} className="flex-shrink-0 w-[230px]">
                   <div className="flex items-center gap-2 mb-3">
                     <div className={`w-2.5 h-2.5 rounded-full ${col.color}`} />
-                    <span className="text-xs font-bold text-slate-700">{col.label}</span>
-                    <span className="ml-auto text-xs font-bold text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded-full">
+                    <span className="text-xs font-bold text-gray-700">{col.label}</span>
+                    <span className="ml-auto text-xs font-bold text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded-full">
                       {cards.length}
                     </span>
                   </div>
@@ -296,8 +296,8 @@ export default function Findings() {
                       <NCCard key={f.id} finding={f} onClick={() => setSelectedId(f.id)} />
                     ))}
                     {cards.length === 0 && (
-                      <div className="border-2 border-dashed border-slate-100 rounded-xl h-24 flex items-center justify-center">
-                        <span className="text-xs text-slate-300">Sin NC</span>
+                      <div className="border-2 border-dashed border-gray-100 rounded-xl h-24 flex items-center justify-center">
+                        <span className="text-xs text-gray-300">Sin NC</span>
                       </div>
                     )}
                   </div>
@@ -309,17 +309,17 @@ export default function Findings() {
         ) : (
 
           /* ─── TABLE ─── */
-          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
             <table className="w-full text-sm">
-              <thead className="bg-slate-50 border-b border-slate-200">
+              <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
-                  <th className="text-left px-4 py-3 text-[10px] font-bold text-slate-500 uppercase tracking-wider w-24">Código</th>
-                  <th className="text-left px-4 py-3 text-[10px] font-bold text-slate-500 uppercase tracking-wider">Descripción</th>
-                  <th className="text-left px-4 py-3 text-[10px] font-bold text-slate-500 uppercase tracking-wider w-28 hidden md:table-cell">Sector</th>
-                  <th className="text-left px-4 py-3 text-[10px] font-bold text-slate-500 uppercase tracking-wider w-24">Tipo</th>
-                  <th className="text-left px-4 py-3 text-[10px] font-bold text-slate-500 uppercase tracking-wider w-28">Estado</th>
-                  <th className="text-left px-4 py-3 text-[10px] font-bold text-slate-500 uppercase tracking-wider w-20 hidden lg:table-cell">Responsable</th>
-                  <th className="text-center px-4 py-3 text-[10px] font-bold text-slate-500 uppercase tracking-wider w-16 hidden lg:table-cell">Días</th>
+                  <th className="text-left px-4 py-3 text-[10px] font-bold text-gray-500 uppercase tracking-wider w-24">Código</th>
+                  <th className="text-left px-4 py-3 text-[10px] font-bold text-gray-500 uppercase tracking-wider">Descripción</th>
+                  <th className="text-left px-4 py-3 text-[10px] font-bold text-gray-500 uppercase tracking-wider w-28 hidden md:table-cell">Sector</th>
+                  <th className="text-left px-4 py-3 text-[10px] font-bold text-gray-500 uppercase tracking-wider w-24">Tipo</th>
+                  <th className="text-left px-4 py-3 text-[10px] font-bold text-gray-500 uppercase tracking-wider w-28">Estado</th>
+                  <th className="text-left px-4 py-3 text-[10px] font-bold text-gray-500 uppercase tracking-wider w-20 hidden lg:table-cell">Responsable</th>
+                  <th className="text-center px-4 py-3 text-[10px] font-bold text-gray-500 uppercase tracking-wider w-16 hidden lg:table-cell">Días</th>
                 </tr>
               </thead>
               <tbody>
@@ -330,19 +330,19 @@ export default function Findings() {
                   return (
                     <tr key={f.id}
                       onClick={() => setSelectedId(f.id)}
-                      className={`border-b border-slate-100 cursor-pointer hover:bg-blue-50 transition-colors
+                      className={`border-b border-gray-100 cursor-pointer hover:bg-dassa-red-tint transition-colors
                         ${overdue ? 'bg-red-50 hover:bg-red-100' : ''}`}
                     >
                       <td className="px-4 py-3">
-                        <code className="text-[10px] font-extrabold text-blue-700 bg-blue-100 px-1.5 py-0.5 rounded">
+                        <code className="text-[10px] font-extrabold text-dassa-red-deep bg-dassa-red-tint px-1.5 py-0.5 rounded">
                           {f.code}
                         </code>
                       </td>
                       <td className="px-4 py-3">
-                        <p className="font-medium text-slate-800 text-xs truncate max-w-[260px]">{f.title}</p>
+                        <p className="font-medium text-gray-800 text-xs truncate max-w-[260px]">{f.title}</p>
                       </td>
                       <td className="px-4 py-3 hidden md:table-cell">
-                        <span className="text-xs text-slate-500 truncate">{f.area || '—'}</span>
+                        <span className="text-xs text-gray-500 truncate">{f.area || '—'}</span>
                       </td>
                       <td className="px-4 py-3">
                         {tc && <Badge label={tc.label} variant={tc.variant} size="sm" />}
@@ -352,12 +352,12 @@ export default function Findings() {
                       </td>
                       <td className="px-4 py-3 hidden lg:table-cell">
                         {f.assigned_to_name
-                          ? <div className="flex items-center gap-1.5"><Avatar name={f.assigned_to_name} size={20} /><span className="text-xs text-slate-600 truncate max-w-[80px]">{f.assigned_to_name}</span></div>
-                          : <span className="text-xs text-slate-300">—</span>
+                          ? <div className="flex items-center gap-1.5"><Avatar name={f.assigned_to_name} size={20} /><span className="text-xs text-gray-600 truncate max-w-[80px]">{f.assigned_to_name}</span></div>
+                          : <span className="text-xs text-gray-300">—</span>
                         }
                       </td>
                       <td className="px-4 py-3 text-center hidden lg:table-cell">
-                        <span className={`text-xs font-bold ${f.days_open > 15 && f.status !== 'cerrado' ? 'text-red-500' : 'text-slate-400'}`}>
+                        <span className={`text-xs font-bold ${f.days_open > 15 && f.status !== 'cerrado' ? 'text-red-500' : 'text-gray-400'}`}>
                           {f.days_open}d
                         </span>
                       </td>
@@ -367,7 +367,7 @@ export default function Findings() {
               </tbody>
             </table>
             {filtered.length === 0 && (
-              <div className="text-center py-12 text-slate-400">
+              <div className="text-center py-12 text-gray-400">
                 <p className="font-medium">Sin resultados</p>
                 <p className="text-sm mt-1">Probá con otros filtros</p>
               </div>

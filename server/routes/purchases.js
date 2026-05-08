@@ -5,7 +5,7 @@ import { authenticate, requireRole } from '../middleware/auth.js';
 const router = Router();
 router.use(authenticate);
 
-// ─── Helper: obtener permisos del usuario ────────────────────
+// ─── Helper: permisos del usuario ──────────────────────────
 async function getPerms(userId, role) {
   if (['master_admin', 'director'].includes(role)) {
     return { can_request: true, can_authorize: true, can_execute: true };
@@ -17,27 +17,72 @@ async function getPerms(userId, role) {
   return rows[0] || { can_request: false, can_authorize: false, can_execute: false };
 }
 
-// GET /api/purchases — lista con joins
+// ═══════════════════════════════════════════════════════════
+// PURCHASE PERMISSIONS (admin) — must be BEFORE /:id routes
+// ═══════════════════════════════════════════════════════════
+
+// GET /api/purchases/permissions-all — lista todos los permisos
+router.get('/permissions-all', async (req, res) => {
+  if (!['master_admin', 'director', 'sgi_leader'].includes(req.user.role)) {
+    return res.status(403).json({ error: 'Sin acceso' });
+  }
+  try {
+    const { rows } = await query('SELECT * FROM purchase_permissions');
+    res.json(rows);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// PUT /api/purchases/permissions/:userId — crear o actualizar permisos
+router.put('/permissions/:userId', async (req, res) => {
+  if (!['master_admin', 'director'].includes(req.user.role)) {
+    return res.status(403).json({ error: 'Solo admin puede cambiar permisos' });
+  }
+  const { can_request, can_authorize, can_execute } = req.body;
+  try {
+    const { rows } = await query(
+      `INSERT INTO purchase_permissions (user_id, can_request, can_authorize, can_execute)
+       VALUES ($1, $2, $3, $4)
+       ON CONFLICT (user_id)
+       DO UPDATE SET can_request = $2, can_authorize = $3, can_execute = $4
+       RETURNING *`,
+      [req.params.userId, !!can_request, !!can_authorize, !!can_execute]
+    );
+    res.json(rows[0]);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// ═══════════════════════════════════════════════════════════
+// PURCHASES CRUD
+// ═══════════════════════════════════════════════════════════
+
+// GET /api/purchases — lista con joins y búsqueda
 router.get('/', async (req, res) => {
-  const { status, category } = req.query;
+  const { status, category, search } = req.query;
   const where = ['1=1'];
   const params = [];
   let i = 1;
   if (status)   { where.push(`p.status = $${i++}`);   params.push(status); }
   if (category) { where.push(`p.category = $${i++}`); params.push(category); }
+  if (search)   { where.push(`(p.description ILIKE $${i} OR p.code ILIKE $${i} OR p.recommended_supplier ILIKE $${i} OR p.supplier_name ILIKE $${i})`); params.push(`%${search}%`); i++; }
 
   try {
     const { rows } = await query(
       `SELECT p.*,
               req.full_name  AS requested_by_name,
               apr.full_name  AS approved_by_name,
-              exe.full_name  AS executed_by_name
+              exe.full_name  AS executed_by_name,
+              (SELECT COUNT(*) FROM purchase_comments pc WHERE pc.purchase_id = p.id)::int AS comments_count
          FROM purchases p
          LEFT JOIN users req ON req.id = p.requested_by
          LEFT JOIN users apr ON apr.id = p.approved_by
          LEFT JOIN users exe ON exe.id = p.executed_by
         WHERE ${where.join(' AND ')}
-        ORDER BY p.created_at DESC`,
+        ORDER BY
+          CASE WHEN p.status IN ('borrador','aprobada','en_ejecucion') THEN 0 ELSE 1 END,
+          CASE p.priority
+            WHEN 'urgente' THEN 0 WHEN 'alta' THEN 1 WHEN 'media' THEN 2 ELSE 3
+          END,
+          p.created_at DESC`,
       params
     );
     res.json(rows);
@@ -52,7 +97,7 @@ router.get('/my-permissions', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// GET /api/purchases/permissions — todos los usuarios (solo admin)
+// GET /api/purchases/permissions — todos (solo admin)
 router.get('/permissions', requireRole('master_admin', 'director', 'sgi_leader'), async (req, res) => {
   try {
     const { rows } = await query(
@@ -69,9 +114,9 @@ router.get('/permissions', requireRole('master_admin', 'director', 'sgi_leader')
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// POST /api/purchases/permissions — guardar permisos (solo admin)
+// POST /api/purchases/permissions — guardar permisos
 router.post('/permissions', requireRole('master_admin', 'director', 'sgi_leader'), async (req, res) => {
-  const { permissions } = req.body; // [{ user_id, can_request, can_authorize, can_execute }]
+  const { permissions } = req.body;
   if (!Array.isArray(permissions)) return res.status(400).json({ error: 'permissions array requerido' });
   try {
     for (const p of permissions) {
@@ -87,27 +132,121 @@ router.post('/permissions', requireRole('master_admin', 'director', 'sgi_leader'
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+// GET /api/purchases/stats
+router.get('/stats', async (req, res) => {
+  try {
+    const { rows } = await query(
+      `SELECT
+         to_char(created_at, 'YYYY-MM') AS month,
+         category,
+         SUM(COALESCE(amount, estimated_budget, 0)) AS total,
+         COUNT(*)::int AS count
+       FROM purchases
+       WHERE status IN ('completada','en_ejecucion')
+         AND created_at >= NOW() - INTERVAL '6 months'
+       GROUP BY 1, 2
+       ORDER BY 1`
+    );
+    res.json(rows);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// GET /api/purchases/:id — detalle con comentarios
+router.get('/:id', async (req, res) => {
+  try {
+    const { rows } = await query(
+      `SELECT p.*,
+              req.full_name AS requested_by_name,
+              apr.full_name AS approved_by_name,
+              exe.full_name AS executed_by_name
+         FROM purchases p
+         LEFT JOIN users req ON req.id = p.requested_by
+         LEFT JOIN users apr ON apr.id = p.approved_by
+         LEFT JOIN users exe ON exe.id = p.executed_by
+        WHERE p.id = $1`, [req.params.id]
+    );
+    if (!rows[0]) return res.status(404).json({ error: 'No encontrado' });
+
+    const { rows: comments } = await query(
+      `SELECT c.*, u.full_name AS user_name
+         FROM purchase_comments c
+         LEFT JOIN users u ON u.id = c.user_id
+        WHERE c.purchase_id = $1
+        ORDER BY c.created_at ASC`,
+      [req.params.id]
+    );
+
+    res.json({ ...rows[0], comments });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
 // POST /api/purchases — crear solicitud
 router.post('/', async (req, res) => {
   const perms = await getPerms(req.user.id, req.user.role);
   if (!perms.can_request) return res.status(403).json({ error: 'Sin permiso para crear solicitudes' });
 
   const { description, category, priority, estimated_budget,
-          required_date, purpose, recommended_supplier } = req.body;
+          required_date, purpose, recommended_supplier, requesting_area } = req.body;
   if (!description) return res.status(400).json({ error: 'Descripción requerida' });
 
   try {
     const { rows } = await query(
       `INSERT INTO purchases
          (description, category, priority, estimated_budget, required_date,
-          purpose, recommended_supplier, requested_by, status)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,'borrador')
+          purpose, recommended_supplier, requesting_area, requested_by, status)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,'borrador')
        RETURNING *`,
       [description, category || 'general', priority || 'media',
-       estimated_budget || null, required_date || null,
-       purpose || null, recommended_supplier || null, req.user.id]
+       estimated_budget || null, required_date || new Date().toISOString().split('T')[0],
+       purpose || null, recommended_supplier || null, requesting_area || null, req.user.id]
     );
+
+    // Notificar a usuarios con permiso de autorizar
+    const { rows: authorizers } = await query(
+      `SELECT u.id FROM users u
+       INNER JOIN purchase_permissions pp ON pp.user_id = u.id
+       WHERE pp.can_authorize = true AND u.id != $1
+       UNION
+       SELECT id FROM users WHERE role IN ('master_admin','director') AND id != $1`,
+      [req.user.id]
+    );
+    for (const a of authorizers) {
+      await query(
+        `INSERT INTO notifications (user_id, title, message, type, source_module)
+         VALUES ($1,$2,$3,'info','purchases')`,
+        [a.id, `Nueva solicitud de compra: ${rows[0].code}`,
+         `${description.substring(0, 100)}${description.length > 100 ? '...' : ''}`]
+      );
+    }
+
     res.status(201).json(rows[0]);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// PATCH /api/purchases/:id — editar campos (borrador o rechazada para re-enviar)
+router.patch('/:id', async (req, res) => {
+  const FIELDS = ['description','category','priority','estimated_budget',
+                  'required_date','purpose','recommended_supplier','requesting_area'];
+  const updates = []; const values = []; let i = 1;
+  for (const f of FIELDS) {
+    if (req.body[f] !== undefined) { updates.push(`${f} = $${i++}`); values.push(req.body[f]); }
+  }
+  // Allow re-submitting a rejected purchase
+  if (req.body.resubmit) {
+    updates.push(`status = $${i++}`); values.push('borrador');
+    updates.push(`approved_by = $${i++}`); values.push(null);
+    updates.push(`approved_at = $${i++}`); values.push(null);
+    updates.push(`approval_notes = $${i++}`); values.push(null);
+  }
+  if (!updates.length) return res.status(400).json({ error: 'Sin campos' });
+  values.push(req.params.id);
+  try {
+    const { rows } = await query(
+      `UPDATE purchases SET ${updates.join(', ')} WHERE id = $${i} AND status IN ('borrador','rechazada') RETURNING *`,
+      values
+    );
+    if (!rows[0]) return res.status(404).json({ error: 'No encontrada o estado no permite edición' });
+    res.json(rows[0]);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
@@ -181,57 +320,83 @@ router.patch('/:id/receive', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// PATCH /api/purchases/:id/close — cerrar compra
-router.patch('/:id/close', async (req, res) => {
-  const { detail_of_use } = req.body;
+// PATCH /api/purchases/:id/cancel — cancelar desde cualquier estado (excepto completada)
+router.patch('/:id/cancel', async (req, res) => {
+  const { reason } = req.body;
   try {
     const { rows } = await query(
-      `UPDATE purchases
-          SET status = 'cancelada'
-        WHERE id = $1 AND status = 'completada'
+      `UPDATE purchases SET status = 'cancelada'
+        WHERE id = $1 AND status NOT IN ('completada','cancelada')
         RETURNING *`,
       [req.params.id]
     );
-    if (!rows[0]) return res.status(404).json({ error: 'No encontrada' });
+    if (!rows[0]) return res.status(404).json({ error: 'No encontrada o no se puede cancelar' });
+
+    // Add cancellation comment
+    if (reason) {
+      await query(
+        `INSERT INTO purchase_comments (purchase_id, user_id, content)
+         VALUES ($1, $2, $3)`,
+        [req.params.id, req.user.id, `Cancelada: ${reason}`]
+      );
+    }
     res.json(rows[0]);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// PATCH /api/purchases/:id — editar campos básicos (solo borrador)
-router.patch('/:id', async (req, res) => {
-  const FIELDS = ['description','category','priority','estimated_budget',
-                  'required_date','purpose','recommended_supplier'];
-  const updates = []; const values = []; let i = 1;
-  for (const f of FIELDS) {
-    if (req.body[f] !== undefined) { updates.push(`${f} = $${i++}`); values.push(req.body[f]); }
-  }
-  if (!updates.length) return res.status(400).json({ error: 'Sin campos' });
-  values.push(req.params.id);
+// DELETE /api/purchases/:id — eliminar (solo borrador o cancelada)
+router.delete('/:id', async (req, res) => {
   try {
-    const { rows } = await query(
-      `UPDATE purchases SET ${updates.join(', ')} WHERE id = $${i} AND status = 'borrador' RETURNING *`,
-      values
+    // Eliminar dependencias
+    await query('DELETE FROM purchase_comments WHERE purchase_id=$1', [req.params.id]);
+    const { rowCount } = await query(
+      `DELETE FROM purchases WHERE id=$1 AND status IN ('borrador','cancelada','rechazada')`,
+      [req.params.id]
     );
-    res.json(rows[0]);
+    if (rowCount === 0) return res.status(404).json({ error: 'No encontrada o estado no permite eliminación' });
+    res.json({ message: 'Solicitud eliminada' });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// GET /api/purchases/stats — para reportes
-router.get('/stats', async (req, res) => {
+// ═══════════════════════════════════════════════════════════
+// COMMENTS
+// ═══════════════════════════════════════════════════════════
+
+// GET /api/purchases/:id/comments
+router.get('/:id/comments', async (req, res) => {
   try {
     const { rows } = await query(
-      `SELECT
-         to_char(created_at, 'YYYY-MM') AS month,
-         category,
-         SUM(COALESCE(amount, estimated_budget, 0)) AS total,
-         COUNT(*)::int AS count
-       FROM purchases
-       WHERE status IN ('completada','en_ejecucion')
-         AND created_at >= NOW() - INTERVAL '6 months'
-       GROUP BY 1, 2
-       ORDER BY 1`
+      `SELECT c.*, u.full_name AS user_name
+         FROM purchase_comments c
+         LEFT JOIN users u ON u.id = c.user_id
+        WHERE c.purchase_id = $1
+        ORDER BY c.created_at ASC`,
+      [req.params.id]
     );
     res.json(rows);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// POST /api/purchases/:id/comments
+router.post('/:id/comments', async (req, res) => {
+  const { content } = req.body;
+  if (!content) return res.status(400).json({ error: 'Contenido requerido' });
+  try {
+    const { rows } = await query(
+      `INSERT INTO purchase_comments (purchase_id, user_id, content)
+       VALUES ($1, $2, $3) RETURNING *`,
+      [req.params.id, req.user.id, content]
+    );
+    res.status(201).json(rows[0]);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// DELETE /api/purchases/:id/comments/:cid
+router.delete('/:id/comments/:cid', async (req, res) => {
+  try {
+    await query('DELETE FROM purchase_comments WHERE id=$1 AND user_id=$2',
+      [req.params.cid, req.user.id]);
+    res.json({ message: 'Comentario eliminado' });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 

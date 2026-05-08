@@ -39,23 +39,23 @@ export const FINDING_STATUS: Record<string, { label: string; variant: BadgeProps
 };
 
 export const FINDING_TYPE: Record<string, { label: string; variant: BadgeProps['variant'] }> = {
-  nc_real:       { label: 'NC Real',       variant: 'red' },
-  nc_potencial:  { label: 'NC Potencial',  variant: 'amber' },
-  mejora:        { label: 'Mejora',        variant: 'green' },
-  desvio_cliente:{ label: 'Desvío Cliente',variant: 'blue' },
+  nc_real:        { label: 'NC Real',        variant: 'red' },
+  nc_potencial:   { label: 'NC Potencial',   variant: 'amber' },
+  mejora:         { label: 'Mejora',         variant: 'green' },
+  desvio_cliente: { label: 'Desvío Cliente', variant: 'blue' },
 };
 
 export const RISK_LEVEL: Record<string, { label: string; variant: BadgeProps['variant'] }> = {
-  alto:  { label: 'Alto',   variant: 'red' },
-  medio: { label: 'Medio',  variant: 'amber' },
-  bajo:  { label: 'Bajo',   variant: 'green' },
+  alto:  { label: 'Alto',  variant: 'red' },
+  medio: { label: 'Medio', variant: 'amber' },
+  bajo:  { label: 'Bajo',  variant: 'green' },
 };
 
 export const TASK_STATUS: Record<string, { label: string; variant: BadgeProps['variant'] }> = {
-  pendiente:  { label: 'Pendiente',   variant: 'amber' },
-  en_curso:   { label: 'En Curso',    variant: 'blue' },
-  completada: { label: 'Completada',  variant: 'green' },
-  cancelada:  { label: 'Cancelada',   variant: 'gray' },
+  pendiente:  { label: 'Pendiente',  variant: 'amber' },
+  en_curso:   { label: 'En Curso',   variant: 'blue' },
+  completada: { label: 'Completada', variant: 'green' },
+  cancelada:  { label: 'Cancelada',  variant: 'gray' },
 };
 
 // ─── KPI Card ────────────────────────────────────────────────
@@ -73,25 +73,33 @@ export function KPICard({ label, value, sub, icon, alert, alertColor = '#ef4444'
   return (
     <div
       onClick={onClick}
-      className={`relative bg-white rounded-xl p-4 border overflow-hidden transition-shadow
-        ${alert ? 'border-red-200 shadow-red-50' : 'border-slate-200'}
-        ${onClick ? 'cursor-pointer hover:shadow-md' : ''}
-      `}
+      className={[
+        'relative bg-white rounded-xl border overflow-hidden transition-all',
+        'p-3 md:p-4 min-h-[100px]',
+        alert ? 'border-red-200' : 'border-slate-200',
+        onClick ? 'cursor-pointer hover:shadow-md active:scale-[0.98] touch-manipulation' : '',
+      ].join(' ')}
     >
       {alert && (
         <div className="absolute top-0 left-0 right-0 h-0.5" style={{ background: alertColor }} />
       )}
+      {/* Label row — NO truncate, wraps to 2 lines */}
       <div className="flex items-start justify-between gap-2 mb-2">
-        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-tight">
+        <span className="text-[9px] md:text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-snug">
           {label}
         </span>
-        {icon && <span className="text-slate-300 flex-shrink-0">{icon}</span>}
+        {icon && <span className="text-slate-300 flex-shrink-0 mt-0.5">{icon}</span>}
       </div>
-      <div className={`text-3xl font-extrabold leading-none mb-1
-        ${alert ? 'text-red-500' : 'text-slate-900'}`}>
+      {/* Big number */}
+      <div className={`text-2xl md:text-3xl font-black leading-none mb-1 ${alert ? 'text-dassa-red' : 'text-slate-900'}`}>
         {value}
       </div>
-      {sub && <div className="text-[11px] text-slate-400">{sub}</div>}
+      {/* Subtitle — wraps, no truncation */}
+      {sub && (
+        <div className="text-[10px] md:text-[11px] text-slate-400 leading-snug">
+          {sub}
+        </div>
+      )}
     </div>
   );
 }
@@ -100,7 +108,7 @@ export function KPICard({ label, value, sub, icon, alert, alertColor = '#ef4444'
 export function Spinner({ size = 20 }: { size?: number }) {
   return (
     <svg
-      className="animate-spin text-blue-500"
+      className="animate-spin text-dassa-red"
       style={{ width: size, height: size }}
       xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
     >
@@ -122,8 +130,13 @@ export function EmptyState({ icon, title, sub }: { icon: string; title: string; 
 }
 
 // ─── Page Container ──────────────────────────────────────────
+// Extra bottom padding on mobile so content isn't hidden behind BottomNav
 export function PageContent({ children }: { children: ReactNode }) {
-  return <div className="flex-1 overflow-y-auto p-6">{children}</div>;
+  return (
+    <div className="flex-1 overflow-y-auto p-3 md:p-6 pb-[calc(4.5rem+env(safe-area-inset-bottom,0px))] md:pb-6">
+      {children}
+    </div>
+  );
 }
 
 // ─── Avatar ──────────────────────────────────────────────────

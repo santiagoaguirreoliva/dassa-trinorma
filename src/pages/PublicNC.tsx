@@ -69,20 +69,20 @@ export default function PublicNC() {
 
   if (step === 'success') {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
         <div className="bg-white rounded-2xl shadow-lg p-8 max-w-md w-full text-center">
           <div className="w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-4">
             <CheckCircle2 size={32} className="text-emerald-600" />
           </div>
-          <h2 className="text-xl font-extrabold text-slate-900 mb-2">¡NC Registrada!</h2>
-          <p className="text-slate-500 text-sm mb-4">Tu no conformidad fue registrada correctamente y será gestionada por el equipo de calidad.</p>
-          <div className="bg-blue-50 rounded-xl px-6 py-4 mb-6">
-            <p className="text-xs text-blue-500 font-semibold uppercase tracking-wider mb-1">Número de referencia</p>
-            <p className="text-2xl font-extrabold text-blue-700">{codeResult}</p>
+          <h2 className="text-xl font-extrabold text-gray-900 mb-2">¡NC Registrada!</h2>
+          <p className="text-gray-500 text-sm mb-4">Tu no conformidad fue registrada correctamente y será gestionada por el equipo de calidad.</p>
+          <div className="bg-dassa-red-tint rounded-xl px-6 py-4 mb-6">
+            <p className="text-xs text-dassa-red font-semibold uppercase tracking-wider mb-1">Número de referencia</p>
+            <p className="text-2xl font-extrabold text-dassa-red-deep">{codeResult}</p>
           </div>
           <button
             onClick={() => { setStep('form'); setForm({ description:'', area:'', detected_by:'', detected_by_email:'', affected_client:'No', client_complaint:'No', immediate_action_required:'No', immediate_action:'', current_status:'ABIERTO', comments:'', photo_base64:'', photo_name:'' }); }}
-            className="w-full py-3 rounded-xl bg-slate-900 text-white font-bold text-sm hover:bg-slate-800 transition-colors"
+            className="w-full py-3 rounded-xl bg-gray-900 text-white font-bold text-sm hover:bg-gray-800 transition-colors"
           >
             Registrar otra NC
           </button>
@@ -92,22 +92,22 @@ export default function PublicNC() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 py-6 px-4">
+    <div className="min-h-screen bg-gray-50 py-6 px-4">
       <div className="max-w-lg mx-auto">
         {/* Header */}
         <div className="text-center mb-6">
           <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-600 to-sky-400 flex items-center justify-center text-white font-black text-xl mx-auto mb-3">
             D
           </div>
-          <h1 className="text-lg font-extrabold text-slate-900">DASSA — Avisos de No Conformidades</h1>
-          <p className="text-xs text-slate-400 mt-1">Completá el formulario para registrar una no conformidad o desvío</p>
+          <h1 className="text-lg font-extrabold text-gray-900">DASSA — Avisos de No Conformidades</h1>
+          <p className="text-xs text-gray-400 mt-1">Completá el formulario para registrar una no conformidad o desvío</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-5">
+        <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 space-y-5">
 
           {/* Descripción */}
           <div>
-            <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5">
+            <label className="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1.5">
               Descripción de la NC / Desvío <span className="text-red-500">*</span>
             </label>
             <textarea
@@ -116,20 +116,20 @@ export default function PublicNC() {
               rows={4}
               required
               placeholder="Describí qué pasó, dónde, cuándo y cómo sucedieron los hechos..."
-              className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-400 resize-none"
+              className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:border-blue-400 resize-none"
             />
           </div>
 
           {/* Sector */}
           <div>
-            <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5">
+            <label className="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1.5">
               Sector <span className="text-red-500">*</span>
             </label>
             <select
               value={form.area}
               onChange={e => set('area', e.target.value)}
               required
-              className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm text-slate-800 focus:outline-none focus:border-blue-400 bg-white"
+              className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm text-gray-800 focus:outline-none focus:border-blue-400 bg-white"
             >
               <option value="">— Seleccioná el sector —</option>
               {SECTORES.map(s => <option key={s} value={s}>{s}</option>)}
@@ -139,7 +139,7 @@ export default function PublicNC() {
           {/* Detectó */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5">
+              <label className="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1.5">
                 Tu nombre / puesto
               </label>
               <input
@@ -147,11 +147,11 @@ export default function PublicNC() {
                 value={form.detected_by}
                 onChange={e => set('detected_by', e.target.value)}
                 placeholder="Nombre o puesto"
-                className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-blue-400"
+                className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-blue-400"
               />
             </div>
             <div>
-              <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5">
+              <label className="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1.5">
                 Email (opcional)
               </label>
               <input
@@ -159,7 +159,7 @@ export default function PublicNC() {
                 value={form.detected_by_email}
                 onChange={e => set('detected_by_email', e.target.value)}
                 placeholder="tu@email.com"
-                className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-blue-400"
+                className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-blue-400"
               />
             </div>
           </div>
@@ -167,7 +167,7 @@ export default function PublicNC() {
           {/* Afectó cliente / Reclamo */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5">
+              <label className="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1.5">
                 ¿Afectó al cliente?
               </label>
               <div className="flex gap-2">
@@ -178,14 +178,14 @@ export default function PublicNC() {
                     onClick={() => set('affected_client', v)}
                     className={`flex-1 py-2 rounded-lg text-xs font-bold border transition-colors
                       ${form.affected_client === v
-                        ? 'bg-blue-600 text-white border-blue-600'
-                        : 'bg-white text-slate-500 border-slate-200 hover:border-blue-300'}`}
+                        ? 'bg-dassa-red text-white border-dassa-red'
+                        : 'bg-white text-gray-500 border-gray-200 hover:border-blue-300'}`}
                   >{v}</button>
                 ))}
               </div>
             </div>
             <div>
-              <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5">
+              <label className="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1.5">
                 ¿Reclamo de cliente?
               </label>
               <div className="flex gap-2">
@@ -196,8 +196,8 @@ export default function PublicNC() {
                     onClick={() => set('client_complaint', v)}
                     className={`flex-1 py-2 rounded-lg text-xs font-bold border transition-colors
                       ${form.client_complaint === v
-                        ? 'bg-blue-600 text-white border-blue-600'
-                        : 'bg-white text-slate-500 border-slate-200 hover:border-blue-300'}`}
+                        ? 'bg-dassa-red text-white border-dassa-red'
+                        : 'bg-white text-gray-500 border-gray-200 hover:border-blue-300'}`}
                   >{v}</button>
                 ))}
               </div>
@@ -206,7 +206,7 @@ export default function PublicNC() {
 
           {/* Acción inmediata */}
           <div>
-            <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5">
+            <label className="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1.5">
               ¿Requirió alguna acción inmediata?
             </label>
             <div className="flex gap-2 mb-2">
@@ -217,8 +217,8 @@ export default function PublicNC() {
                   onClick={() => set('immediate_action_required', v)}
                   className={`px-4 py-1.5 rounded-lg text-xs font-bold border transition-colors
                     ${form.immediate_action_required === v
-                      ? 'bg-blue-600 text-white border-blue-600'
-                      : 'bg-white text-slate-500 border-slate-200 hover:border-blue-300'}`}
+                      ? 'bg-dassa-red text-white border-dassa-red'
+                      : 'bg-white text-gray-500 border-gray-200 hover:border-blue-300'}`}
                 >{v}</button>
               ))}
             </div>
@@ -228,14 +228,14 @@ export default function PublicNC() {
                 onChange={e => set('immediate_action', e.target.value)}
                 rows={2}
                 placeholder="¿Qué acción inmediata se tomó?"
-                className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-blue-400 resize-none"
+                className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-blue-400 resize-none"
               />
             )}
           </div>
 
           {/* Estado actual */}
           <div>
-            <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5">
+            <label className="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1.5">
               El caso se encuentra
             </label>
             <div className="flex gap-2 flex-wrap">
@@ -246,8 +246,8 @@ export default function PublicNC() {
                   onClick={() => set('current_status', v)}
                   className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-colors
                     ${form.current_status === v
-                      ? 'bg-slate-900 text-white border-slate-900'
-                      : 'bg-white text-slate-500 border-slate-200 hover:border-slate-400'}`}
+                      ? 'bg-gray-900 text-white border-slate-900'
+                      : 'bg-white text-gray-500 border-gray-200 hover:border-gray-400'}`}
                 >{v}</button>
               ))}
             </div>
@@ -255,7 +255,7 @@ export default function PublicNC() {
 
           {/* Comentarios */}
           <div>
-            <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5">
+            <label className="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1.5">
               Comentarios adicionales
             </label>
             <textarea
@@ -263,13 +263,13 @@ export default function PublicNC() {
               onChange={e => set('comments', e.target.value)}
               rows={2}
               placeholder="Cualquier información adicional relevante..."
-              className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-blue-400 resize-none"
+              className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-blue-400 resize-none"
             />
           </div>
 
           {/* Foto */}
           <div>
-            <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5">
+            <label className="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1.5">
               Foto / Evidencia (opcional)
             </label>
             <input ref={fileRef} type="file" accept="image/*" onChange={handleFile} className="hidden" />
@@ -278,17 +278,17 @@ export default function PublicNC() {
                 <CheckCircle2 size={16} className="text-emerald-600 flex-shrink-0" />
                 <span className="text-sm text-emerald-700 flex-1 truncate">{form.photo_name}</span>
                 <button type="button" onClick={() => { set('photo_base64', ''); set('photo_name', ''); }}>
-                  <X size={14} className="text-slate-400" />
+                  <X size={14} className="text-gray-400" />
                 </button>
               </div>
             ) : (
               <button
                 type="button"
                 onClick={() => fileRef.current?.click()}
-                className="w-full border-2 border-dashed border-slate-200 rounded-xl py-5 flex flex-col items-center gap-2 hover:border-blue-300 hover:bg-blue-50 transition-colors"
+                className="w-full border-2 border-dashed border-gray-200 rounded-xl py-5 flex flex-col items-center gap-2 hover:border-blue-300 hover:bg-dassa-red-tint transition-colors"
               >
-                <Upload size={20} className="text-slate-300" />
-                <span className="text-xs text-slate-400">Tocá para adjuntar una foto (máx. 5MB)</span>
+                <Upload size={20} className="text-gray-300" />
+                <span className="text-xs text-gray-400">Tocá para adjuntar una foto (máx. 5MB)</span>
               </button>
             )}
           </div>
@@ -311,7 +311,7 @@ export default function PublicNC() {
             {loading ? 'Registrando...' : 'Registrar No Conformidad'}
           </button>
 
-          <p className="text-center text-xs text-slate-400">
+          <p className="text-center text-xs text-gray-400">
             DASSA — Depósito Avellaneda Sur S.A. · Sistema de Gestión Integrado Trinorma
           </p>
         </form>

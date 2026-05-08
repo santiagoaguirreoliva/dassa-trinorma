@@ -43,12 +43,12 @@ export default function Register() {
           <div className="w-14 h-14 rounded-full bg-emerald-500/20 flex items-center justify-center mx-auto mb-4">
             <CheckCircle2 size={28} className="text-emerald-400" />
           </div>
-          <h2 className="text-lg font-extrabold text-slate-200 mb-2">¡Solicitud enviada!</h2>
-          <p className="text-sm text-slate-400 mb-6">
+          <h2 className="text-lg font-extrabold text-gray-200 mb-2">¡Solicitud enviada!</h2>
+          <p className="text-sm text-gray-400 mb-6">
             Tu solicitud fue recibida. El administrador del sistema la revisará y recibirás tu acceso en breve.
           </p>
           <Link to="/login"
-            className="flex items-center justify-center gap-2 w-full py-3 bg-blue-700 text-white font-bold text-sm rounded-xl hover:bg-blue-600 transition-colors">
+            className="flex items-center justify-center gap-2 w-full py-3 bg-dassa-red-deep text-white font-bold text-sm rounded-xl hover:bg-dassa-red transition-colors">
             <ArrowLeft size={15} /> Volver al inicio de sesión
           </Link>
         </div>
@@ -64,14 +64,14 @@ export default function Register() {
           <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-600 to-sky-400 flex items-center justify-center text-white font-black text-xl mx-auto mb-3">
             D
           </div>
-          <h1 className="text-lg font-extrabold text-slate-200">DASSA — Solicitar acceso</h1>
-          <p className="text-[11px] text-slate-500 mt-1">Completá el formulario y el administrador te habilitará</p>
+          <h1 className="text-lg font-extrabold text-gray-200">DASSA — Solicitar acceso</h1>
+          <p className="text-[11px] text-gray-500 mt-1">Completá el formulario y el administrador te habilitará</p>
         </div>
 
         <div className="bg-[#111827] border border-[#1a2235] rounded-2xl p-6 shadow-2xl space-y-4">
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5">
+              <label className="block text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-1.5">
                 Nombre completo <span className="text-red-400">*</span>
               </label>
               <input
@@ -79,12 +79,12 @@ export default function Register() {
                 onChange={e => set('full_name', e.target.value)}
                 required
                 placeholder="Tu nombre y apellido"
-                className="w-full px-3 py-2.5 bg-[#0f172a] border border-[#1e3a5f] rounded-lg text-slate-200 text-[13px] placeholder-slate-600 focus:outline-none focus:border-blue-500"
+                className="w-full px-3 py-2.5 bg-[#0f172a] border border-[#1e3a5f] rounded-lg text-gray-200 text-[13px] placeholder-slate-600 focus:outline-none focus:border-dassa-red"
               />
             </div>
 
             <div>
-              <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5">
+              <label className="block text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-1.5">
                 Email <span className="text-red-400">*</span>
               </label>
               <input
@@ -93,30 +93,30 @@ export default function Register() {
                 onChange={e => set('email', e.target.value)}
                 required
                 placeholder="tu@email.com"
-                className="w-full px-3 py-2.5 bg-[#0f172a] border border-[#1e3a5f] rounded-lg text-slate-200 text-[13px] placeholder-slate-600 focus:outline-none focus:border-blue-500"
+                className="w-full px-3 py-2.5 bg-[#0f172a] border border-[#1e3a5f] rounded-lg text-gray-200 text-[13px] placeholder-slate-600 focus:outline-none focus:border-dassa-red"
               />
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5">
+                <label className="block text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-1.5">
                   Puesto / Cargo
                 </label>
                 <input
                   value={form.position}
                   onChange={e => set('position', e.target.value)}
                   placeholder="Ej: Apuntador"
-                  className="w-full px-3 py-2.5 bg-[#0f172a] border border-[#1e3a5f] rounded-lg text-slate-200 text-[13px] placeholder-slate-600 focus:outline-none focus:border-blue-500"
+                  className="w-full px-3 py-2.5 bg-[#0f172a] border border-[#1e3a5f] rounded-lg text-gray-200 text-[13px] placeholder-slate-600 focus:outline-none focus:border-dassa-red"
                 />
               </div>
               <div>
-                <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5">
+                <label className="block text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-1.5">
                   Área
                 </label>
                 <select
                   value={form.department}
                   onChange={e => set('department', e.target.value)}
-                  className="w-full px-3 py-2.5 bg-[#0f172a] border border-[#1e3a5f] rounded-lg text-slate-200 text-[13px] focus:outline-none focus:border-blue-500"
+                  className="w-full px-3 py-2.5 bg-[#0f172a] border border-[#1e3a5f] rounded-lg text-gray-200 text-[13px] focus:outline-none focus:border-dassa-red"
                 >
                   <option value="">Seleccioná</option>
                   {DEPARTAMENTOS.map(d => <option key={d} value={d}>{d}</option>)}
@@ -125,7 +125,7 @@ export default function Register() {
             </div>
 
             <div>
-              <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5">
+              <label className="block text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-1.5">
                 Mensaje (opcional)
               </label>
               <textarea
@@ -133,7 +133,7 @@ export default function Register() {
                 onChange={e => set('message', e.target.value)}
                 rows={2}
                 placeholder="¿Por qué necesitás acceso al sistema?"
-                className="w-full px-3 py-2.5 bg-[#0f172a] border border-[#1e3a5f] rounded-lg text-slate-200 text-[13px] placeholder-slate-600 focus:outline-none focus:border-blue-500 resize-none"
+                className="w-full px-3 py-2.5 bg-[#0f172a] border border-[#1e3a5f] rounded-lg text-gray-200 text-[13px] placeholder-slate-600 focus:outline-none focus:border-dassa-red resize-none"
               />
             </div>
 
@@ -154,7 +154,7 @@ export default function Register() {
           </form>
         </div>
 
-        <p className="text-center text-[11px] text-slate-600 mt-4">
+        <p className="text-center text-[11px] text-gray-600 mt-4">
           ¿Ya tenés acceso?{' '}
           <Link to="/login" className="text-sky-400 hover:text-sky-300 font-semibold">
             Iniciá sesión

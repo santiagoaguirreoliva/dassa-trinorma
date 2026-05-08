@@ -1,73 +1,87 @@
-import express from 'express';
-import { query } from '../db.js';
-import { authenticateToken } from '../middleware/auth.js';
+import { Router } from 'express';
+import { query } from '../db/db.js';
+import { authenticate } from '../middleware/auth.js';
 
-const router = express.Router();
-function p(params, val) { params.push(val); return `$${params.length}`; }
+const router = Router();
+router.use(authenticate);
 
+// GET /api/suppliers
 router.get('/', async (req, res) => {
-  const { status, type, search } = req.query;
-  let sql = 'SELECT * FROM suppliers WHERE 1=1';
+  const { search, category, active } = req.query;
+  const where = ['1=1'];
   const params = [];
-  if (status) sql += ` AND status = ${p(params, status)}`;
-  if (type)   sql += ` AND type = ${p(params, type)}`;
-  if (search) sql += ` AND name ILIKE ${p(params, `%${search}%`)}`;
-  sql += ' ORDER BY name ASC';
+  let i = 1;
+  if (search)   { where.push(`name ILIKE $${i++}`); params.push(`%${search}%`); }
+  if (category) { where.push(`category = $${i++}`); params.push(category); }
+  if (active !== undefined) { where.push(`is_active = $${i++}`); params.push(active === 'true'); }
+
   try {
-    const { rows } = await query(sql, params);
+    const { rows } = await query(
+      `SELECT * FROM suppliers WHERE ${where.join(' AND ')} ORDER BY name ASC`, params
+    );
     res.json(rows);
-  } catch (err) { res.status(500).json({ error: 'Error al obtener proveedores' }); }
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+// GET /api/suppliers/:id
 router.get('/:id', async (req, res) => {
   try {
     const { rows } = await query('SELECT * FROM suppliers WHERE id = $1', [req.params.id]);
     if (!rows[0]) return res.status(404).json({ error: 'Proveedor no encontrado' });
     res.json(rows[0]);
-  } catch (err) { res.status(500).json({ error: 'Error al obtener proveedor' }); }
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-router.post('/', authenticateToken, async (req, res) => {
-  const { name, cuit, type, contact_name, email, phone, address, status = 'activo', notes } = req.body;
+// POST /api/suppliers
+router.post('/', async (req, res) => {
+  const { name, cuit, category, contact_name, contact_email, contact_phone,
+          address, is_homologated, homologation_date, homologation_expiry,
+          score, notes, is_active } = req.body;
   if (!name) return res.status(400).json({ error: 'El nombre es requerido' });
   try {
     const { rows } = await query(
-      `INSERT INTO suppliers (name, cuit, type, contact_name, email, phone, address, status, notes)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *`,
-      [name, cuit||null, type||null, contact_name||null, email||null, phone||null, address||null, status, notes||null]
+      `INSERT INTO suppliers
+         (name, cuit, category, contact_name, contact_email, contact_phone,
+          address, is_homologated, homologation_date, homologation_expiry,
+          score, notes, is_active)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)
+       RETURNING *`,
+      [name, cuit||null, category||null, contact_name||null,
+       contact_email||null, contact_phone||null, address||null,
+       is_homologated||false, homologation_date||null, homologation_expiry||null,
+       score||null, notes||null, is_active !== false]
     );
     res.status(201).json(rows[0]);
-  } catch (err) { res.status(500).json({ error: 'Error al crear proveedor' }); }
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-router.put('/:id', authenticateToken, async (req, res) => {
-  const { name, cuit, type, contact_name, email, phone, address, status, notes } = req.body;
+// PATCH /api/suppliers/:id
+router.patch('/:id', async (req, res) => {
+  const FIELDS = ['name','cuit','category','contact_name','contact_email',
+    'contact_phone','address','is_homologated','homologation_date',
+    'homologation_expiry','score','notes','is_active'];
+  const updates = []; const values = []; let i = 1;
+  for (const f of FIELDS) {
+    if (req.body[f] !== undefined) { updates.push(`${f}=$${i++}`); values.push(req.body[f]); }
+  }
+  if (!updates.length) return res.status(400).json({ error: 'Sin campos para actualizar' });
+  values.push(req.params.id);
   try {
-    const updates = []; const params = [];
-    if (name)                   updates.push(`name = ${p(params, name)}`);
-    if (cuit !== undefined)     updates.push(`cuit = ${p(params, cuit)}`);
-    if (type !== undefined)     updates.push(`type = ${p(params, type)}`);
-    if (contact_name !== undefined) updates.push(`contact_name = ${p(params, contact_name)}`);
-    if (email !== undefined)    updates.push(`email = ${p(params, email)}`);
-    if (phone !== undefined)    updates.push(`phone = ${p(params, phone)}`);
-    if (address !== undefined)  updates.push(`address = ${p(params, address)}`);
-    if (status)                 updates.push(`status = ${p(params, status)}`);
-    if (notes !== undefined)    updates.push(`notes = ${p(params, notes)}`);
-    if (updates.length === 0)   return res.status(400).json({ error: 'No hay campos para actualizar' });
-    params.push(req.params.id);
     const { rows } = await query(
-      `UPDATE suppliers SET ${updates.join(', ')} WHERE id = $${params.length} RETURNING *`, params
+      `UPDATE suppliers SET ${updates.join(', ')} WHERE id=$${i} RETURNING *`, values
     );
     if (!rows[0]) return res.status(404).json({ error: 'Proveedor no encontrado' });
     res.json(rows[0]);
-  } catch (err) { res.status(500).json({ error: 'Error al actualizar proveedor' }); }
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-router.delete('/:id', authenticateToken, async (req, res) => {
+// DELETE /api/suppliers/:id
+router.delete('/:id', async (req, res) => {
   try {
-    await query('DELETE FROM suppliers WHERE id = $1', [req.params.id]);
+    const { rowCount } = await query('DELETE FROM suppliers WHERE id = $1', [req.params.id]);
+    if (rowCount === 0) return res.status(404).json({ error: 'Proveedor no encontrado' });
     res.json({ message: 'Proveedor eliminado' });
-  } catch (err) { res.status(500).json({ error: 'Error al eliminar proveedor' }); }
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 export default router;

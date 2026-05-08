@@ -1,154 +1,484 @@
-import express from 'express';
-import { query } from '../db.js';
-import { authenticateToken } from '../middleware/auth.js';
+import { Router } from 'express';
+import { query } from '../db/db.js';
+import { authenticate, requireRole } from '../middleware/auth.js';
+import { writeFileSync, mkdirSync } from 'fs';
+import { join, dirname } from 'path';
+import { fileURLToPath } from 'url';
+import nodemailer from 'nodemailer';
 
-const router = express.Router();
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const UPLOADS_DIR = join(__dirname, '../../uploads');
+try { mkdirSync(UPLOADS_DIR, { recursive: true }); } catch {}
 
-function p(params, val) { params.push(val); return `$${params.length}`; }
+const router = Router();
+router.use(authenticate);
 
-router.get('/', async (req, res) => {
-  const { status, type, department, search } = req.query;
-  let sql = 'SELECT * FROM trainings WHERE 1=1';
-  const params = [];
+// ─── Helpers ───────────────────────────────────────────────
+function saveBase64(base64, name) {
+  if (!base64) return null;
+  const matches = base64.match(/^data:(.+);base64,(.+)$/);
+  if (!matches) return null;
+  const ext = matches[1].split('/')[1]?.split('+')[0] || 'bin';
+  const fname = `${Date.now()}-${name}.${ext}`;
+  writeFileSync(join(UPLOADS_DIR, fname), Buffer.from(matches[2], 'base64'));
+  return `/uploads/${fname}`;
+}
 
-  if (status)     sql += ` AND status = ${p(params, status)}`;
-  if (type)       sql += ` AND type = ${p(params, type)}`;
-  if (department) sql += ` AND department = ${p(params, department)}`;
-  if (search) {
-    sql += ` AND (title ILIKE ${p(params, `%${search}%`)} OR description ILIKE ${p(params, `%${search}%`)})`;
-  }
-  sql += ' ORDER BY date DESC';
-
+async function sendReminderEmail(to, subject, html) {
+  if (!process.env.SMTP_HOST) return;
   try {
-    const { rows } = await query(sql, params);
-    res.json(rows);
+    const transporter = nodemailer.createTransport({
+      host: process.env.SMTP_HOST,
+      port: parseInt(process.env.SMTP_PORT || '587'),
+      secure: false,
+      auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
+    });
+    await transporter.sendMail({
+      from: `DASSA SGI <${process.env.SMTP_USER}>`,
+      to, subject, html,
+    });
   } catch (err) {
-    res.status(500).json({ error: 'Error al obtener capacitaciones' });
+    console.error('Email error:', err.message);
   }
+}
+
+// Helper: obtener emails de notificación configurados
+async function getNotificationEmails() {
+  try {
+    const { rows } = await query(
+      `SELECT email FROM training_notification_emails WHERE active = true`
+    );
+    return rows.map(r => r.email);
+  } catch {
+    return [];
+  }
+}
+
+// ─── Ensure notification_emails table exists ───────────────
+(async () => {
+  try {
+    await query(`
+      CREATE TABLE IF NOT EXISTS training_notification_emails (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        email VARCHAR(255) NOT NULL UNIQUE,
+        name VARCHAR(255),
+        active BOOLEAN DEFAULT true,
+        created_at TIMESTAMPTZ DEFAULT NOW()
+      )
+    `);
+  } catch (err) {
+    console.error('Table creation error:', err.message);
+  }
+})();
+
+// ═══════════════════════════════════════════════════════════
+// TRAININGS CRUD
+// ═══════════════════════════════════════════════════════════
+
+// GET /api/trainings
+router.get('/', async (req, res) => {
+  try {
+    const { rows } = await query(
+      `SELECT t.*,
+              u.full_name AS organized_by_name,
+              (SELECT COUNT(*) FROM training_participants tp WHERE tp.training_id = t.id)::int AS participants_count,
+              (SELECT COUNT(*) FROM training_participants tp WHERE tp.training_id = t.id AND tp.attended = true)::int AS attended_count,
+              (SELECT COUNT(*) FROM training_evidence te WHERE te.training_id = t.id)::int AS evidence_count,
+              CASE
+                WHEN t.status = 'completada' AND t.completed_at IS NOT NULL AND t.recurrence_days IS NOT NULL
+                  THEN t.completed_at + (t.recurrence_days || ' days')::interval
+                ELSE t.scheduled_date
+              END AS next_due_date,
+              CASE
+                WHEN t.status = 'completada' AND t.completed_at IS NOT NULL AND t.recurrence_days IS NOT NULL
+                  THEN EXTRACT(DAY FROM (t.completed_at + (t.recurrence_days || ' days')::interval - NOW()))::int
+                WHEN t.status = 'programada'
+                  THEN EXTRACT(DAY FROM (t.scheduled_date - NOW()))::int
+                ELSE NULL
+              END AS days_until_due
+         FROM trainings t
+         LEFT JOIN users u ON u.id = t.organized_by
+        ORDER BY
+          CASE WHEN t.status IN ('programada','en_curso') THEN 0 ELSE 1 END,
+          t.scheduled_date ASC`
+    );
+    res.json(rows);
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+// GET /api/trainings/upcoming — próximas (para dashboard)
+router.get('/upcoming', async (req, res) => {
+  try {
+    const { rows } = await query(
+      `SELECT t.id, t.title, t.scheduled_date, t.training_type, t.is_mandatory,
+              t.location, t.instructor, t.duration_hours,
+              (SELECT COUNT(*) FROM training_participants tp WHERE tp.training_id = t.id)::int AS participants_count
+         FROM trainings t
+        WHERE t.scheduled_date >= NOW()
+          AND t.status = 'programada'
+        ORDER BY t.scheduled_date ASC
+        LIMIT 10`
+    );
+    res.json(rows);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// GET /api/trainings/:id
 router.get('/:id', async (req, res) => {
   try {
-    const { rows } = await query('SELECT * FROM trainings WHERE id = $1', [req.params.id]);
-    if (!rows[0]) return res.status(404).json({ error: 'Capacitación no encontrada' });
-
-    const { rows: employees } = await query(
-      `SELECT e.*, te.attendance, te.score, te.certificate_url
-       FROM training_employees te
-       JOIN employees e ON te.employee_id = e.id
-       WHERE te.training_id = $1`,
-      [req.params.id]
+    const { rows } = await query(
+      `SELECT t.*, u.full_name AS organized_by_name
+         FROM trainings t LEFT JOIN users u ON u.id = t.organized_by
+        WHERE t.id = $1`, [req.params.id]
     );
-    res.json({ ...rows[0], employees });
-  } catch (err) {
-    res.status(500).json({ error: 'Error al obtener capacitación' });
-  }
+    if (!rows[0]) return res.status(404).json({ error: 'No encontrado' });
+
+    const [participants, evidence] = await Promise.all([
+      query(
+        `SELECT tp.*, u.full_name, u.position, u.department
+           FROM training_participants tp
+           LEFT JOIN users u ON u.id = tp.user_id
+          WHERE tp.training_id = $1
+          ORDER BY tp.created_at`,
+        [req.params.id]
+      ),
+      query(
+        `SELECT te.*, u.full_name AS uploaded_by_name
+           FROM training_evidence te
+           LEFT JOIN users u ON u.id = te.uploaded_by
+          WHERE te.training_id = $1
+          ORDER BY te.created_at`,
+        [req.params.id]
+      ),
+    ]);
+
+    res.json({ ...rows[0], participants: participants.rows, evidence: evidence.rows });
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-router.post('/', authenticateToken, async (req, res) => {
-  const { title, description, type, date, duration_hours, instructor, status = 'planificada', department, max_participants } = req.body;
-  if (!title || !type || !date) {
-    return res.status(400).json({ error: 'Título, tipo y fecha son requeridos' });
+// POST /api/trainings — crear capacitación (todos los usuarios autenticados)
+router.post('/', async (req, res) => {
+  const {
+    title, description, objective, legal_framework, training_type,
+    category, scheduled_date, location, instructor, duration_hours,
+    max_participants, is_mandatory, reminder_days, recurrence_days, audience,
+    date_confirmed,
+    participants
+  } = req.body;
+
+  if (!title) {
+    return res.status(400).json({ error: 'Título es requerido' });
+  }
+
+  try {
+    const { rows } = await query(
+      `INSERT INTO trainings
+         (title, description, objective, legal_framework, training_type, category,
+          scheduled_date, location, instructor, duration_hours, max_participants,
+          is_mandatory, reminder_days, recurrence_days, audience, organized_by, status, date_confirmed)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,'programada',$17)
+       RETURNING *`,
+      [title, description || null, objective || null, legal_framework || null,
+       training_type || 'capacitacion', category || 'obligatoria',
+       scheduled_date || null, location || null, instructor || null,
+       duration_hours || null, max_participants || null,
+       is_mandatory || false, reminder_days || 30,
+       recurrence_days || 365, audience || null, req.user.id,
+       date_confirmed !== undefined ? date_confirmed : (scheduled_date ? true : false)]
+    );
+    const training = rows[0];
+
+    // Insertar participantes
+    if (Array.isArray(participants)) {
+      for (const p of participants) {
+        await query(
+          `INSERT INTO training_participants
+             (training_id, user_id, external_name, external_position, attended)
+           VALUES ($1,$2,$3,$4,false)
+           ON CONFLICT (training_id, user_id) DO NOTHING`,
+          [training.id, p.user_id || null, p.name || null, p.position || null]
+        );
+      }
+    }
+
+    // Notificaciones + emails
+    if (Array.isArray(participants)) {
+      for (const p of participants) {
+        if (p.user_id) {
+          await query(
+            `INSERT INTO notifications (user_id, title, message, type, source_module)
+             VALUES ($1,$2,$3,'info','trainings')`,
+            [p.user_id,
+             `Capacitación programada: ${title}`,
+             `Fecha: ${scheduled_date ? new Date(scheduled_date).toLocaleDateString('es-AR') : 'A confirmar'}${location ? ' — ' + location : ''}`]
+          );
+          const { rows: usr } = await query('SELECT email, full_name FROM users WHERE id=$1', [p.user_id]);
+          if (usr[0]?.email) {
+            sendReminderEmail(
+              usr[0].email,
+              `DASSA SGI — Capacitación: ${title}`,
+              `<p>Hola ${usr[0].full_name},</p>
+               <p>Tenés una capacitación programada:</p>
+               <ul>
+                 <li><strong>Tema:</strong> ${title}</li>
+                 <li><strong>Fecha:</strong> ${scheduled_date ? new Date(scheduled_date).toLocaleDateString('es-AR') : 'A confirmar'}</li>
+                 <li><strong>Lugar:</strong> ${location || 'A confirmar'}</li>
+                 <li><strong>Instructor:</strong> ${instructor || 'A confirmar'}</li>
+               </ul>
+               <p><a href="http://${process.env.APP_HOST || '181.174.193.98'}/trainings">Ver en DASSA SGI</a></p>`
+            );
+          }
+        }
+      }
+    }
+
+    // Notificar a emails de notificación configurados
+    const notifEmails = await getNotificationEmails();
+    for (const email of notifEmails) {
+      sendReminderEmail(
+        email,
+        `DASSA SGI — Nueva capacitación creada: ${title}`,
+        `<p>Se creó una nueva capacitación:</p>
+         <ul>
+           <li><strong>Tema:</strong> ${title}</li>
+           <li><strong>Tipo:</strong> ${training_type || 'capacitacion'}</li>
+           <li><strong>Fecha:</strong> ${scheduled_date ? new Date(scheduled_date).toLocaleDateString('es-AR') : 'Sin fecha'}</li>
+           <li><strong>Obligatoria:</strong> ${is_mandatory ? 'Sí' : 'No'}</li>
+         </ul>
+         <p><a href="http://${process.env.APP_HOST || '181.174.193.98'}/trainings">Ver en DASSA SGI</a></p>`
+      );
+    }
+
+    res.status(201).json(training);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// PATCH /api/trainings/:id — editar capacitación
+router.patch('/:id', async (req, res) => {
+  const FIELDS = ['title','description','objective','legal_framework','training_type',
+    'category','scheduled_date','location','instructor','duration_hours',
+    'max_participants','is_mandatory','reminder_days','status','recurrence_days',
+    'audience','date_confirmed'];
+  const updates = []; const values = []; let i = 1;
+  for (const f of FIELDS) {
+    if (req.body[f] !== undefined) { updates.push(`${f}=$${i++}`); values.push(req.body[f]); }
+  }
+  const completing = req.body.status === 'completada';
+  if (completing) {
+    updates.push(`completed_at=$${i++}`); values.push(new Date());
+  }
+  if (!updates.length) return res.status(400).json({ error: 'Sin campos' });
+  values.push(req.params.id);
+  try {
+    const { rows } = await query(
+      `UPDATE trainings SET ${updates.join(',')} WHERE id=$${i} RETURNING *`, values
+    );
+    const updated = rows[0];
+
+    // Auto-crear próxima edición si tiene recurrencia y se acaba de completar
+    if (completing && updated?.recurrence_days) {
+      const nextDate = new Date(updated.completed_at || new Date());
+      nextDate.setDate(nextDate.getDate() + updated.recurrence_days);
+      await query(
+        `INSERT INTO trainings
+           (title, description, objective, legal_framework, training_type, category,
+            scheduled_date, instructor, duration_hours, audience, is_mandatory,
+            recurrence_days, reminder_days, status, date_confirmed)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,'programada',false)`,
+        [updated.title, updated.description, updated.objective, updated.legal_framework,
+         updated.training_type, updated.category, nextDate.toISOString(),
+         updated.instructor, updated.duration_hours, updated.audience,
+         updated.is_mandatory, updated.recurrence_days, updated.reminder_days || 30]
+      );
+    }
+
+    res.json(updated);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// DELETE /api/trainings/:id — eliminar capacitación
+router.delete('/:id', async (req, res) => {
+  try {
+    // Eliminar dependencias primero
+    await query('DELETE FROM training_evidence WHERE training_id=$1', [req.params.id]);
+    await query('DELETE FROM training_participants WHERE training_id=$1', [req.params.id]);
+    const { rowCount } = await query('DELETE FROM trainings WHERE id=$1', [req.params.id]);
+    if (rowCount === 0) return res.status(404).json({ error: 'No encontrado' });
+    res.json({ message: 'Capacitación eliminada' });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// ═══════════════════════════════════════════════════════════
+// PARTICIPANTS
+// ═══════════════════════════════════════════════════════════
+
+router.post('/:id/participants', async (req, res) => {
+  const { user_id, external_name, external_position, external_sector } = req.body;
+  if (!user_id && !external_name) {
+    return res.status(400).json({ error: 'user_id o external_name requerido' });
   }
   try {
     const { rows } = await query(
-      `INSERT INTO trainings (title, description, type, date, duration_hours, instructor, status, department, max_participants)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *`,
-      [title, description || null, type, date, duration_hours || null, instructor || null, status, department || null, max_participants || null]
+      `INSERT INTO training_participants
+         (training_id, user_id, external_name, external_position, external_sector, attended)
+       VALUES ($1,$2,$3,$4,$5,false)
+       ON CONFLICT DO NOTHING
+       RETURNING *`,
+      [req.params.id, user_id || null, external_name || null,
+       external_position || null, external_sector || null]
+    );
+    res.status(201).json(rows[0] || { message: 'Ya existe' });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+router.patch('/:id/participants/:pid', async (req, res) => {
+  const { attended, score, dni } = req.body;
+  try {
+    const { rows } = await query(
+      `UPDATE training_participants SET
+         attended = COALESCE($1, attended),
+         score = COALESCE($2, score),
+         dni = COALESCE($3, dni),
+         attendance_date = CASE WHEN $1 = true THEN NOW() ELSE attendance_date END
+       WHERE id = $4 RETURNING *`,
+      [attended ?? null, score ?? null, dni ?? null, req.params.pid]
+    );
+    res.json(rows[0]);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+router.delete('/:id/participants/:pid', async (req, res) => {
+  try {
+    await query('DELETE FROM training_participants WHERE id=$1', [req.params.pid]);
+    res.json({ message: 'Eliminado' });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// ═══════════════════════════════════════════════════════════
+// EVIDENCE
+// ═══════════════════════════════════════════════════════════
+
+router.post('/:id/evidence', async (req, res) => {
+  const { file_base64, file_name, file_type, description } = req.body;
+  if (!file_base64) return res.status(400).json({ error: 'Archivo requerido' });
+  try {
+    const url = saveBase64(file_base64, file_name || 'evidencia');
+    const { rows } = await query(
+      `INSERT INTO training_evidence
+         (training_id, file_url, file_name, file_type, description, uploaded_by)
+       VALUES ($1,$2,$3,$4,$5,$6) RETURNING *`,
+      [req.params.id, url, file_name || null, file_type || null,
+       description || null, req.user.id]
     );
     res.status(201).json(rows[0]);
-  } catch (error) {
-    res.status(500).json({ error: 'Error al crear capacitación' });
-  }
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-router.put('/:id', authenticateToken, async (req, res) => {
-  const { title, description, type, date, duration_hours, instructor, status, department, max_participants } = req.body;
+router.delete('/:id/evidence/:eid', async (req, res) => {
   try {
-    const updates = [];
-    const params = [];
-
-    if (title)                    updates.push(`title = ${p(params, title)}`);
-    if (description !== undefined) updates.push(`description = ${p(params, description)}`);
-    if (type)                     updates.push(`type = ${p(params, type)}`);
-    if (date)                     updates.push(`date = ${p(params, date)}`);
-    if (duration_hours !== undefined) updates.push(`duration_hours = ${p(params, duration_hours)}`);
-    if (instructor !== undefined) updates.push(`instructor = ${p(params, instructor)}`);
-    if (status)                   updates.push(`status = ${p(params, status)}`);
-    if (department !== undefined) updates.push(`department = ${p(params, department)}`);
-    if (max_participants !== undefined) updates.push(`max_participants = ${p(params, max_participants)}`);
-
-    if (updates.length === 0) return res.status(400).json({ error: 'No hay campos para actualizar' });
-
-    params.push(req.params.id);
-    const { rows } = await query(
-      `UPDATE trainings SET ${updates.join(', ')} WHERE id = $${params.length} RETURNING *`,
-      params
-    );
-    if (!rows[0]) return res.status(404).json({ error: 'Capacitación no encontrada' });
-    res.json(rows[0]);
-  } catch (error) {
-    res.status(500).json({ error: 'Error al actualizar capacitación' });
-  }
+    await query('DELETE FROM training_evidence WHERE id=$1', [req.params.eid]);
+    res.json({ message: 'Eliminado' });
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-router.delete('/:id', authenticateToken, async (req, res) => {
-  try {
-    await query('DELETE FROM training_employees WHERE training_id = $1', [req.params.id]);
-    await query('DELETE FROM trainings WHERE id = $1', [req.params.id]);
-    res.json({ message: 'Capacitación eliminada' });
-  } catch (error) {
-    res.status(500).json({ error: 'Error al eliminar capacitación' });
-  }
-});
+// ═══════════════════════════════════════════════════════════
+// SEND REMINDER
+// ═══════════════════════════════════════════════════════════
 
-// Training employees endpoints
-router.post('/:id/employees', authenticateToken, async (req, res) => {
-  const { employee_id, attendance, score, certificate_url } = req.body;
-  if (!employee_id) return res.status(400).json({ error: 'employee_id es requerido' });
+router.post('/:id/send-reminder', async (req, res) => {
   try {
     const { rows } = await query(
-      `INSERT INTO training_employees (training_id, employee_id, attendance, score, certificate_url)
-       VALUES ($1,$2,$3,$4,$5) RETURNING id`,
-      [req.params.id, employee_id, attendance ?? null, score ?? null, certificate_url ?? null]
+      `SELECT t.*, array_agg(DISTINCT u.email) FILTER (WHERE u.email IS NOT NULL) AS emails
+         FROM trainings t
+         JOIN training_participants tp ON tp.training_id = t.id
+         LEFT JOIN users u ON u.id = tp.user_id
+        WHERE t.id = $1
+        GROUP BY t.id`,
+      [req.params.id]
     );
-    res.status(201).json({ id: rows[0].id });
-  } catch (error) {
-    res.status(400).json({ error: 'Error al añadir empleado a la capacitación' });
-  }
+    if (!rows[0]) return res.status(404).json({ error: 'No encontrado' });
+    const t = rows[0];
+
+    // Notif in-app
+    const { rows: parts } = await query(
+      `SELECT user_id FROM training_participants WHERE training_id=$1 AND user_id IS NOT NULL`,
+      [req.params.id]
+    );
+    for (const p of parts) {
+      await query(
+        `INSERT INTO notifications (user_id, title, message, type, source_module)
+         VALUES ($1,$2,$3,'warning','trainings')`,
+        [p.user_id,
+         `⏰ Recordatorio: ${t.title}`,
+         `La capacitación es el ${new Date(t.scheduled_date).toLocaleDateString('es-AR', { weekday:'long', day:'numeric', month:'long' })}${t.location ? ' en ' + t.location : ''}`]
+      );
+    }
+
+    // Emails a participantes
+    const allEmails = [...(t.emails?.filter(Boolean) || [])];
+
+    // También enviar a emails de notificación configurados
+    const notifEmails = await getNotificationEmails();
+    for (const ne of notifEmails) {
+      if (!allEmails.includes(ne)) allEmails.push(ne);
+    }
+
+    for (const email of allEmails) {
+      sendReminderEmail(
+        email,
+        `⏰ DASSA SGI — Recordatorio capacitación: ${t.title}`,
+        `<p>Recordatorio de capacitación:</p>
+         <ul>
+           <li><strong>Tema:</strong> ${t.title}</li>
+           <li><strong>Fecha:</strong> ${new Date(t.scheduled_date).toLocaleDateString('es-AR', { weekday:'long', day:'numeric', month:'long', year:'numeric' })}</li>
+           <li><strong>Lugar:</strong> ${t.location || 'A confirmar'}</li>
+           <li><strong>Instructor:</strong> ${t.instructor || 'A confirmar'}</li>
+           <li><strong>Duración:</strong> ${t.duration_hours ? t.duration_hours + ' hs' : 'A confirmar'}</li>
+         </ul>
+         <p><a href="http://${process.env.APP_HOST || '181.174.193.98'}/trainings">Ver en DASSA SGI</a></p>`
+      );
+    }
+
+    res.json({ message: `Recordatorio enviado a ${parts.length} participantes y ${notifEmails.length} emails configurados` });
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-router.put('/:id/employees/:empId', authenticateToken, async (req, res) => {
-  const { attendance, score, certificate_url } = req.body;
+// ═══════════════════════════════════════════════════════════
+// NOTIFICATION EMAILS CONFIG
+// ═══════════════════════════════════════════════════════════
+
+// GET /api/trainings-config/notification-emails
+router.get('/config/notification-emails', async (req, res) => {
   try {
-    const updates = [];
-    const params = [];
-
-    if (attendance !== undefined)       updates.push(`attendance = ${p(params, attendance)}`);
-    if (score !== undefined)            updates.push(`score = ${p(params, score)}`);
-    if (certificate_url !== undefined)  updates.push(`certificate_url = ${p(params, certificate_url)}`);
-
-    if (updates.length === 0) return res.status(400).json({ error: 'No hay campos para actualizar' });
-
-    params.push(req.params.id);
-    params.push(req.params.empId);
-    await query(
-      `UPDATE training_employees SET ${updates.join(', ')} WHERE training_id = $${params.length - 1} AND employee_id = $${params.length}`,
-      params
+    const { rows } = await query(
+      `SELECT * FROM training_notification_emails ORDER BY created_at ASC`
     );
-    res.json({ message: 'Actualizado' });
-  } catch (error) {
-    res.status(500).json({ error: 'Error al actualizar' });
-  }
+    res.json(rows);
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-router.delete('/:id/employees/:empId', authenticateToken, async (req, res) => {
+// POST /api/trainings-config/notification-emails — agregar email
+router.post('/config/notification-emails', async (req, res) => {
+  const { email, name } = req.body;
+  if (!email) return res.status(400).json({ error: 'Email requerido' });
   try {
-    await query('DELETE FROM training_employees WHERE training_id = $1 AND employee_id = $2', [req.params.id, req.params.empId]);
-    res.json({ message: 'Empleado removido de la capacitación' });
-  } catch (error) {
-    res.status(500).json({ error: 'Error al remover empleado' });
-  }
+    const { rows } = await query(
+      `INSERT INTO training_notification_emails (email, name)
+       VALUES ($1, $2)
+       ON CONFLICT (email) DO UPDATE SET name=$2, active=true
+       RETURNING *`,
+      [email.toLowerCase().trim(), name || null]
+    );
+    res.status(201).json(rows[0]);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// DELETE /api/trainings-config/notification-emails/:id
+router.delete('/config/notification-emails/:id', async (req, res) => {
+  try {
+    await query('DELETE FROM training_notification_emails WHERE id=$1', [req.params.id]);
+    res.json({ message: 'Eliminado' });
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 export default router;

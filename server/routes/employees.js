@@ -1,34 +1,48 @@
-import express from 'express';
-import { query } from '../db.js';
-import { authenticateToken } from '../middleware/auth.js';
+import { Router } from 'express';
+import { query } from '../db/db.js';
+import { authenticate, requireRole } from '../middleware/auth.js';
 
-const router = express.Router();
+const router = Router();
+router.use(authenticate);
 
 function p(params, val) { params.push(val); return `$${params.length}`; }
 
+// GET /api/employees
 router.get('/', async (req, res) => {
-  const { department, status, search } = req.query;
-  let sql = 'SELECT * FROM employees WHERE 1=1';
+  const { sector, status, search } = req.query;
+  let sql = `SELECT e.*, ev.full_name AS evaluator_name, ev2.full_name AS secondary_evaluator_name
+             FROM employees e
+             LEFT JOIN employees ev ON ev.id = e.evaluator_id
+             LEFT JOIN employees ev2 ON ev2.id = e.secondary_evaluator_id
+             WHERE 1=1`;
   const params = [];
 
-  if (department) sql += ` AND department = ${p(params, department)}`;
-  if (status)     sql += ` AND status = ${p(params, status)}`;
+  if (sector)  sql += ` AND e.sector = ${p(params, sector)}`;
+  if (status === 'activo')   sql += ` AND e.is_active = true`;
+  if (status === 'inactivo') sql += ` AND e.is_active = false`;
   if (search) {
-    sql += ` AND (first_name ILIKE ${p(params, `%${search}%`)} OR last_name ILIKE ${p(params, `%${search}%`)} OR employee_number ILIKE ${p(params, `%${search}%`)})`;
+    sql += ` AND (e.full_name ILIKE ${p(params, `%${search}%`)} OR e.email ILIKE ${p(params, `%${search}%`)})`;
   }
-  sql += ' ORDER BY employee_number ASC';
+  sql += ' ORDER BY e.full_name ASC';
 
   try {
     const { rows } = await query(sql, params);
     res.json(rows);
   } catch (err) {
+    console.error('Error employees GET:', err.message);
     res.status(500).json({ error: 'Error al obtener empleados' });
   }
 });
 
+// GET /api/employees/:id
 router.get('/:id', async (req, res) => {
   try {
-    const { rows } = await query('SELECT * FROM employees WHERE id = $1', [req.params.id]);
+    const { rows } = await query(
+      `SELECT e.*, ev.full_name AS evaluator_name, ev2.full_name AS secondary_evaluator_name
+       FROM employees e
+       LEFT JOIN employees ev ON ev.id = e.evaluator_id
+       LEFT JOIN employees ev2 ON ev2.id = e.secondary_evaluator_id
+       WHERE e.id = $1`, [req.params.id]);
     if (!rows[0]) return res.status(404).json({ error: 'Empleado no encontrado' });
     res.json(rows[0]);
   } catch (err) {
@@ -36,59 +50,60 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-router.post('/', authenticateToken, async (req, res) => {
-  const { employee_number, first_name, last_name, position, department, hire_date, status = 'activo', email, phone } = req.body;
-  if (!employee_number || !first_name || !last_name) {
-    return res.status(400).json({ error: 'Número de empleado, nombre y apellido son requeridos' });
-  }
+// POST /api/employees
+router.post('/', requireRole('master_admin', 'director', 'sgi_leader'), async (req, res) => {
+  const { full_name, email, phone, sector, position, evaluator_id, secondary_evaluator_id, user_id } = req.body;
+  if (!full_name) return res.status(400).json({ error: 'El nombre completo es requerido' });
+
   try {
     const { rows } = await query(
-      `INSERT INTO employees (employee_number, first_name, last_name, position, department, hire_date, status, email, phone)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *`,
-      [employee_number, first_name, last_name, position || null, department || null, hire_date || null, status, email || null, phone || null]
-    );
+      `INSERT INTO employees (full_name, email, phone, sector, position, evaluator_id, secondary_evaluator_id, user_id)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *`,
+      [full_name, email || null, phone || null, sector || null, position || null,
+       evaluator_id || null, secondary_evaluator_id || null, user_id || null]);
     res.status(201).json(rows[0]);
-  } catch (error) {
-    res.status(400).json({ error: 'El número de empleado ya existe' });
+  } catch (err) {
+    console.error('Error employees POST:', err.message);
+    res.status(400).json({ error: err.message });
   }
 });
 
-router.put('/:id', authenticateToken, async (req, res) => {
-  const { employee_number, first_name, last_name, position, department, hire_date, status, email, phone } = req.body;
+// PATCH /api/employees/:id
+router.patch('/:id', requireRole('master_admin', 'director', 'sgi_leader'), async (req, res) => {
+  const ALLOWED = ['full_name', 'email', 'phone', 'sector', 'position',
+                   'evaluator_id', 'secondary_evaluator_id', 'user_id', 'is_active'];
+  const updates = [];
+  const params = [];
+
+  for (const key of ALLOWED) {
+    if (req.body[key] !== undefined) {
+      updates.push(`${key} = ${p(params, req.body[key])}`);
+    }
+  }
+  if (updates.length === 0) return res.status(400).json({ error: 'No hay campos para actualizar' });
+
+  params.push(req.params.id);
   try {
-    const updates = [];
-    const params = [];
-
-    if (employee_number)    updates.push(`employee_number = ${p(params, employee_number)}`);
-    if (first_name)         updates.push(`first_name = ${p(params, first_name)}`);
-    if (last_name)          updates.push(`last_name = ${p(params, last_name)}`);
-    if (position !== undefined)   updates.push(`position = ${p(params, position)}`);
-    if (department !== undefined) updates.push(`department = ${p(params, department)}`);
-    if (hire_date !== undefined)  updates.push(`hire_date = ${p(params, hire_date)}`);
-    if (status)             updates.push(`status = ${p(params, status)}`);
-    if (email !== undefined)  updates.push(`email = ${p(params, email)}`);
-    if (phone !== undefined)  updates.push(`phone = ${p(params, phone)}`);
-
-    if (updates.length === 0) return res.status(400).json({ error: 'No hay campos para actualizar' });
-
-    params.push(req.params.id);
     const { rows } = await query(
-      `UPDATE employees SET ${updates.join(', ')} WHERE id = $${params.length} RETURNING *`,
-      params
-    );
+      `UPDATE employees SET ${updates.join(', ')}, updated_at = NOW() WHERE id = $${params.length} RETURNING *`,
+      params);
     if (!rows[0]) return res.status(404).json({ error: 'Empleado no encontrado' });
     res.json(rows[0]);
-  } catch (error) {
-    res.status(400).json({ error: error.message });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
   }
 });
 
-router.delete('/:id', authenticateToken, async (req, res) => {
+// DELETE /api/employees/:id (soft delete)
+router.delete('/:id', requireRole('master_admin', 'director'), async (req, res) => {
   try {
-    await query('DELETE FROM employees WHERE id = $1', [req.params.id]);
-    res.json({ message: 'Empleado eliminado' });
-  } catch (error) {
-    res.status(500).json({ error: 'Error al eliminar empleado' });
+    const { rows } = await query(
+      `UPDATE employees SET is_active = false, updated_at = NOW() WHERE id = $1 RETURNING id`,
+      [req.params.id]);
+    if (!rows[0]) return res.status(404).json({ error: 'Empleado no encontrado' });
+    res.json({ message: 'Empleado desactivado' });
+  } catch (err) {
+    res.status(500).json({ error: 'Error al desactivar empleado' });
   }
 });
 

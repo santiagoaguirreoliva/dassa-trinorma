@@ -4,3 +4,13 @@ dist/
 *.local
 .DS_Store
 *.log
+*.bak
+*.bak_*
+backup_*/
+.backups/
+*.LEGACY_*
+.env.bak
+.env N
+uploads/
+knowledge-base/raw/
+knowledge-base/processed/

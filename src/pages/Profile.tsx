@@ -68,28 +68,28 @@ export default function Profile() {
       <PageContent>
         <div className="max-w-xl space-y-5">
           {/* Avatar card */}
-          <div className="bg-white rounded-2xl border border-slate-200 p-6 flex items-center gap-5">
+          <div className="bg-white rounded-2xl border border-gray-200 p-6 flex items-center gap-5">
             <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-600 to-sky-400 flex items-center justify-center text-white font-black text-2xl flex-shrink-0">
               {initials}
             </div>
             <div>
-              <p className="text-lg font-extrabold text-slate-900">{user?.full_name}</p>
-              <p className="text-sm text-slate-400">{user?.email}</p>
-              <span className="inline-block mt-1 px-2.5 py-0.5 bg-blue-100 text-blue-700 text-[10px] font-extrabold rounded-full uppercase tracking-wide">
+              <p className="text-lg font-extrabold text-gray-900">{user?.full_name}</p>
+              <p className="text-sm text-gray-400">{user?.email}</p>
+              <span className="inline-block mt-1 px-2.5 py-0.5 bg-dassa-red-tint text-dassa-red-deep text-[10px] font-extrabold rounded-full uppercase tracking-wide">
                 {user?.role ? ROLE_LABELS[user.role] : ''}
               </span>
             </div>
           </div>
 
           {/* Tabs */}
-          <div className="flex bg-slate-100 rounded-xl p-1 gap-1">
+          <div className="flex bg-gray-100 rounded-xl p-1 gap-1">
             {[
               { key: 'perfil',    label: 'Datos personales', icon: <User size={13} /> },
               { key: 'seguridad', label: 'Contraseña',       icon: <Lock size={13} /> },
             ].map(t => (
               <button key={t.key} onClick={() => setTab(t.key as any)}
                 className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-bold transition-colors
-                  ${tab === t.key ? 'bg-white text-blue-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>
+                  ${tab === t.key ? 'bg-white text-dassa-red-deep shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>
                 {t.icon}{t.label}
               </button>
             ))}
@@ -97,7 +97,7 @@ export default function Profile() {
 
           {/* ─── PERFIL ─── */}
           {tab === 'perfil' && (
-            <div className="bg-white rounded-2xl border border-slate-200 p-6 space-y-4">
+            <div className="bg-white rounded-2xl border border-gray-200 p-6 space-y-4">
               <div>
                 <label className="label-field">Nombre completo</label>
                 <input value={form.full_name} onChange={e => set('full_name', e.target.value)} className="input-field" />
@@ -105,8 +105,8 @@ export default function Profile() {
               <div>
                 <label className="label-field">Email</label>
                 <input value={user?.email || ''} disabled
-                  className="input-field bg-slate-50 text-slate-400 cursor-not-allowed" />
-                <p className="text-[10px] text-slate-400 mt-1">El email no se puede cambiar desde acá</p>
+                  className="input-field bg-gray-50 text-gray-400 cursor-not-allowed" />
+                <p className="text-[10px] text-gray-400 mt-1">El email no se puede cambiar desde acá</p>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
@@ -134,7 +134,7 @@ export default function Profile() {
                 </div>
               )}
               <button onClick={() => saveProfile.mutate()} disabled={saveProfile.isPending}
-                className="w-full py-3 bg-blue-700 text-white font-bold text-sm rounded-xl hover:bg-blue-600 flex items-center justify-center gap-2 disabled:opacity-50">
+                className="w-full py-3 bg-dassa-red-deep text-white font-bold text-sm rounded-xl hover:bg-dassa-red flex items-center justify-center gap-2 disabled:opacity-50">
                 {saveProfile.isPending ? <Loader2 size={15} className="animate-spin" /> : <Save size={15} />}
                 Guardar cambios
               </button>
@@ -143,7 +143,7 @@ export default function Profile() {
 
           {/* ─── CONTRASEÑA ─── */}
           {tab === 'seguridad' && (
-            <div className="bg-white rounded-2xl border border-slate-200 p-6 space-y-4">
+            <div className="bg-white rounded-2xl border border-gray-200 p-6 space-y-4">
               <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
                 <p className="text-xs text-amber-700 font-medium">
                   Si es tu primer ingreso al sistema, cambiá la contraseña provisoria <strong>Dassa2026x</strong> por una personal.
@@ -160,7 +160,7 @@ export default function Profile() {
                     className="input-field pr-10"
                   />
                   <button type="button" onClick={() => setShowCurrent(!showCurrent)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400">
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
                     {showCurrent ? <EyeOff size={15} /> : <Eye size={15} />}
                   </button>
                 </div>
@@ -176,7 +176,7 @@ export default function Profile() {
                     className="input-field pr-10"
                   />
                   <button type="button" onClick={() => setShowNew(!showNew)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400">
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
                     {showNew ? <EyeOff size={15} /> : <Eye size={15} />}
                   </button>
                 </div>
@@ -208,7 +208,7 @@ export default function Profile() {
               <button
                 onClick={() => changePwd.mutate()}
                 disabled={!pwd.current || !pwd.new || !pwd.confirm || changePwd.isPending}
-                className="w-full py-3 bg-slate-900 text-white font-bold text-sm rounded-xl hover:bg-slate-800 flex items-center justify-center gap-2 disabled:opacity-50">
+                className="w-full py-3 bg-gray-900 text-white font-bold text-sm rounded-xl hover:bg-gray-800 flex items-center justify-center gap-2 disabled:opacity-50">
                 {changePwd.isPending ? <Loader2 size={15} className="animate-spin" /> : <Lock size={15} />}
                 Cambiar contraseña
               </button>

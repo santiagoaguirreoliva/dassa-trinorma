@@ -34,13 +34,13 @@ export default function Placeholder() {
         <div className="flex flex-col items-center justify-center min-h-[400px] text-center gap-5">
           <div className="text-6xl opacity-20">{icon}</div>
           <div>
-            <h2 className="text-lg font-bold text-slate-600 mb-2">{title}</h2>
-            <p className="text-[13px] text-slate-400 max-w-sm">{desc}</p>
-            <p className="text-[12px] text-slate-300 mt-2">Fase de desarrollo correspondiente en progreso</p>
+            <h2 className="text-lg font-bold text-gray-600 mb-2">{title}</h2>
+            <p className="text-[13px] text-gray-400 max-w-sm">{desc}</p>
+            <p className="text-[12px] text-gray-300 mt-2">Fase de desarrollo correspondiente en progreso</p>
           </div>
           <button
             onClick={() => navigate('/dashboard')}
-            className="px-5 py-2.5 bg-blue-600 text-white rounded-lg text-[13px] font-semibold hover:bg-blue-700 transition-colors"
+            className="px-5 py-2.5 bg-dassa-red text-white rounded-lg text-[13px] font-semibold hover:bg-dassa-red-deep transition-colors"
           >
             ← Volver al Dashboard
           </button>

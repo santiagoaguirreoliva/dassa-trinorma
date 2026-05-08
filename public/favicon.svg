@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" role="img" aria-label="DASSA">
+  <title>DASSA</title>
+  <defs><style>
+    .s-red{stroke:#BF1E2E;fill:none;stroke-width:12;stroke-linecap:round;stroke-linejoin:round}
+    .s-cel{stroke:#5BBDC9;fill:none;stroke-width:12;stroke-linecap:round;stroke-linejoin:round}
+    .s-cube{stroke:#BF1E2E;fill:none;stroke-width:8;stroke-linecap:round;stroke-linejoin:round}
+  </style></defs>
+  <path class="s-red" d="M 30 70 V 30 H 70"/>
+  <path class="s-cel" d="M 130 30 H 170 V 70"/>
+  <path class="s-red" d="M 170 130 V 170 H 130"/>
+  <path class="s-cel" d="M 70 170 H 30 V 130"/>
+  <g class="s-cube" transform="translate(100,100)">
+    <path d="M 0 -42 L 38 -22 L 0 -2 L -38 -22 Z"/>
+    <line x1="0" y1="-2" x2="0" y2="42"/>
+    <line x1="38" y1="-22" x2="38" y2="22"/>
+    <line x1="-38" y1="-22" x2="-38" y2="22"/>
+    <path d="M -38 22 L 0 42 L 38 22"/>
+  </g>
+</svg>

@@ -1,84 +1,98 @@
-import express from 'express';
-import { query } from '../db.js';
-import { authenticateToken } from '../middleware/auth.js';
+import { Router } from 'express';
+import { query } from '../db/db.js';
+import { authenticate } from '../middleware/auth.js';
 
-const router = express.Router();
+const router = Router();
 
 function p(params, val) { params.push(val); return `$${params.length}`; }
 
+// GET / — list surveys with NPS computed from responses
 router.get('/', async (req, res) => {
   try {
-    const { rows: surveys } = await query('SELECT * FROM customer_surveys ORDER BY date DESC', []);
-    const promoters  = surveys.filter(s => s.rating >= 9).length;
-    const detractors = surveys.filter(s => s.rating <= 6).length;
-    const nps = surveys.length > 0
-      ? Math.round(((promoters - detractors) / surveys.length) * 100)
+    const { rows: surveys } = await query(
+      `SELECT s.*, u.full_name AS created_by_name,
+              (SELECT count(*) FROM survey_responses sr WHERE sr.survey_id = s.id) AS response_count
+         FROM surveys s
+         LEFT JOIN users u ON u.id = s.created_by
+        ORDER BY s.created_at DESC`
+    );
+    // Get all responses with nps_score for NPS calculation
+    const { rows: responses } = await query(
+      `SELECT nps_score FROM survey_responses WHERE nps_score IS NOT NULL`
+    );
+    const total = responses.length;
+    const promoters  = responses.filter(r => r.nps_score >= 9).length;
+    const detractors = responses.filter(r => r.nps_score <= 6).length;
+    const nps = total > 0 ? Math.round(((promoters - detractors) / total) * 100) : 0;
+    const average_rating = total > 0
+      ? (responses.reduce((sum, r) => sum + r.nps_score, 0) / total).toFixed(1)
       : 0;
+
     res.json({
       surveys,
       nps,
       total_surveys: surveys.length,
-      average_rating: surveys.length > 0
-        ? (surveys.reduce((sum, s) => sum + s.rating, 0) / surveys.length).toFixed(1)
-        : 0,
+      total_responses: total,
+      average_rating,
+      promoters,
+      detractors,
+      passives: total - promoters - detractors,
     });
   } catch (err) {
+    console.error('Satisfaction GET error:', err);
     res.status(500).json({ error: 'Error al obtener encuestas' });
   }
 });
 
+// GET /:id — single survey with questions & responses
 router.get('/:id', async (req, res) => {
   try {
-    const { rows } = await query('SELECT * FROM customer_surveys WHERE id = $1', [req.params.id]);
-    if (!rows[0]) return res.status(404).json({ error: 'Encuesta no encontrada' });
-    res.json(rows[0]);
+    const { rows: survey } = await query('SELECT * FROM surveys WHERE id = $1', [req.params.id]);
+    if (!survey[0]) return res.status(404).json({ error: 'Encuesta no encontrada' });
+    const { rows: questions } = await query('SELECT * FROM survey_questions WHERE survey_id = $1 ORDER BY order_index', [req.params.id]);
+    const { rows: responses } = await query('SELECT * FROM survey_responses WHERE survey_id = $1 ORDER BY submitted_at DESC', [req.params.id]);
+    res.json({ ...survey[0], questions, responses });
   } catch (err) {
     res.status(500).json({ error: 'Error al obtener encuesta' });
   }
 });
 
-router.post('/', authenticateToken, async (req, res) => {
-  const { customer_name, date, rating, comments, category } = req.body;
-  if (!customer_name || !date || !rating) {
-    return res.status(400).json({ error: 'Nombre del cliente, fecha y calificación son requeridos' });
-  }
-  if (rating < 1 || rating > 10) {
-    return res.status(400).json({ error: 'La calificación debe estar entre 1 y 10' });
+// POST / — create survey
+router.post('/', authenticate, async (req, res) => {
+  const { title, survey_type, description, period, year, quarter, closes_at } = req.body;
+  if (!title || !survey_type) {
+    return res.status(400).json({ error: 'Título y tipo de encuesta son requeridos' });
   }
   try {
     const { rows } = await query(
-      `INSERT INTO customer_surveys (customer_name, date, rating, comments, category, created_by)
-       VALUES ($1,$2,$3,$4,$5,$6) RETURNING *`,
-      [customer_name, date, rating, comments || null, category || null, req.userId]
+      `INSERT INTO surveys (title, survey_type, description, period, year, quarter, closes_at, created_by)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *`,
+      [title, survey_type, description || null, period || null, year || null, quarter || null, closes_at || null, req.user.id]
     );
     res.status(201).json(rows[0]);
   } catch (error) {
+    console.error('Satisfaction POST error:', error);
     res.status(500).json({ error: 'Error al crear encuesta' });
   }
 });
 
-router.put('/:id', authenticateToken, async (req, res) => {
-  const { customer_name, date, rating, comments, category } = req.body;
+// PUT /:id — update survey
+router.put('/:id', authenticate, async (req, res) => {
+  const { title, description, period, year, quarter, closes_at, is_active } = req.body;
+  const updates = []; const params = [];
+  if (title !== undefined)       updates.push(`title = ${p(params, title)}`);
+  if (description !== undefined) updates.push(`description = ${p(params, description)}`);
+  if (period !== undefined)      updates.push(`period = ${p(params, period)}`);
+  if (year !== undefined)        updates.push(`year = ${p(params, year)}`);
+  if (quarter !== undefined)     updates.push(`quarter = ${p(params, quarter)}`);
+  if (closes_at !== undefined)   updates.push(`closes_at = ${p(params, closes_at)}`);
+  if (is_active !== undefined)   updates.push(`is_active = ${p(params, is_active)}`);
+  if (!updates.length) return res.status(400).json({ error: 'Sin campos' });
+  updates.push(`updated_at = NOW()`);
+  params.push(req.params.id);
   try {
-    const updates = [];
-    const params = [];
-
-    if (customer_name)      updates.push(`customer_name = ${p(params, customer_name)}`);
-    if (date)               updates.push(`date = ${p(params, date)}`);
-    if (rating !== undefined) {
-      if (rating < 1 || rating > 10)
-        return res.status(400).json({ error: 'La calificación debe estar entre 1 y 10' });
-      updates.push(`rating = ${p(params, rating)}`);
-    }
-    if (comments !== undefined) updates.push(`comments = ${p(params, comments)}`);
-    if (category !== undefined) updates.push(`category = ${p(params, category)}`);
-
-    if (updates.length === 0) return res.status(400).json({ error: 'No hay campos para actualizar' });
-
-    params.push(req.params.id);
     const { rows } = await query(
-      `UPDATE customer_surveys SET ${updates.join(', ')} WHERE id = $${params.length} RETURNING *`,
-      params
+      `UPDATE surveys SET ${updates.join(', ')} WHERE id = $${params.length} RETURNING *`, params
     );
     if (!rows[0]) return res.status(404).json({ error: 'Encuesta no encontrada' });
     res.json(rows[0]);
@@ -87,9 +101,10 @@ router.put('/:id', authenticateToken, async (req, res) => {
   }
 });
 
-router.delete('/:id', authenticateToken, async (req, res) => {
+// DELETE /:id
+router.delete('/:id', authenticate, async (req, res) => {
   try {
-    await query('DELETE FROM customer_surveys WHERE id = $1', [req.params.id]);
+    await query('DELETE FROM surveys WHERE id = $1', [req.params.id]);
     res.json({ message: 'Encuesta eliminada' });
   } catch (error) {
     res.status(500).json({ error: 'Error al eliminar encuesta' });

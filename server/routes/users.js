@@ -12,7 +12,7 @@ router.get('/', async (req, res) => {
     const { rows } = await query(
       `SELECT id, email, full_name, role, position, department,
               avatar_url, phone, is_active, last_login, created_at
-         FROM users ORDER BY full_name`
+         FROM users WHERE is_active = true ORDER BY full_name`
     );
     res.json(rows);
   } catch (err) { res.status(500).json({ error: err.message }); }

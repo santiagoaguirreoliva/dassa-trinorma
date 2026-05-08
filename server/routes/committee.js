@@ -132,8 +132,16 @@ ${rows[0].minutes}`;
     let parsed;
     try {
       parsed = JSON.parse(text.replace(/```json|```/g, '').trim());
-    } catch {
+    } catch (parseErr) {
+      console.error('AI JSON parse error:', parseErr.message, 'Raw:', text.substring(0, 200));
       return res.status(500).json({ error: 'No se pudo parsear la respuesta de la IA' });
+    }
+    // Validar estructura esperada
+    if (!parsed || typeof parsed.summary !== 'string') {
+      return res.status(500).json({ error: 'La IA devolvio una estructura inesperada (falta summary)' });
+    }
+    if (!Array.isArray(parsed.tasks)) {
+      parsed.tasks = [];
     }
 
     // Matching nombre → user_id

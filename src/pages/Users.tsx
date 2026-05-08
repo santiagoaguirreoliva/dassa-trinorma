@@ -23,18 +23,18 @@ interface AccessRequest {
 const ROLES: { value: AppRole; label: string; color: string }[] = [
   { value: 'master_admin',      label: 'Master Admin',        color: 'text-red-700 bg-red-100' },
   { value: 'director',          label: 'Director',            color: 'text-purple-700 bg-purple-100' },
-  { value: 'sgi_leader',        label: 'SGI Leader',          color: 'text-blue-700 bg-blue-100' },
+  { value: 'sgi_leader',        label: 'SGI Leader',          color: 'text-dassa-red-deep bg-dassa-red-tint' },
   { value: 'seguridad_higiene', label: 'Seguridad e Higiene', color: 'text-orange-700 bg-orange-100' },
   { value: 'operaciones',       label: 'Operaciones',         color: 'text-cyan-700 bg-cyan-100' },
   { value: 'rrhh',              label: 'RRHH',                color: 'text-pink-700 bg-pink-100' },
   { value: 'compras_approver',  label: 'Aprobador Compras',   color: 'text-amber-700 bg-amber-100' },
-  { value: 'auditor_externo',   label: 'Auditor Externo',     color: 'text-slate-700 bg-slate-100' },
+  { value: 'auditor_externo',   label: 'Auditor Externo',     color: 'text-gray-700 bg-gray-100' },
 ];
 
 function RoleBadge({ role }: { role: AppRole }) {
   const r = ROLES.find(x => x.value === role);
   return (
-    <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-extrabold ${r?.color || 'bg-slate-100 text-slate-600'}`}>
+    <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-extrabold ${r?.color || 'bg-gray-100 text-gray-600'}`}>
       {r?.label || role}
     </span>
   );
@@ -66,21 +66,21 @@ function ApproveModal({ req, onClose }: { req: AccessRequest; onClose: () => voi
     <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={onClose}>
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between px-6 py-4 border-b">
-          <h3 className="text-[15px] font-extrabold text-slate-900">Revisar solicitud</h3>
-          <button onClick={onClose}><X size={18} className="text-slate-400" /></button>
+          <h3 className="text-[15px] font-extrabold text-gray-900">Revisar solicitud</h3>
+          <button onClick={onClose}><X size={18} className="text-gray-400" /></button>
         </div>
         <div className="p-6 space-y-4">
-          <div className="bg-slate-50 rounded-xl p-4 border border-slate-200 space-y-1.5">
-            <p className="text-sm font-extrabold text-slate-900">{req.full_name}</p>
-            <p className="text-xs text-slate-500">{req.email}</p>
-            {req.position && <p className="text-xs text-slate-400">Puesto: {req.position}</p>}
-            {req.department && <p className="text-xs text-slate-400">Área: {req.department}</p>}
+          <div className="bg-gray-50 rounded-xl p-4 border border-gray-200 space-y-1.5">
+            <p className="text-sm font-extrabold text-gray-900">{req.full_name}</p>
+            <p className="text-xs text-gray-500">{req.email}</p>
+            {req.position && <p className="text-xs text-gray-400">Puesto: {req.position}</p>}
+            {req.department && <p className="text-xs text-gray-400">Área: {req.department}</p>}
             {req.message && (
-              <p className="text-xs text-slate-600 bg-white rounded-lg px-3 py-2 border border-slate-200 mt-2 italic">
+              <p className="text-xs text-gray-600 bg-white rounded-lg px-3 py-2 border border-gray-200 mt-2 italic">
                 "{req.message}"
               </p>
             )}
-            <p className="text-[10px] text-slate-400 mt-2">
+            <p className="text-[10px] text-gray-400 mt-2">
               Solicitado: {new Date(req.created_at).toLocaleDateString('es-AR', { day:'2-digit', month:'2-digit', year:'2-digit', hour:'2-digit', minute:'2-digit' })}
             </p>
           </div>
@@ -90,7 +90,7 @@ function ApproveModal({ req, onClose }: { req: AccessRequest; onClose: () => voi
             <select value={role} onChange={e => setRole(e.target.value as AppRole)} className="input-field">
               {ROLES.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
             </select>
-            <p className="text-[10px] text-slate-400 mt-1">La contraseña inicial será <strong>Dassa2026x</strong></p>
+            <p className="text-[10px] text-gray-400 mt-1">La contraseña inicial será <strong>Dassa2026x</strong></p>
           </div>
 
           {error && <p className="text-xs text-red-500 bg-red-50 px-3 py-2 rounded-lg">{error}</p>}
@@ -135,8 +135,8 @@ function NewUserModal({ onClose }: { onClose: () => void }) {
     <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={onClose}>
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between px-6 py-4 border-b">
-          <h3 className="text-[15px] font-extrabold text-slate-900">Nuevo Usuario</h3>
-          <button onClick={onClose}><X size={18} className="text-slate-400" /></button>
+          <h3 className="text-[15px] font-extrabold text-gray-900">Nuevo Usuario</h3>
+          <button onClick={onClose}><X size={18} className="text-gray-400" /></button>
         </div>
         <div className="p-6 space-y-4">
           <div>
@@ -152,7 +152,7 @@ function NewUserModal({ onClose }: { onClose: () => void }) {
             <div className="relative">
               <input type={showPass ? 'text' : 'password'} value={form.password}
                 onChange={e => set('password', e.target.value)} className="input-field pr-10" />
-              <button type="button" onClick={() => setShowPass(!showPass)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400">
+              <button type="button" onClick={() => setShowPass(!showPass)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
                 {showPass ? <EyeOff size={14} /> : <Eye size={14} />}
               </button>
             </div>
@@ -175,9 +175,9 @@ function NewUserModal({ onClose }: { onClose: () => void }) {
           </div>
           {error && <p className="text-xs text-red-500 bg-red-50 px-3 py-2 rounded-lg">{error}</p>}
           <div className="flex gap-2 pt-1">
-            <button onClick={onClose} className="flex-1 py-2.5 border border-slate-200 rounded-xl text-sm font-semibold text-slate-600">Cancelar</button>
+            <button onClick={onClose} className="flex-1 py-2.5 border border-gray-200 rounded-xl text-sm font-semibold text-gray-600">Cancelar</button>
             <button onClick={() => !create.isPending && create.mutate()} disabled={!form.full_name || !form.email || create.isPending}
-              className="flex-1 py-2.5 bg-blue-700 text-white font-bold text-sm rounded-xl hover:bg-blue-600 flex items-center justify-center gap-2 disabled:opacity-50">
+              className="flex-1 py-2.5 bg-dassa-red-deep text-white font-bold text-sm rounded-xl hover:bg-dassa-red flex items-center justify-center gap-2 disabled:opacity-50">
               {create.isPending && <Loader2 size={14} className="animate-spin" />} Crear usuario
             </button>
           </div>
@@ -211,15 +211,15 @@ function EditUserPanel({ user: u, onClose }: { user: AppUser; onClose: () => voi
   return (
     <div className="fixed inset-0 bg-black/60 z-50 flex items-start justify-end" onClick={onClose}>
       <div className="relative h-full w-full max-w-md bg-white shadow-2xl overflow-y-auto" onClick={e => e.stopPropagation()}>
-        <div className="sticky top-0 bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between z-10">
+        <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between z-10">
           <div className="flex items-center gap-3">
             <Avatar name={u.full_name} size={34} />
             <div>
-              <p className="text-[13px] font-extrabold text-slate-900">{u.full_name}</p>
-              <p className="text-[10px] text-slate-400">{u.email}</p>
+              <p className="text-[13px] font-extrabold text-gray-900">{u.full_name}</p>
+              <p className="text-[10px] text-gray-400">{u.email}</p>
             </div>
           </div>
-          <button onClick={onClose}><X size={18} className="text-slate-400" /></button>
+          <button onClick={onClose}><X size={18} className="text-gray-400" /></button>
         </div>
         <div className="p-6 space-y-4">
           <div>
@@ -228,7 +228,7 @@ function EditUserPanel({ user: u, onClose }: { user: AppUser; onClose: () => voi
           </div>
           <div>
             <label className="label-field">Rol</label>
-            <select value={form.role} onChange={e => set('role', e.target.value)} disabled={u.id === me?.id} className="input-field disabled:bg-slate-50 disabled:text-slate-400">
+            <select value={form.role} onChange={e => set('role', e.target.value)} disabled={u.id === me?.id} className="input-field disabled:bg-gray-50 disabled:text-gray-400">
               {ROLES.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
             </select>
           </div>
@@ -242,10 +242,10 @@ function EditUserPanel({ user: u, onClose }: { user: AppUser; onClose: () => voi
               <input value={form.department} onChange={e => set('department', e.target.value)} className="input-field" />
             </div>
           </div>
-          <div className="flex items-center justify-between p-4 bg-slate-50 rounded-xl border border-slate-200">
-            <p className="text-sm font-semibold text-slate-700">Cuenta {form.is_active ? 'activa' : 'inactiva'}</p>
+          <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-200">
+            <p className="text-sm font-semibold text-gray-700">Cuenta {form.is_active ? 'activa' : 'inactiva'}</p>
             <button onClick={() => set('is_active', !form.is_active)} disabled={u.id === me?.id}
-              className={`relative w-11 h-6 rounded-full transition-colors disabled:opacity-50 ${form.is_active ? 'bg-emerald-500' : 'bg-slate-300'}`}>
+              className={`relative w-11 h-6 rounded-full transition-colors disabled:opacity-50 ${form.is_active ? 'bg-emerald-500' : 'bg-gray-300'}`}>
               <div className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-all ${form.is_active ? 'left-6' : 'left-1'}`} />
             </button>
           </div>
@@ -256,7 +256,7 @@ function EditUserPanel({ user: u, onClose }: { user: AppUser; onClose: () => voi
                 placeholder="Nueva contraseña" className="input-field flex-1" />
               <button onClick={() => resetPwd.length >= 8 && resetPassword.mutate()}
                 disabled={resetPwd.length < 8 || resetPassword.isPending}
-                className="px-3 py-2 bg-slate-900 text-white rounded-lg text-xs font-bold disabled:opacity-50 flex-shrink-0">
+                className="px-3 py-2 bg-gray-900 text-white rounded-lg text-xs font-bold disabled:opacity-50 flex-shrink-0">
                 <KeyRound size={13} />
               </button>
             </div>
@@ -264,9 +264,9 @@ function EditUserPanel({ user: u, onClose }: { user: AppUser; onClose: () => voi
           </div>
           {error && <p className="text-xs text-red-500 bg-red-50 px-3 py-2 rounded-lg">{error}</p>}
           <div className="flex gap-2">
-            <button onClick={onClose} className="flex-1 py-2.5 border border-slate-200 rounded-xl text-sm font-semibold text-slate-600">Cancelar</button>
+            <button onClick={onClose} className="flex-1 py-2.5 border border-gray-200 rounded-xl text-sm font-semibold text-gray-600">Cancelar</button>
             <button onClick={() => save.mutate()} disabled={save.isPending}
-              className="flex-1 py-2.5 bg-blue-700 text-white font-bold text-sm rounded-xl hover:bg-blue-600 flex items-center justify-center gap-2 disabled:opacity-50">
+              className="flex-1 py-2.5 bg-dassa-red-deep text-white font-bold text-sm rounded-xl hover:bg-dassa-red flex items-center justify-center gap-2 disabled:opacity-50">
               {save.isPending ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />} Guardar
             </button>
           </div>
@@ -306,21 +306,21 @@ export default function UsersPage() {
         subtitle={`${active.length} usuarios activos`}
         actions={isMasterAdmin && (
           <button onClick={() => setShowNew(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-700 text-white rounded-lg text-xs font-bold hover:bg-blue-600">
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-dassa-red-deep text-white rounded-lg text-xs font-bold hover:bg-dassa-red">
             <Plus size={14} /> Nuevo usuario
           </button>
         )}
       />
 
       {/* Tabs */}
-      <div className="bg-white border-b border-slate-200 px-6 flex">
+      <div className="bg-white border-b border-gray-200 px-6 flex">
         {[
           { key: 'usuarios',    label: `Usuarios (${active.length})` },
           { key: 'solicitudes', label: `Solicitudes${pendingCount > 0 ? ` (${pendingCount})` : ''}` },
         ].map(t => (
           <button key={t.key} onClick={() => setTab(t.key as any)}
             className={`px-4 py-3 text-xs font-bold border-b-2 transition-colors
-              ${tab === t.key ? 'border-blue-600 text-blue-700' : 'border-transparent text-slate-400 hover:text-slate-700'}`}>
+              ${tab === t.key ? 'border-dassa-red text-dassa-red-deep' : 'border-transparent text-gray-400 hover:text-gray-700'}`}>
             {t.label}
             {t.key === 'solicitudes' && pendingCount > 0 && (
               <span className="ml-1.5 w-4 h-4 rounded-full bg-red-500 text-white text-[9px] font-extrabold inline-flex items-center justify-center">
@@ -336,12 +336,12 @@ export default function UsersPage() {
         {tab === 'usuarios' && (
           isLoading ? <div className="flex justify-center py-16"><Spinner size={32} /></div> : (
             <div className="max-w-4xl space-y-5">
-              <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-                <div className="px-5 py-3 border-b border-slate-100 bg-slate-50">
-                  <p className="text-xs font-bold text-slate-600 uppercase tracking-wider">Usuarios activos ({active.length})</p>
+              <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                <div className="px-5 py-3 border-b border-gray-100 bg-gray-50">
+                  <p className="text-xs font-bold text-gray-600 uppercase tracking-wider">Usuarios activos ({active.length})</p>
                 </div>
                 <table className="w-full">
-                  <thead className="border-b border-slate-100">
+                  <thead className="border-b border-gray-100">
                     <tr>
                       <th className="th-cell">Usuario</th>
                       <th className="th-cell hidden md:table-cell">Rol</th>
@@ -352,27 +352,27 @@ export default function UsersPage() {
                   </thead>
                   <tbody>
                     {active.map(u => (
-                      <tr key={u.id} className="border-b border-slate-100 hover:bg-slate-50">
+                      <tr key={u.id} className="border-b border-gray-100 hover:bg-gray-50">
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-2.5">
                             <Avatar name={u.full_name} size={32} />
                             <div>
-                              <p className="text-xs font-bold text-slate-800">{u.full_name}</p>
-                              <p className="text-[10px] text-slate-400">{u.email}</p>
+                              <p className="text-xs font-bold text-gray-800">{u.full_name}</p>
+                              <p className="text-[10px] text-gray-400">{u.email}</p>
                             </div>
                           </div>
                         </td>
                         <td className="px-4 py-3 hidden md:table-cell"><RoleBadge role={u.role} /></td>
-                        <td className="px-4 py-3 hidden lg:table-cell"><span className="text-xs text-slate-500">{u.position || '—'}</span></td>
+                        <td className="px-4 py-3 hidden lg:table-cell"><span className="text-xs text-gray-500">{u.position || '—'}</span></td>
                         <td className="px-4 py-3 hidden md:table-cell">
-                          <span className="text-[10px] text-slate-400">
+                          <span className="text-[10px] text-gray-400">
                             {u.last_login ? new Date(u.last_login).toLocaleDateString('es-AR', { day:'2-digit', month:'2-digit', year:'2-digit' }) : 'Nunca'}
                           </span>
                         </td>
                         <td className="px-4 py-3 text-right">
                           {isAdmin && (
                             <button onClick={() => setEditing(u)}
-                              className="flex items-center gap-1.5 px-2.5 py-1.5 bg-slate-100 text-slate-600 rounded-lg text-[10px] font-bold hover:bg-slate-200 ml-auto">
+                              className="flex items-center gap-1.5 px-2.5 py-1.5 bg-gray-100 text-gray-600 rounded-lg text-[10px] font-bold hover:bg-gray-200 ml-auto">
                               <UserCog size={12} /> Editar
                             </button>
                           )}
@@ -383,16 +383,16 @@ export default function UsersPage() {
                 </table>
               </div>
               {inactive.length > 0 && (
-                <div className="bg-white rounded-xl border border-slate-200 overflow-hidden opacity-60">
-                  <div className="px-5 py-3 border-b border-slate-100 bg-slate-50">
-                    <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Inactivos ({inactive.length})</p>
+                <div className="bg-white rounded-xl border border-gray-200 overflow-hidden opacity-60">
+                  <div className="px-5 py-3 border-b border-gray-100 bg-gray-50">
+                    <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Inactivos ({inactive.length})</p>
                   </div>
                   {inactive.map(u => (
-                    <div key={u.id} className="flex items-center gap-3 px-5 py-3 border-b border-slate-100 last:border-0">
+                    <div key={u.id} className="flex items-center gap-3 px-5 py-3 border-b border-gray-100 last:border-0">
                       <Avatar name={u.full_name} size={28} />
-                      <p className="text-xs text-slate-500 flex-1">{u.full_name}</p>
-                      <p className="text-[10px] text-slate-400">{u.email}</p>
-                      {isAdmin && <button onClick={() => setEditing(u)} className="px-2 py-1 bg-slate-100 text-slate-500 rounded text-[10px] font-bold hover:bg-slate-200">Reactivar</button>}
+                      <p className="text-xs text-gray-500 flex-1">{u.full_name}</p>
+                      <p className="text-[10px] text-gray-400">{u.email}</p>
+                      {isAdmin && <button onClick={() => setEditing(u)} className="px-2 py-1 bg-gray-100 text-gray-500 rounded text-[10px] font-bold hover:bg-gray-200">Reactivar</button>}
                     </div>
                   ))}
                 </div>
@@ -406,24 +406,24 @@ export default function UsersPage() {
           <div className="max-w-3xl space-y-3">
             {requests.filter(r => r.status === 'pending').length > 0 && (
               <div>
-                <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Pendientes de revisión</p>
+                <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Pendientes de revisión</p>
                 {requests.filter(r => r.status === 'pending').map(r => (
                   <div key={r.id} className="bg-white rounded-xl border border-amber-200 bg-amber-50 p-4 flex items-start gap-3 mb-2">
                     <div className="w-9 h-9 rounded-full bg-amber-200 flex items-center justify-center text-amber-700 font-extrabold text-sm flex-shrink-0">
                       {r.full_name[0]}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-bold text-slate-800">{r.full_name}</p>
-                      <p className="text-xs text-slate-500">{r.email}</p>
-                      {r.position && <p className="text-[10px] text-slate-400">{r.position} · {r.department}</p>}
-                      {r.message && <p className="text-xs text-slate-500 italic mt-1">"{r.message}"</p>}
-                      <p className="text-[10px] text-slate-400 mt-1">
+                      <p className="text-sm font-bold text-gray-800">{r.full_name}</p>
+                      <p className="text-xs text-gray-500">{r.email}</p>
+                      {r.position && <p className="text-[10px] text-gray-400">{r.position} · {r.department}</p>}
+                      {r.message && <p className="text-xs text-gray-500 italic mt-1">"{r.message}"</p>}
+                      <p className="text-[10px] text-gray-400 mt-1">
                         <Clock size={9} className="inline mr-1" />
                         {new Date(r.created_at).toLocaleDateString('es-AR', { day:'2-digit', month:'2-digit', year:'2-digit', hour:'2-digit', minute:'2-digit' })}
                       </p>
                     </div>
                     <button onClick={() => setReviewing(r)}
-                      className="px-3 py-1.5 bg-blue-700 text-white rounded-lg text-xs font-bold hover:bg-blue-600 flex-shrink-0">
+                      className="px-3 py-1.5 bg-dassa-red-deep text-white rounded-lg text-xs font-bold hover:bg-dassa-red flex-shrink-0">
                       Revisar
                     </button>
                   </div>
@@ -433,13 +433,13 @@ export default function UsersPage() {
 
             {requests.filter(r => r.status !== 'pending').length > 0 && (
               <div>
-                <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Historial</p>
+                <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Historial</p>
                 {requests.filter(r => r.status !== 'pending').map(r => (
-                  <div key={r.id} className="bg-white rounded-xl border border-slate-200 p-3 flex items-center gap-3 mb-2">
+                  <div key={r.id} className="bg-white rounded-xl border border-gray-200 p-3 flex items-center gap-3 mb-2">
                     <Avatar name={r.full_name} size={30} />
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs font-semibold text-slate-700">{r.full_name}</p>
-                      <p className="text-[10px] text-slate-400">{r.email}</p>
+                      <p className="text-xs font-semibold text-gray-700">{r.full_name}</p>
+                      <p className="text-[10px] text-gray-400">{r.email}</p>
                     </div>
                     <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full ${r.status === 'approved' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>
                       {r.status === 'approved' ? 'Aprobado' : 'Rechazado'}
@@ -450,7 +450,7 @@ export default function UsersPage() {
             )}
 
             {requests.length === 0 && (
-              <div className="text-center py-12 text-slate-400">
+              <div className="text-center py-12 text-gray-400">
                 <UserPlus size={28} className="mx-auto mb-2 opacity-30" />
                 <p className="text-sm">Sin solicitudes de acceso</p>
               </div>

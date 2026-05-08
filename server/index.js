@@ -49,6 +49,7 @@ const UPLOADS_DIR = join(__dirname, '../uploads');
 try { mkdirSync(UPLOADS_DIR, { recursive: true }); } catch {}
 
 const app = express();
+app.set('trust proxy', 1); // detras de Nginx
 const PORT = process.env.PORT || 4000;
 
 // ─── Security ────────────────────────────────────────────────
@@ -59,10 +60,15 @@ const ALLOWED_ORIGINS = (process.env.CORS_ORIGIN || 'http://localhost:3000')
 app.use(cors({
   origin: (origin, cb) => {
     if (!origin || ALLOWED_ORIGINS.includes(origin)) return cb(null, true);
-    cb(new Error('CORS no permitido'));
+    console.warn('[CORS] origen rechazado:', origin);
+    return cb(null, false);
   },
   credentials: true,
 }));
+
+// Body parsers (CRITICO: antes de cualquier router que lea req.body)
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Rate limiters
 const loginLimiter = rateLimit({

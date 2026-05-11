@@ -13,6 +13,9 @@ import Objetivos      from '@/pages/Objetivos';
 import Cambios        from '@/pages/Cambios';
 import Procedimientos from '@/pages/Procedimientos';
 import RiesgosAMFE    from '@/pages/RiesgosAMFE';
+import Comunicaciones from '@/pages/Comunicaciones';
+import PublicComm     from '@/pages/PublicComm';
+import NixaInbox      from '@/pages/NixaInbox';
 import Register from '@/pages/Register';
 import Dashboard from '@/pages/Dashboard';
 import Findings from '@/pages/Findings';
@@ -79,6 +82,7 @@ export default function App() {
             <Route path="/login"      element={<Login />} />
             <Route path="/register"   element={<Register />} />
             <Route path="/reporte-nc" element={<PublicNC />} />
+            <Route path="/c/:token"   element={<PublicComm />} />
             <Route path="/"           element={<Navigate to="/dashboard" replace />} />
             <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
               <Route path="/dashboard"      element={<Dashboard />} />
@@ -99,6 +103,8 @@ export default function App() {
               <Route path="/cambios"        element={<Cambios />} />
               <Route path="/procedimientos" element={<Procedimientos />} />
               <Route path="/riesgos-amfe"   element={<RiesgosAMFE />} />
+              <Route path="/comunicaciones" element={<Comunicaciones />} />
+              <Route path="/inbox-nixa"     element={<NixaInbox />} />
               <Route path="/profile"        element={<Profile />} />
               <Route path="/employees"      element={<Employees />} />
               <Route path="/incidents"      element={<Incidents />} />

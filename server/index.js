@@ -48,6 +48,7 @@ import agentV2Router from "./routes/agent-v2.js";
 import reviewsRouter from './routes/reviews.js';
 import orgchartRouter from './routes/orgchart.js';
 import { objectivesRouter, changesRouter, proceduresRouter, risksAmfeRouter } from './routes/sgi-modules.js';
+import commRouter, { publicRouter as commPublicRouter } from './routes/comunicaciones.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const UPLOADS_DIR = join(__dirname, '../uploads');
@@ -196,6 +197,8 @@ app.use('/api/objetivos', objectivesRouter);
 app.use('/api/cambios', changesRouter);
 app.use('/api/procedimientos', proceduresRouter);
 app.use('/api/riesgos-amfe', risksAmfeRouter);
+app.use('/api/comunicaciones', commRouter);
+app.use('/api/comunicaciones/public', commPublicRouter);
 
 app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok', env: process.env.NODE_ENV, ts: new Date().toISOString() });

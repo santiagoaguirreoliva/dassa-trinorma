@@ -1,0 +1,8 @@
+-- Migration 014 · AMFE inicial seed via IA
+-- Claude Haiku 4.5 procesó los 30 riesgos del F-TRI-08 e infirió:
+-- - detection (1-4) a partir de current_controls
+-- - causes
+-- - process (RRHH/Operación/Comercial/etc)
+-- - recommended_action
+-- - opportunity (cuando aplica)
+-- Resultado: 23 significativos (NPR ≥16) · NPR computed = G × O × D

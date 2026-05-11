@@ -5,6 +5,7 @@ import { api } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { Header } from '@/components/layout/Header';
 import { Spinner, PageContent } from '@/components/ui';
+import { SimplePie } from '@/components/charts';
 
 interface Proc { id:string; code:string; title:string; module:string; description:string; norma:string; status:string; num_steps:number; }
 
@@ -20,6 +21,21 @@ export default function Procedimientos() {
   return (
     <PageContent>
       <Header title="📘 Procedimientos del Sistema" subtitle={`${data.procedures.length} procedimientos · instructivos por módulo`} icon={<BookOpen size={20}/>}/>
+      {/* Charts */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
+        <SimplePie
+          title="📘 Procedimientos por norma"
+          data={Array.from(new Set(data.procedures.map(p=>p.norma||'sin norma'))).map(n=>({
+            name: n, value: data.procedures.filter(p=>(p.norma||'sin norma')===n).length
+          }))}
+        />
+        <SimplePie
+          title="📘 Procedimientos por módulo"
+          data={Array.from(new Set(data.procedures.map(p=>p.module||'sin módulo'))).map(m=>({
+            name: m, value: data.procedures.filter(p=>(p.module||'sin módulo')===m).length
+          }))}
+        />
+      </div>
       <div className="flex justify-end mb-3">
         {isLeader && <button onClick={()=>setShowNew(true)} className="flex items-center gap-1 px-3 py-1.5 bg-dassa-red text-white text-xs font-bold rounded-lg"><Plus size={12}/> Nuevo procedimiento</button>}
       </div>

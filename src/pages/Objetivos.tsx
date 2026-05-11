@@ -5,6 +5,7 @@ import { api } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { Header } from '@/components/layout/Header';
 import { Spinner, PageContent, KPICard } from '@/components/ui';
+import { SimplePie } from '@/components/charts';
 
 interface Objective { id:string; code:string; name:string; description:string; area:string; target_metric:string; target_value:string; admissible_value:string; status:string; num_indicators:number; }
 
@@ -46,6 +47,16 @@ export default function Objetivos() {
         <KPICard label="Activos" value={activos}/>
         <KPICard label="Cumplidos" value={cumplidos}/>
         <KPICard label="No cumplidos" value={noCumplidos} alert={noCumplidos>0}/>
+      </div>
+      <div className="mb-4">
+        <SimplePie
+          title="🎯 Objetivos por estado"
+          data={[
+            { name: 'Activos', value: activos, color: '#F59E0B' },
+            { name: 'Cumplidos', value: cumplidos, color: '#10B981' },
+            { name: 'No cumplidos', value: noCumplidos, color: '#EF4444' },
+          ].filter(d=>d.value>0)}
+        />
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
         {data.objectives.map(o=>(

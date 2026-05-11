@@ -5,6 +5,7 @@ import { api } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { Header } from '@/components/layout/Header';
 import { Spinner, PageContent, KPICard } from '@/components/ui';
+import { SimpleBar, SimplePie } from '@/components/charts';
 
 interface Change { id:string; code:string; title:string; purpose:string; status:string; plazo_target:string; year:number; num_items:number; }
 const STATUS_BG: Record<string,string> = { propuesto:'bg-amber-100 text-amber-700', aprobado:'bg-blue-100 text-blue-700', en_curso:'bg-violet-100 text-violet-700', completado:'bg-emerald-100 text-emerald-700', cancelado:'bg-red-100 text-red-700', postpuesto:'bg-gray-100 text-gray-600' };
@@ -26,6 +27,21 @@ export default function Cambios() {
         <KPICard label="En curso" value={data.changes.filter(c=>c.status==='en_curso').length}/>
         <KPICard label="Completados" value={data.changes.filter(c=>c.status==='completado').length}/>
         <KPICard label="Propuestos" value={data.changes.filter(c=>c.status==='propuesto').length}/>
+      </div>
+      {/* Charts */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
+        <SimplePie
+          title="🍕 Cambios por estado"
+          data={Array.from(new Set(data.changes.map(c=>c.status))).map(s=>({
+            name: s, value: data.changes.filter(c=>c.status===s).length
+          }))}
+        />
+        <SimpleBar
+          title="📊 Cambios por año"
+          data={Array.from(new Set(data.changes.map(c=>c.year))).sort().map(y=>({
+            name: String(y), value: data.changes.filter(c=>c.year===y).length
+          }))}
+        />
       </div>
       <div className="flex justify-end mb-3">
         {isLeader && <button onClick={()=>setShowNew(true)} className="flex items-center gap-1 px-3 py-1.5 bg-dassa-red text-white text-xs font-bold rounded-lg"><Plus size={12}/> Nuevo cambio</button>}

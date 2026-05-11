@@ -139,7 +139,7 @@ async function runFullAudit({ triggeredBy = null, type = 'weekly' } = {}) {
               ${insights.content.replace(/\n/g, '<br>')}
             </div>
           `,
-          ctaUrl: `${process.env.APP_URL || 'https://trinorma.dassa.com.ar'}/auditor`,
+          ctaUrl: `${process.env.APP_URL || 'https://trinorma.dassa.com.ar:8443'}/auditor`,
           ctaLabel: 'Ver dashboard del Auditor',
         }),
       });

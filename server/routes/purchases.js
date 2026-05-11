@@ -186,19 +186,24 @@ router.post('/', async (req, res) => {
   if (!perms.can_request) return res.status(403).json({ error: 'Sin permiso para crear solicitudes' });
 
   const { description, category, priority, estimated_budget,
-          required_date, purpose, recommended_supplier, requesting_area } = req.body;
+          required_date, purpose, recommended_supplier, requesting_area,
+          source_url, long_description, item_specs, photo_urls } = req.body;
   if (!description) return res.status(400).json({ error: 'Descripción requerida' });
 
   try {
     const { rows } = await query(
       `INSERT INTO purchases
          (description, category, priority, estimated_budget, required_date,
-          purpose, recommended_supplier, requesting_area, requested_by, status)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,'borrador')
+          purpose, recommended_supplier, requesting_area, requested_by, status,
+          source_url, long_description, item_specs, photo_urls)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,'borrador',$10,$11,$12,$13)
        RETURNING *`,
       [description, category || 'general', priority || 'media',
        estimated_budget || null, required_date || new Date().toISOString().split('T')[0],
-       purpose || null, recommended_supplier || null, requesting_area || null, req.user.id]
+       purpose || null, recommended_supplier || null, requesting_area || null, req.user.id,
+       source_url || null, long_description || null,
+       item_specs ? JSON.stringify(item_specs) : null,
+       photo_urls && Array.isArray(photo_urls) ? photo_urls : null]
     );
 
     // Notificar a usuarios con permiso de autorizar
@@ -226,10 +231,17 @@ router.post('/', async (req, res) => {
 // PATCH /api/purchases/:id — editar campos (borrador o rechazada para re-enviar)
 router.patch('/:id', async (req, res) => {
   const FIELDS = ['description','category','priority','estimated_budget',
-                  'required_date','purpose','recommended_supplier','requesting_area'];
+                  'required_date','purpose','recommended_supplier','requesting_area',
+                  'source_url','long_description','item_specs','photo_urls'];
   const updates = []; const values = []; let i = 1;
   for (const f of FIELDS) {
-    if (req.body[f] !== undefined) { updates.push(`${f} = $${i++}`); values.push(req.body[f]); }
+    if (req.body[f] !== undefined) {
+      updates.push(`${f} = $${i++}`);
+      // item_specs es JSONB — stringify si llega como objeto
+      values.push(f === 'item_specs' && typeof req.body[f] === 'object' && req.body[f] !== null
+        ? JSON.stringify(req.body[f])
+        : req.body[f]);
+    }
   }
   // Allow re-submitting a rejected purchase
   if (req.body.resubmit) {

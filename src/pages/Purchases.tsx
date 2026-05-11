@@ -3,7 +3,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Plus, X, Loader2, Save, CheckCircle2, XCircle,
   Play, Package, Lock, BarChart3, ShoppingCart,
-  ChevronDown, AlertTriangle, DollarSign
+  ChevronDown, AlertTriangle, DollarSign,
+  Eye, ExternalLink, FileText, MessageSquare, Image as ImageIcon, Calendar
 } from 'lucide-react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid,
@@ -28,6 +29,11 @@ interface Purchase {
   status: string; approval_notes?: string;
   deferred_until?: string; payment_method?: string;
   created_at: string; approved_at?: string;
+  // CAPA 1 · Compras 2.0
+  source_url?: string;
+  long_description?: string;
+  item_specs?: Record<string, any> | null;
+  photo_urls?: string[] | null;
 }
 
 interface Perms { can_request: boolean; can_authorize: boolean; can_execute: boolean; }
@@ -79,7 +85,8 @@ function NewPurchaseModal({ onClose }: { onClose: () => void }) {
   const qc = useQueryClient();
   const [form, setForm] = useState({
     description: '', category: 'general', priority: 'media',
-    estimated_budget: '', required_date: '', purpose: '', recommended_supplier: ''
+    estimated_budget: '', required_date: '', purpose: '', recommended_supplier: '',
+    source_url: '', long_description: ''
   });
   const [error, setError] = useState('');
   const set = (k: string, v: string) => setForm(p => ({ ...p, [k]: v }));
@@ -145,6 +152,26 @@ function NewPurchaseModal({ onClose }: { onClose: () => void }) {
                 <option value="baja">Baja</option>
               </select>
             </div>
+          </div>
+          {/* CAPA 1 · Compras 2.0 · campos enriquecidos */}
+          <div>
+            <label className="label-field flex items-center gap-1.5">
+              <ExternalLink size={12} className="text-dassa-celeste-deep" />
+              Link de origen (Mercado Libre, web del proveedor)
+            </label>
+            <input value={form.source_url} onChange={e => set('source_url', e.target.value)}
+              placeholder="https://articulo.mercadolibre.com.ar/..."
+              className="input-field" />
+            <p className="text-[10px] text-gray-400 mt-1">Si pegás un link, en la próxima fase la IA lo lee y autocompleta los datos.</p>
+          </div>
+          <div>
+            <label className="label-field flex items-center gap-1.5">
+              <FileText size={12} className="text-dassa-celeste-deep" />
+              Descripción detallada / especificaciones técnicas
+            </label>
+            <textarea value={form.long_description} onChange={e => set('long_description', e.target.value)}
+              rows={3} placeholder="Especificaciones, modelo, marca, dimensiones, garantía esperada, condiciones de entrega..."
+              className="input-field resize-none" />
           </div>
           {error && <p className="text-xs text-red-500 bg-red-50 px-3 py-2 rounded-lg">{error}</p>}
         </div>
@@ -302,7 +329,172 @@ function ReceiveModal({ purchase, onClose }: { purchase: Purchase; onClose: () =
   );
 }
 
-// ─── Permissions Tab ──────────────────────────────────────────
+
+// ─── Detail Modal · CAPA 1 ────────────────────────────────────
+function PurchaseDetailModal({ purchaseId, onClose }: { purchaseId: string; onClose: () => void }) {
+  const { data: purchase, isLoading } = useQuery<Purchase & { comments?: any[] }>({
+    queryKey: ['purchase', purchaseId],
+    queryFn: () => api.get(`/purchases/${purchaseId}`).then(r => r.data),
+  });
+
+  if (isLoading || !purchase) {
+    return (
+      <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+        <div className="bg-white rounded-2xl p-12"><Spinner /></div>
+      </div>
+    );
+  }
+
+  const status = STATUS_CONFIG[purchase.status];
+  const fmtMoney = (n?: number) => n ? n.toLocaleString('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }) : '—';
+  const fmtDate  = (d?: string) => d ? new Date(d).toLocaleDateString('es-AR') : '—';
+
+  return (
+    <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
+        {/* Header */}
+        <div className="flex items-start justify-between px-6 py-4 border-b">
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <code className="text-[11px] font-extrabold text-dassa-red-deep bg-dassa-red-tint px-2 py-0.5 rounded">{purchase.code}</code>
+              <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${status?.bg} ${status?.color}`}>{status?.label || purchase.status}</span>
+            </div>
+            <h3 className="text-base font-extrabold text-gray-900 leading-snug">{purchase.description}</h3>
+          </div>
+          <button onClick={onClose}><X size={18} className="text-gray-400" /></button>
+        </div>
+
+        {/* Body scroll */}
+        <div className="flex-1 overflow-y-auto p-6 space-y-5">
+
+          {/* Link de origen */}
+          {purchase.source_url && (
+            <div className="bg-dassa-celeste-tint/40 border border-dassa-celeste/30 rounded-xl p-4">
+              <div className="flex items-center gap-2 text-[11px] font-bold text-dassa-celeste-deep uppercase tracking-wide mb-2">
+                <ExternalLink size={13} /> Link de origen
+              </div>
+              <a href={purchase.source_url} target="_blank" rel="noopener noreferrer"
+                 className="text-sm text-dassa-celeste-deep hover:underline break-all">
+                {purchase.source_url}
+              </a>
+            </div>
+          )}
+
+          {/* Detalle long */}
+          {purchase.long_description && (
+            <div>
+              <div className="flex items-center gap-2 text-[11px] font-bold text-gray-500 uppercase tracking-wide mb-2">
+                <FileText size={13} /> Descripción detallada
+              </div>
+              <div className="bg-gray-50 rounded-xl p-4 text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
+                {purchase.long_description}
+              </div>
+            </div>
+          )}
+
+          {/* Fotos */}
+          {purchase.photo_urls && purchase.photo_urls.length > 0 && (
+            <div>
+              <div className="flex items-center gap-2 text-[11px] font-bold text-gray-500 uppercase tracking-wide mb-2">
+                <ImageIcon size={13} /> Fotos ({purchase.photo_urls.length})
+              </div>
+              <div className="grid grid-cols-3 gap-2">
+                {purchase.photo_urls.map((url, i) => (
+                  <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="block aspect-square bg-gray-100 rounded-lg overflow-hidden hover:opacity-90">
+                    <img src={url} alt={`Foto ${i+1}`} className="w-full h-full object-cover" />
+                  </a>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Datos clave grid */}
+          <div className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
+            <div><span className="text-[11px] text-gray-400 uppercase tracking-wide block">Solicitante</span>
+              <span className="font-semibold text-gray-700">{purchase.requested_by_name}</span></div>
+            <div><span className="text-[11px] text-gray-400 uppercase tracking-wide block">Categoría</span>
+              <span className="font-semibold text-gray-700">{CAT_LABELS[purchase.category] || purchase.category}</span></div>
+            <div><span className="text-[11px] text-gray-400 uppercase tracking-wide block">Monto estimado</span>
+              <span className="font-semibold text-gray-700">{fmtMoney(purchase.estimated_budget)}</span></div>
+            <div><span className="text-[11px] text-gray-400 uppercase tracking-wide block">Monto final</span>
+              <span className="font-bold text-dassa-red-deep">{fmtMoney(purchase.amount)}</span></div>
+            <div><span className="text-[11px] text-gray-400 uppercase tracking-wide block">Fecha requerida</span>
+              <span className="font-semibold text-gray-700">{fmtDate(purchase.required_date)}</span></div>
+            <div><span className="text-[11px] text-gray-400 uppercase tracking-wide block">Fecha de compra</span>
+              <span className="font-semibold text-gray-700">{fmtDate(purchase.purchase_date)}</span></div>
+            <div><span className="text-[11px] text-gray-400 uppercase tracking-wide block">Proveedor sugerido</span>
+              <span className="font-semibold text-gray-700">{purchase.recommended_supplier || '—'}</span></div>
+            <div><span className="text-[11px] text-gray-400 uppercase tracking-wide block">Proveedor real</span>
+              <span className="font-semibold text-gray-700">{purchase.supplier_name || '—'}</span></div>
+            <div><span className="text-[11px] text-gray-400 uppercase tracking-wide block">Factura</span>
+              <span className="font-semibold text-gray-700">{purchase.invoice_number || '—'}</span></div>
+            <div><span className="text-[11px] text-gray-400 uppercase tracking-wide block">Método de pago</span>
+              <span className="font-semibold text-gray-700">{purchase.payment_method || '—'}</span></div>
+          </div>
+
+          {/* Motivo */}
+          {purchase.purpose && (
+            <div>
+              <div className="text-[11px] font-bold text-gray-500 uppercase tracking-wide mb-2">Motivo / Propósito</div>
+              <div className="bg-gray-50 rounded-xl p-3 text-sm text-gray-700">{purchase.purpose}</div>
+            </div>
+          )}
+
+          {/* Specs técnicas parseadas */}
+          {purchase.item_specs && Object.keys(purchase.item_specs).length > 0 && (
+            <div>
+              <div className="flex items-center gap-2 text-[11px] font-bold text-gray-500 uppercase tracking-wide mb-2">
+                <Package size={13} /> Datos del link de origen
+              </div>
+              <div className="bg-gray-50 rounded-xl p-4 text-xs font-mono text-gray-700 whitespace-pre-wrap">
+                {JSON.stringify(purchase.item_specs, null, 2)}
+              </div>
+            </div>
+          )}
+
+          {/* Notas de autorización si fue rechazada */}
+          {purchase.status === 'rechazada' && purchase.approval_notes && (
+            <div className="bg-red-50 border border-red-200 rounded-xl p-4">
+              <div className="text-[11px] font-bold text-red-600 uppercase tracking-wide mb-1">Motivo de rechazo</div>
+              <p className="text-sm text-red-800">{purchase.approval_notes}</p>
+            </div>
+          )}
+
+          {/* Timeline de comentarios */}
+          {purchase.comments && purchase.comments.length > 0 && (
+            <div>
+              <div className="flex items-center gap-2 text-[11px] font-bold text-gray-500 uppercase tracking-wide mb-3">
+                <MessageSquare size={13} /> Comentarios ({purchase.comments.length})
+              </div>
+              <div className="space-y-3">
+                {purchase.comments.map((c: any) => (
+                  <div key={c.id} className="flex gap-3">
+                    <Avatar name={c.user_name} size={28} />
+                    <div className="flex-1 bg-gray-50 rounded-xl p-3">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-xs font-bold text-gray-700">{c.user_name}</span>
+                        <span className="text-[10px] text-gray-400">{new Date(c.created_at).toLocaleString('es-AR')}</span>
+                      </div>
+                      <p className="text-xs text-gray-600 whitespace-pre-wrap">{c.text || c.content}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="px-6 py-3 border-t bg-gray-50 flex items-center justify-between text-[11px] text-gray-500">
+          <span>Creada: {fmtDate(purchase.created_at)}</span>
+          {purchase.approved_at && <span>Autorizada: {fmtDate(purchase.approved_at)} por {purchase.approved_by_name}</span>}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Permissions Tab ───────────────────────────────────────────────────────────────────────────────
 function PermissionsTab() {
   const qc = useQueryClient();
   const { data: perms = [], isLoading } = useQuery<any[]>({
@@ -447,6 +639,7 @@ export default function Purchases() {
   const [tab, setTab] = useState<'solicitudes' | 'reportes' | 'permisos'>('solicitudes');
   const [showNew, setShowNew] = useState(false);
   const [authorizing, setAuthorizing] = useState<Purchase | null>(null);
+  const [detailingId, setDetailingId] = useState<string | null>(null);
   const [receiving, setReceiving] = useState<Purchase | null>(null);
   const [filterStatus, setFilterStatus] = useState('');
   const [filterCat, setFilterCat] = useState('');
@@ -601,6 +794,11 @@ export default function Purchases() {
                         </td>
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-1">
+                            {/* Ver detalle — siempre disponible */}
+                            <button onClick={() => setDetailingId(p.id)}
+                              className="flex items-center gap-1 px-2 py-1.5 bg-gray-100 text-gray-700 rounded-lg text-[10px] font-bold hover:bg-gray-200">
+                              <Eye size={11} /> Ver
+                            </button>
                             {/* Autorizar — solo si borrador y tiene permiso */}
                             {p.status === 'borrador' && myPerms?.can_authorize && (
                               <button onClick={() => setAuthorizing(p)}
@@ -644,6 +842,7 @@ export default function Purchases() {
       {showNew    && <NewPurchaseModal onClose={() => setShowNew(false)} />}
       {authorizing && <AuthorizeModal purchase={authorizing} onClose={() => setAuthorizing(null)} />}
       {receiving   && <ReceiveModal   purchase={receiving}   onClose={() => setReceiving(null)} />}
+      {detailingId && <PurchaseDetailModal purchaseId={detailingId} onClose={() => setDetailingId(null)} />}
     </>
   );
 }

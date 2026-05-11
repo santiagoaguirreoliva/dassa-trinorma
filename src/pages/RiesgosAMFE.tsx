@@ -1,0 +1,107 @@
+import { useQuery, useMutation } from '@tanstack/react-query';
+import { AlertTriangle, Sparkles, Loader2 } from 'lucide-react';
+import { useState } from 'react';
+import { api } from '@/lib/api';
+import { useAuth } from '@/contexts/AuthContext';
+import { Header } from '@/components/layout/Header';
+import { Spinner, PageContent, KPICard } from '@/components/ui';
+
+interface Risk { id:string; code:string; activity:string; hazard:string; severity:number; probability:number; detection:number; npr:number; npr_level:string; process:string; recommended_action:string; causes:string; }
+
+export default function RiesgosAMFE() {
+  const { user } = useAuth();
+  const isAdmin = ['master_admin','director','sgi_leader'].includes(user?.role||'');
+  const [proc, setProc] = useState<string>('');
+  const [suggestions, setSuggestions] = useState<any[]>([]);
+
+  const { data, isLoading } = useQuery<{ok:boolean;risks:Risk[]}>({
+    queryKey: ['riesgos-amfe', proc],
+    queryFn: () => api.get(`/riesgos-amfe${proc?`?process=${proc}`:''}`),
+  });
+
+  const suggestMut = useMutation({
+    mutationFn: () => api.post('/riesgos-amfe/sugerir-ia', {}),
+    onSuccess: (r:any) => setSuggestions(r.suggestions || []),
+  });
+
+  if (isLoading || !data) return <PageContent><Spinner/></PageContent>;
+  const significativos = data.risks.filter(r=>r.npr_level==='significativo').length;
+  const promNPR = data.risks.length ? Math.round(data.risks.reduce((s,r)=>s+(r.npr||0),0)/data.risks.length) : 0;
+  const processes = Array.from(new Set(data.risks.map(r=>r.process).filter(Boolean)));
+
+  return (
+    <PageContent>
+      <Header title="⚠ Matriz de Riesgos AMFE" subtitle={`${data.risks.length} riesgos · NPR = G × O × D · ≥16 significativo`} icon={<AlertTriangle size={20}/>}/>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+        <KPICard label="Total riesgos" value={data.risks.length}/>
+        <KPICard label="Significativos" value={significativos} sub="NPR ≥ 16" alert={significativos>0}/>
+        <KPICard label="NPR promedio" value={promNPR}/>
+        <KPICard label="Procesos" value={processes.length}/>
+      </div>
+      <div className="flex items-center gap-2 mb-4">
+        <select value={proc} onChange={e=>setProc(e.target.value)} className="input-field text-xs">
+          <option value="">Todos los procesos</option>
+          {processes.map(p=><option key={p} value={p}>{p}</option>)}
+        </select>
+        {isAdmin && (
+          <button onClick={()=>suggestMut.mutate()} disabled={suggestMut.isPending}
+            className="flex items-center gap-1.5 px-4 py-2 bg-dassa-celeste-deep text-white text-xs font-bold rounded-lg hover:bg-dassa-celeste disabled:opacity-50">
+            {suggestMut.isPending? <Loader2 size={12} className="animate-spin"/> : <Sparkles size={12}/>}
+            Sugerir riesgos con IA
+          </button>
+        )}
+      </div>
+
+      {suggestions.length>0 && (
+        <div className="bg-dassa-celeste-tint/30 border-2 border-dashed border-dassa-celeste/40 rounded-xl p-4 mb-4">
+          <h4 className="text-xs font-bold text-dassa-celeste-deep mb-2">🪄 {suggestions.length} riesgos sugeridos por la IA</h4>
+          <div className="space-y-2">
+            {suggestions.map((s,i)=>(
+              <div key={i} className="bg-white p-3 rounded border border-gray-200">
+                <div className="font-bold text-xs">{s.process} · {s.activity}</div>
+                <div className="text-[11px] text-gray-700">{s.hazard}</div>
+                <div className="text-[10px] text-gray-500 mt-1">G={s.severity} O={s.probability} D={s.detection} → NPR={s.severity*s.probability*s.detection}</div>
+                {s.recommended_action && <div className="text-[10px] mt-1"><strong>Acción:</strong> {s.recommended_action}</div>}
+              </div>
+            ))}
+          </div>
+          <button onClick={()=>setSuggestions([])} className="text-[10px] text-gray-500 mt-2">Cerrar sugerencias</button>
+        </div>
+      )}
+
+      <div className="bg-white border border-gray-200 rounded-xl overflow-hidden overflow-x-auto">
+        <table className="w-full text-xs">
+          <thead className="bg-gray-50 border-b">
+            <tr>
+              <th className="text-left px-3 py-2 text-[10px] font-bold text-gray-500 uppercase">Código</th>
+              <th className="text-left px-3 py-2 text-[10px] font-bold text-gray-500 uppercase">Actividad / Peligro</th>
+              <th className="text-center px-2 py-2 text-[10px] font-bold text-gray-500 uppercase">G</th>
+              <th className="text-center px-2 py-2 text-[10px] font-bold text-gray-500 uppercase">O</th>
+              <th className="text-center px-2 py-2 text-[10px] font-bold text-gray-500 uppercase">D</th>
+              <th className="text-center px-2 py-2 text-[10px] font-bold text-gray-500 uppercase">NPR</th>
+              <th className="text-left px-3 py-2 text-[10px] font-bold text-gray-500 uppercase">Proceso</th>
+              <th className="text-left px-3 py-2 text-[10px] font-bold text-gray-500 uppercase">Acción</th>
+            </tr>
+          </thead>
+          <tbody>
+            {data.risks.map(r=>(
+              <tr key={r.id} className="border-b hover:bg-gray-50">
+                <td className="px-3 py-2"><code className="text-[10px] font-bold text-dassa-red-deep">{r.code}</code></td>
+                <td className="px-3 py-2 max-w-xs">
+                  <div className="font-semibold text-gray-900">{r.activity}</div>
+                  <div className="text-[10px] text-gray-500">{r.hazard}</div>
+                </td>
+                <td className="text-center px-2 py-2">{r.severity}</td>
+                <td className="text-center px-2 py-2">{r.probability}</td>
+                <td className="text-center px-2 py-2">{r.detection ?? '—'}</td>
+                <td className={`text-center px-2 py-2 font-bold ${r.npr_level==='significativo'?'text-red-600':'text-gray-600'}`}>{r.npr ?? '—'}</td>
+                <td className="px-3 py-2 text-[10px] text-gray-600">{r.process||'—'}</td>
+                <td className="px-3 py-2 text-[10px] text-gray-700 line-clamp-2 max-w-xs">{r.recommended_action||'—'}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </PageContent>
+  );
+}

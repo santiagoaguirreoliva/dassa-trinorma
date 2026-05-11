@@ -4,6 +4,15 @@ import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import AppLayout from '@/components/layout/AppLayout';
 import Login from '@/pages/Login';
 import AgentSettings  from '@/pages/AgentSettings';
+import Ciclo2026      from '@/pages/Ciclo2026';
+import Organigrama    from '@/pages/Organigrama';
+import Puestos        from '@/pages/Puestos';
+import PuestoDetalle  from '@/pages/PuestoDetalle';
+import MiPuesto       from '@/pages/MiPuesto';
+import Objetivos      from '@/pages/Objetivos';
+import Cambios        from '@/pages/Cambios';
+import Procedimientos from '@/pages/Procedimientos';
+import RiesgosAMFE    from '@/pages/RiesgosAMFE';
 import Register from '@/pages/Register';
 import Dashboard from '@/pages/Dashboard';
 import Findings from '@/pages/Findings';
@@ -81,6 +90,15 @@ export default function App() {
               <Route path="/trainings"      element={<Trainings />} />
               <Route path="/users"          element={<Users />} />
               <Route path="/agent-settings"  element={<AgentSettings />} />
+              <Route path="/ciclo/2026"     element={<Ciclo2026 />} />
+              <Route path="/organigrama"    element={<Organigrama />} />
+              <Route path="/puestos"        element={<Puestos />} />
+              <Route path="/puestos/:id"    element={<PuestoDetalle />} />
+              <Route path="/mi-puesto"      element={<MiPuesto />} />
+              <Route path="/objetivos"      element={<Objetivos />} />
+              <Route path="/cambios"        element={<Cambios />} />
+              <Route path="/procedimientos" element={<Procedimientos />} />
+              <Route path="/riesgos-amfe"   element={<RiesgosAMFE />} />
               <Route path="/profile"        element={<Profile />} />
               <Route path="/employees"      element={<Employees />} />
               <Route path="/incidents"      element={<Incidents />} />

@@ -46,6 +46,8 @@ import surveysRouter        from './routes/surveys.js';
 // import agentRouter (legacy Ollama/Gemini) archivado en _archive/
 import agentV2Router from "./routes/agent-v2.js";
 import reviewsRouter from './routes/reviews.js';
+import orgchartRouter from './routes/orgchart.js';
+import { objectivesRouter, changesRouter, proceduresRouter, risksAmfeRouter } from './routes/sgi-modules.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const UPLOADS_DIR = join(__dirname, '../uploads');
@@ -189,6 +191,11 @@ app.use('/api/biblioteca',      bibliotecaRouter);
 app.use('/api/surveys',         surveysRouter);
 app.use('/api/agent', agentV2Router);
 app.use('/api/reviews', reviewsRouter);
+app.use('/api/orgchart', orgchartRouter);
+app.use('/api/objetivos', objectivesRouter);
+app.use('/api/cambios', changesRouter);
+app.use('/api/procedimientos', proceduresRouter);
+app.use('/api/riesgos-amfe', risksAmfeRouter);
 
 app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok', env: process.env.NODE_ENV, ts: new Date().toISOString() });

@@ -1,0 +1,6 @@
+-- Migration 015 · Correcciones de organigrama
+-- - Santiago Director también cubre Líder SGI (Manuel deja SGI)
+-- - Alexis Dalpra pasa de Sistemas a Vendedor
+-- - Enzo Nieto · nuevo Vendedor
+-- - Sistemas tercerizado (Yamil Syspro), reporta a Dirección
+-- - Nuevo sector Tecnología bajo Dirección con Santi + Facundo Lastra

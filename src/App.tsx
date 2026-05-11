@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import AppLayout from '@/components/layout/AppLayout';
 import Login from '@/pages/Login';
+import AgentSettings  from '@/pages/AgentSettings';
 import Register from '@/pages/Register';
 import Dashboard from '@/pages/Dashboard';
 import Findings from '@/pages/Findings';
@@ -79,6 +80,7 @@ export default function App() {
               <Route path="/committee"      element={<Committee />} />
               <Route path="/trainings"      element={<Trainings />} />
               <Route path="/users"          element={<Users />} />
+              <Route path="/agent-settings"  element={<AgentSettings />} />
               <Route path="/profile"        element={<Profile />} />
               <Route path="/employees"      element={<Employees />} />
               <Route path="/incidents"      element={<Incidents />} />

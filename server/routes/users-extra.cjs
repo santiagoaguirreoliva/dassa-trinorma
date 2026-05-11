@@ -202,7 +202,7 @@ router.post('/access-requests', async (req, res) => {
             ${department ? `<p>Área: ${department}</p>` : ''}
             ${message ? `<p>Mensaje:<br><em>${message}</em></p>` : ''}
           `,
-          ctaUrl: `${process.env.APP_URL || 'https://trinorma.dassa.com.ar:8443'}/users?tab=requests`,
+          ctaUrl: `${process.env.APP_URL || 'https://trinorma.dassa.com.ar'}/users?tab=requests`,
           ctaLabel: 'Revisar solicitud',
         }),
       });

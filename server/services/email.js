@@ -14,7 +14,7 @@ const transporter = nodemailer.createTransport({
 });
 
 const FROM = process.env.SMTP_FROM || 'DASSA SGI <no-reply@dassa.com.ar>';
-const APP_URL = process.env.APP_URL || 'https://trinorma.dassa.com.ar:8443';
+const APP_URL = process.env.APP_URL || 'https://trinorma.dassa.com.ar';
 
 function priorityLabel(p) {
   return { urgente: 'URGENTE', alta: 'ALTA', media: 'Media', baja: 'Baja' }[p] || p;

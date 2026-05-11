@@ -8,7 +8,7 @@ const SMTP_PORT = parseInt(process.env.SMTP_PORT || '587', 10);
 const SMTP_USER = process.env.SMTP_USER || 'info@dassa.com.ar';
 const SMTP_PASS = process.env.SMTP_PASS;  // App password de Gmail
 const SMTP_FROM = process.env.SMTP_FROM || `"DASSA SGI" <${SMTP_USER}>`;
-const APP_URL   = process.env.APP_URL || 'https://trinorma.dassa.com.ar:8443';
+const APP_URL   = process.env.APP_URL || 'https://trinorma.dassa.com.ar';
 
 let transport = null;
 function getTransport() {

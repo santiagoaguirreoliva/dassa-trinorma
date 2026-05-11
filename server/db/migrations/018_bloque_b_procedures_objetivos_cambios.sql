@@ -173,7 +173,7 @@ CREATE INDEX IF NOT EXISTS idx_committee_tasks_meeting ON committee_tasks(meetin
 CREATE INDEX IF NOT EXISTS idx_employee_docs_emp       ON employee_documents(employee_id);
 CREATE INDEX IF NOT EXISTS idx_employee_certs_emp      ON employee_certifications(employee_id);
 CREATE INDEX IF NOT EXISTS idx_purchase_comments_purch ON purchase_comments(purchase_id);
-CREATE INDEX IF NOT EXISTS idx_contact_lists_owner     ON contact_lists(owner_id);
+CREATE INDEX IF NOT EXISTS idx_contact_lists_created ON contact_lists(created_by);
 CREATE INDEX IF NOT EXISTS idx_context_strategies_resp ON context_strategies(responsible_id);
 
 COMMIT;

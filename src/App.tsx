@@ -17,6 +17,7 @@ import Comunicaciones from '@/pages/Comunicaciones';
 import PublicComm     from '@/pages/PublicComm';
 import NixaInbox      from '@/pages/NixaInbox';
 import BIOperativo    from '@/pages/BIOperativo';
+import CalendarioNixa from '@/pages/CalendarioNixa';
 import Register from '@/pages/Register';
 import Dashboard from '@/pages/Dashboard';
 import Findings from '@/pages/Findings';
@@ -107,6 +108,7 @@ export default function App() {
               <Route path="/comunicaciones" element={<Comunicaciones />} />
               <Route path="/inbox-nixa"     element={<NixaInbox />} />
               <Route path="/bi-operativo"   element={<BIOperativo />} />
+              <Route path="/calendario-nixa" element={<CalendarioNixa />} />
               <Route path="/profile"        element={<Profile />} />
               <Route path="/employees"      element={<Employees />} />
               <Route path="/incidents"      element={<Incidents />} />

@@ -60,6 +60,7 @@ import orgchartRouter from './routes/orgchart.js';
 import { objectivesRouter, changesRouter, proceduresRouter, risksAmfeRouter } from './routes/sgi-modules.js';
 import commRouter, { publicRouter as commPublicRouter } from './routes/comunicaciones.js';
 import aiQualityRouter from './routes/ai-quality.js';
+import calendarNixaRouter from './routes/calendar-nixa.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const UPLOADS_DIR = join(__dirname, '../uploads');
@@ -211,6 +212,7 @@ app.use('/api/riesgos-amfe', risksAmfeRouter);
 app.use('/api/comunicaciones/public', commPublicRouter);
 app.use('/api/comunicaciones', commRouter);
 app.use('/api/ai-quality', aiQualityRouter);
+app.use('/api/calendar', calendarNixaRouter);
 
 app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok', env: process.env.NODE_ENV, ts: new Date().toISOString() });

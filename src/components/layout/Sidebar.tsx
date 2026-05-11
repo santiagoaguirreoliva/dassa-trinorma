@@ -34,6 +34,7 @@ function buildNav(openFindings: number, legalAlerts: number, role?: string): Nav
       items: [
         { path: '/ciclo/2026',     label: 'Ciclo 2026 · DAG',     icon: <Workflow size={15} /> },
         { path: '/procedimientos', label: 'Procedimientos',       icon: <BookOpen2 size={15} /> },
+        { path: '/calendario-nixa', label: 'Calendario NIXA',  icon: <CalendarDays size={15} /> },
         ...(isAdmin || isAuditor ? [{ path: '/inbox-nixa', label: 'Inbox NIXA', icon: <Inbox size={15} /> }] : []),
       ],
     },

@@ -80,6 +80,7 @@ function buildNav(openFindings: number, legalAlerts: number, role?: string): Nav
       group: 'Operativo',
       emoji: '📦',
       items: [
+        { path: '/bi-operativo', label: 'BI Operativo',  icon: <BarChart3 size={15} /> },
         { path: '/purchases',   label: 'Compras',        icon: <ShoppingCart size={15} /> },
         { path: '/organigrama', label: 'Organigrama',    icon: <FolderTree size={15} /> },
         { path: '/puestos',     label: 'Puestos / Fichas', icon: <Briefcase size={15} /> },

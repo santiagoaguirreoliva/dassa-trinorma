@@ -16,6 +16,7 @@ import RiesgosAMFE    from '@/pages/RiesgosAMFE';
 import Comunicaciones from '@/pages/Comunicaciones';
 import PublicComm     from '@/pages/PublicComm';
 import NixaInbox      from '@/pages/NixaInbox';
+import BIOperativo    from '@/pages/BIOperativo';
 import Register from '@/pages/Register';
 import Dashboard from '@/pages/Dashboard';
 import Findings from '@/pages/Findings';
@@ -105,6 +106,7 @@ export default function App() {
               <Route path="/riesgos-amfe"   element={<RiesgosAMFE />} />
               <Route path="/comunicaciones" element={<Comunicaciones />} />
               <Route path="/inbox-nixa"     element={<NixaInbox />} />
+              <Route path="/bi-operativo"   element={<BIOperativo />} />
               <Route path="/profile"        element={<Profile />} />
               <Route path="/employees"      element={<Employees />} />
               <Route path="/incidents"      element={<Incidents />} />

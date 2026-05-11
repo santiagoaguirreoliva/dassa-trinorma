@@ -29,6 +29,7 @@ const DEFAULTS = {
     'consultar_incidentes','consultar_proveedores','resumen_dashboard',
     'consultar_documentos','crear_hallazgo','historial_compras',
     'consultar_estado_ciclo','iniciar_revision','validar_revision',
+    'consultar_objetivos','consultar_cambios','consultar_procedimientos','consultar_organigrama',
   ],
   assistant_system_prompt_extra: '',
 };
@@ -240,6 +241,35 @@ const ALL_TOOLS = [
       },
       required: ['review_id','approve'],
     },
+  },
+  {
+    name: 'consultar_objetivos',
+    description: 'Lista objetivos corporativos del SGI por año. Filtra por estado (activo/cumplido/no_cumplido/postpuesto).',
+    input_schema: { type: 'object', properties: {
+      year: { type: 'integer' },
+      status: { type: 'string', enum: ['activo','cumplido','no_cumplido','postpuesto','todos'] }
+    }},
+  },
+  {
+    name: 'consultar_cambios',
+    description: 'Lista gestión de cambios (proyectos/mejoras) del SGI por año y estado.',
+    input_schema: { type: 'object', properties: {
+      year: { type: 'integer' },
+      status: { type: 'string', enum: ['propuesto','aprobado','en_curso','completado','cancelado','postpuesto','todos'] }
+    }},
+  },
+  {
+    name: 'consultar_procedimientos',
+    description: 'Lista los procedimientos del sistema (instructivos de cómo completar cada módulo). Filtra por módulo o búsqueda.',
+    input_schema: { type: 'object', properties: {
+      module: { type: 'string', description: 'findings|risks|purchases|trainings|incidents|etc.' },
+      query: { type: 'string' }
+    }},
+  },
+  {
+    name: 'consultar_organigrama',
+    description: 'Devuelve el organigrama de DASSA: nodos, áreas y puestos con empleados asignados.',
+    input_schema: { type: 'object', properties: {} },
   }
 ];
 
@@ -457,6 +487,59 @@ async function h_validar_revision({ review_id, approve, notes }, ctx) {
   return { ok: true, status, entity_type: r[0].entity_type, message: approve ? 'Validada. Las child reviews bloqueadas se destrabarán automáticamente.' : 'Rechazada' };
 }
 
+
+
+async function h_consultar_objetivos({ year, status }) {
+  const params = [];
+  let conds = [];
+  if (year) { params.push(year); conds.push(`year = $${params.length}`); }
+  if (status && status !== 'todos') { params.push(status); conds.push(`status = $${params.length}`); }
+  const where = conds.length ? 'WHERE ' + conds.join(' AND ') : '';
+  const { rows } = await pool.query(
+    `SELECT code, name, area, target_value, status FROM objectives ${where} ORDER BY code LIMIT 30`, params
+  );
+  return { found: rows.length, objectives: rows };
+}
+
+async function h_consultar_cambios({ year, status }) {
+  const params = [];
+  let conds = [];
+  if (year) { params.push(year); conds.push(`year = $${params.length}`); }
+  if (status && status !== 'todos') { params.push(status); conds.push(`status = $${params.length}`); }
+  const where = conds.length ? 'WHERE ' + conds.join(' AND ') : '';
+  const { rows } = await pool.query(
+    `SELECT code, title, status, plazo_target FROM change_requests ${where} ORDER BY code DESC LIMIT 30`, params
+  );
+  return { found: rows.length, changes: rows };
+}
+
+async function h_consultar_procedimientos({ module, query }) {
+  const params = [];
+  let conds = [];
+  if (module) { params.push(module); conds.push(`module = $${params.length}`); }
+  if (query) { params.push(`%${query}%`); conds.push(`(title ILIKE $${params.length} OR description ILIKE $${params.length})`); }
+  const where = conds.length ? 'WHERE ' + conds.join(' AND ') : '';
+  const { rows } = await pool.query(
+    `SELECT code, title, module, description, norma, status FROM procedures ${where} ORDER BY code LIMIT 20`, params
+  );
+  return { found: rows.length, procedures: rows };
+}
+
+async function h_consultar_organigrama() {
+  const { rows: nodes } = await pool.query(`SELECT id, name, parent_id, type, level, area FROM org_chart_nodes WHERE is_active = TRUE ORDER BY level, sort_order`);
+  const { rows: profiles } = await pool.query(`
+    SELECT jp.role_label, jp.area,
+           string_agg(e.full_name, ', ') AS empleados
+    FROM job_profiles jp
+    LEFT JOIN job_profile_employees jpe ON jpe.profile_id = jp.id AND jpe.until IS NULL
+    LEFT JOIN employees e ON e.id = jpe.employee_id
+    WHERE jp.is_active = TRUE
+    GROUP BY jp.role_label, jp.area
+    ORDER BY jp.area, jp.role_label`);
+  return { nodes_count: nodes.length, puestos: profiles };
+}
+
+
 const HANDLERS = {
   consultar_tareas: h_consultar_tareas,
   consultar_hallazgos: h_consultar_hallazgos,
@@ -471,6 +554,10 @@ const HANDLERS = {
   consultar_estado_ciclo: h_consultar_estado_ciclo,
   iniciar_revision: h_iniciar_revision,
   validar_revision: h_validar_revision,
+  consultar_objetivos: h_consultar_objetivos,
+  consultar_cambios: h_consultar_cambios,
+  consultar_procedimientos: h_consultar_procedimientos,
+  consultar_organigrama: h_consultar_organigrama,
 };
 
 // ───────────────────────────────────────────────────────────────

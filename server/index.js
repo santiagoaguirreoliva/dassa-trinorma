@@ -61,6 +61,8 @@ import { objectivesRouter, changesRouter, proceduresRouter, risksAmfeRouter } fr
 import commRouter, { publicRouter as commPublicRouter } from './routes/comunicaciones.js';
 import aiQualityRouter from './routes/ai-quality.js';
 import calendarNixaRouter from './routes/calendar-nixa.js';
+import onboardingRouter from './routes/onboarding.js';
+import tenantsAdminRouter from './routes/tenants-admin.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const UPLOADS_DIR = join(__dirname, '../uploads');
@@ -213,6 +215,8 @@ app.use('/api/comunicaciones/public', commPublicRouter);
 app.use('/api/comunicaciones', commRouter);
 app.use('/api/ai-quality', aiQualityRouter);
 app.use('/api/calendar', calendarNixaRouter);
+app.use('/api/onboarding', onboardingRouter);  // PÚBLICO
+app.use('/api/tenants', tenantsAdminRouter);
 
 app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok', env: process.env.NODE_ENV, ts: new Date().toISOString() });

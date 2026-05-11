@@ -2,6 +2,7 @@ import { useQuery, useMutation } from '@tanstack/react-query';
 import { useParams } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { CheckCircle2, Megaphone, Loader2, ShieldCheck } from 'lucide-react';
+import MarkdownRender from '@/components/MarkdownRender';
 
 export default function PublicComm() {
   const { token } = useParams();
@@ -71,7 +72,7 @@ export default function PublicComm() {
           </div>
 
           <div className="p-6">
-            <div className="prose prose-sm max-w-none text-gray-700 whitespace-pre-wrap leading-relaxed">{c.body_md}</div>
+            <MarkdownRender content={c.body_md}/>
           </div>
 
           {!confirmed && (

@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { Megaphone, Send, Eye, Link as LinkIcon, Loader2, CheckCircle2, MessageCircle, Copy } from 'lucide-react';
+import CommunicationEditor from '@/components/CommunicationEditor';
 import { api } from '@/lib/api';
 import { Header } from '@/components/layout/Header';
 import { Spinner, PageContent, KPICard } from '@/components/ui';
@@ -111,7 +112,7 @@ function NewCommModal({ onClose }: { onClose:()=>void }) {
       <div className="bg-white rounded-2xl w-full max-w-lg p-6" onClick={e=>e.stopPropagation()}>
         <h3 className="text-lg font-extrabold mb-4">Nueva Comunicación</h3>
         <input placeholder="Título" value={form.title} onChange={e=>setForm({...form, title:e.target.value})} className="input-field w-full mb-2"/>
-        <textarea placeholder="Cuerpo (markdown)" rows={6} value={form.body_md} onChange={e=>setForm({...form, body_md:e.target.value})} className="input-field w-full mb-2"/>
+        <CommunicationEditor value={form.body_md} onChange={(v: string)=>setForm({...form, body_md: v})}/>
         <select value={form.category} onChange={e=>setForm({...form, category:e.target.value})} className="input-field w-full mb-2">
           <option value="info">Info general</option>
           <option value="politica">Política</option>

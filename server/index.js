@@ -6,7 +6,7 @@ const usersExtraRouter = require('./routes/users-extra.cjs');
 const auditorRouter = require('./routes/auditor.cjs');
 const tasksMineRouter = require('./routes/tasks-mine.cjs');
 const profilesRouter = require('./routes/profiles.cjs');
-const agentV2Router = require('./routes/agent-v2.cjs');
+
 const { startScheduler: startAuditorScheduler } = require('./services/auditor-cron.cjs');
 
 import express from 'express';
@@ -44,7 +44,7 @@ import contextRouter        from './routes/context.js';
 import bibliotecaRouter     from './routes/biblioteca.js';
 import surveysRouter        from './routes/surveys.js';
 // import agentRouter (legacy Ollama/Gemini) archivado en _archive/
-// import agentRouter          from './routes/agent.js';
+// import agentV2Router from './routes/agent-v2.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const UPLOADS_DIR = join(__dirname, '../uploads');

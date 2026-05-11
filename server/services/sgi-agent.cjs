@@ -237,15 +237,15 @@ async function h_consultar_tareas({ usuario_email, estado, solo_vencidas, query_
 
 async function h_consultar_hallazgos({ estado, severidad, categoria, usuario_email, query_texto }) {
   const conds = []; const params = [];
-  if (estado && estado !== 'todas')    { params.push(estado);    conds.push(`f.status = $${params.length}`); }
-  if (severidad && severidad !== 'todas') { params.push(severidad); conds.push(`f.severity = $${params.length}`); }
-  if (categoria && categoria !== 'todas') { params.push(categoria); conds.push(`f.category = $${params.length}`); }
+  if (estado && estado !== 'todas') { params.push(estado); conds.push(`f.status = $${params.length}`); }
+  // 'categoria' del prompt mapea a 'finding_type' real (NC/desvio/mejora/oportunidad)
+  if (categoria && categoria !== 'todas') { params.push(categoria); conds.push(`f.finding_type = $${params.length}`); }
   if (usuario_email) { params.push(usuario_email); conds.push(`u.email ILIKE $${params.length}`); }
   if (query_texto)   { params.push(`%${query_texto}%`); conds.push(`(f.title ILIKE $${params.length} OR f.description ILIKE $${params.length})`); }
   const where = conds.length ? 'WHERE ' + conds.join(' AND ') : '';
   const { rows } = await pool.query(
-    `SELECT f.code, f.title, f.category, f.severity, f.status, f.created_at,
-            u.full_name AS assigned_to
+    `SELECT f.code, f.title, f.finding_type, f.status, f.area, f.due_date, f.created_at,
+            u.full_name AS assigned_to_name
        FROM findings f LEFT JOIN users u ON u.id = f.assigned_to
        ${where} ORDER BY f.created_at DESC LIMIT 15`,
     params
@@ -256,9 +256,9 @@ async function h_consultar_hallazgos({ estado, severidad, categoria, usuario_ema
 async function h_crear_hallazgo({ titulo, descripcion, categoria, severidad, norma, area }, ctx) {
   if (!ctx?.userId) return { error: 'Necesito el contexto del usuario para crear el hallazgo' };
   const { rows } = await pool.query(
-    `INSERT INTO findings (title, description, category, severity, norm, area, status, created_by)
-     VALUES ($1,$2,$3,$4,$5,$6,'abierta',$7) RETURNING code, id, title, category, severity, status`,
-    [titulo, descripcion, categoria, severidad || 'moderada', norma || 'ninguna', area || null, ctx.userId]
+    `INSERT INTO findings (title, description, finding_type, area, status, reported_by)
+     VALUES ($1,$2,$3,$4,'abierta',$5) RETURNING code, id, title, finding_type, status`,
+    [titulo, descripcion, categoria, area || null, ctx.userId]
   );
   return { ok: true, finding: rows[0], message: `Hallazgo ${rows[0].code} creado en estado borrador. Revisalo en /findings y completá los datos faltantes.` };
 }
@@ -277,22 +277,30 @@ async function h_consultar_riesgos({ nivel, actividad, solo_activos = true }) {
 }
 
 async function h_consultar_legal({ dias_vencimiento, jurisdiccion }) {
-  const conds = []; const params = [];
-  if (dias_vencimiento) { params.push(dias_vencimiento); conds.push(`fecha_vencimiento BETWEEN NOW() AND NOW() + INTERVAL '${dias_vencimiento} days'`); }
-  if (jurisdiccion && jurisdiccion !== 'todas') { params.push(jurisdiccion); conds.push(`jurisdiccion = $${params.length}`); }
-  const where = conds.length ? 'WHERE ' + conds.join(' AND ') : '';
+  const conds = ['is_active = TRUE']; const params = [];
+  if (dias_vencimiento) {
+    conds.push(`expiration_date BETWEEN NOW() AND NOW() + INTERVAL '${parseInt(dias_vencimiento)} days'`);
+  }
+  if (jurisdiccion && jurisdiccion !== 'todas') {
+    params.push(`%${jurisdiccion}%`);
+    conds.push(`issuing_authority ILIKE $${params.length}`);
+  }
+  const where = 'WHERE ' + conds.join(' AND ');
   const { rows } = await pool.query(
-    `SELECT title, jurisdiccion, fecha_vencimiento, estado FROM legal_requirements ${where} ORDER BY fecha_vencimiento ASC NULLS LAST LIMIT 15`, params
+    `SELECT code, title, issuing_authority, applicable_area, expiration_date, category
+       FROM legal_requirements ${where} ORDER BY expiration_date ASC NULLS LAST LIMIT 15`, params
   );
   return { found: rows.length, requirements: rows };
 }
 
 async function h_consultar_incidentes({ severidad, ultimos_dias = 365 }) {
-  const conds = [`created_at >= NOW() - INTERVAL '${ultimos_dias} days'`];
+  const days = parseInt(ultimos_dias) || 365;
+  const conds = [`date >= NOW() - INTERVAL '${days} days'`];
   const params = [];
   if (severidad && severidad !== 'todos') { params.push(severidad); conds.push(`severity = $${params.length}`); }
   const { rows } = await pool.query(
-    `SELECT code, title, severity, status, incident_date FROM incidents WHERE ${conds.join(' AND ')} ORDER BY incident_date DESC LIMIT 15`, params
+    `SELECT code, LEFT(description, 150) AS description, severity, status, date AS incident_date, area
+       FROM incidents WHERE ${conds.join(' AND ')} ORDER BY date DESC LIMIT 15`, params
   );
   return { found: rows.length, incidents: rows };
 }
@@ -329,7 +337,7 @@ async function h_resumen_dashboard() {
                   FROM findings`),
     pool.query(`SELECT COUNT(*) FILTER (WHERE risk_level = 'alto' AND is_active) AS criticos,
                        COUNT(*) FILTER (WHERE is_active) AS activos FROM risks`),
-    pool.query(`SELECT COUNT(*) FILTER (WHERE fecha_vencimiento BETWEEN NOW() AND NOW() + INTERVAL '30 days') AS por_vencer FROM legal_requirements`),
+    pool.query(`SELECT COUNT(*) FILTER (WHERE expiration_date BETWEEN NOW() AND NOW() + INTERVAL '30 days') AS por_vencer FROM legal_requirements WHERE is_active = TRUE`),
     pool.query(`SELECT COUNT(*) FILTER (WHERE status NOT IN ('completada','cancelada')) AS pendientes,
                        COUNT(*) FILTER (WHERE due_date < NOW() AND status NOT IN ('completada','cancelada')) AS vencidas FROM tasks`),
     pool.query(`SELECT COUNT(*) FILTER (WHERE created_at >= NOW() - INTERVAL '30 days') AS ultimos_30 FROM incidents`),
@@ -348,11 +356,11 @@ async function h_resumen_dashboard() {
 async function h_consultar_documentos({ query, tipo, norma }) {
   const conds = []; const params = [];
   if (query) { params.push(`%${query}%`); conds.push(`(title ILIKE $${params.length} OR description ILIKE $${params.length})`); }
-  if (tipo && tipo !== 'todos') { params.push(tipo); conds.push(`document_type = $${params.length}`); }
-  if (norma && norma !== 'todas'){ params.push(norma); conds.push(`norm = $${params.length}`); }
+  if (tipo && tipo !== 'todos') { params.push(tipo); conds.push(`doc_type = $${params.length}`); }
+  if (norma && norma !== 'todas'){ params.push(norma); conds.push(`norma = $${params.length}`); }
   const where = conds.length ? 'WHERE ' + conds.join(' AND ') : '';
   const { rows } = await pool.query(
-    `SELECT code, title, document_type, norm, version, updated_at FROM documents ${where} ORDER BY updated_at DESC LIMIT 10`, params
+    `SELECT code, title, doc_type, norma, version, status, updated_at FROM documents ${where} ORDER BY updated_at DESC LIMIT 10`, params
   );
   return { found: rows.length, documents: rows };
 }

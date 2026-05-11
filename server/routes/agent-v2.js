@@ -1,11 +1,16 @@
 // =============================================================================
 // DASSA SGI · /api/agent · endpoints del agente unificado
+// ESM (porque importa middleware/auth.js que es ESM con TLA)
 // =============================================================================
-const express = require('express');
-const { Pool } = require('pg');
-const { authenticate, requireRole } = require('../middleware/auth.js');
+import express from 'express';
+import { createRequire } from 'module';
+import pg from 'pg';
+import { authenticate, requireRole } from '../middleware/auth.js';
+
+const require = createRequire(import.meta.url);
 const sgiAgent = require('../services/sgi-agent.cjs');
 
+const { Pool } = pg;
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 const router = express.Router();
 
@@ -47,7 +52,12 @@ router.post('/chat', async (req, res) => {
 router.get('/config', requireRole('master_admin','director'), async (req, res) => {
   try {
     const cfg = await sgiAgent.getConfig();
-    res.json({ ok: true, config: cfg, all_tools: sgiAgent.ALL_TOOLS.map(t => ({ name: t.name, description: t.description })), defaults: sgiAgent.DEFAULTS });
+    res.json({
+      ok: true,
+      config: cfg,
+      all_tools: sgiAgent.ALL_TOOLS.map(t => ({ name: t.name, description: t.description })),
+      defaults: sgiAgent.DEFAULTS
+    });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
@@ -80,4 +90,4 @@ router.get('/stats', requireRole('master_admin','director'), async (req, res) =>
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-module.exports = router;
+export default router;

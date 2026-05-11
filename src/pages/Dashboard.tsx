@@ -1,3 +1,4 @@
+import { SimplePie, SimpleBar } from '@/components/charts';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -280,7 +281,30 @@ export default function Dashboard() {
 
           </div>
         )}
-      </PageContent>
+      <DashboardCharts/>
+    </PageContent>
     </>
+  );
+}
+
+
+import { useQuery as useQ2 } from '@tanstack/react-query';
+import { api as api2 } from '@/lib/api';
+
+function DashboardCharts() {
+  const { data, isLoading } = useQ2<any>({
+    queryKey: ['dashboard-charts'],
+    queryFn: () => api2.get('/dashboard/charts'),
+  });
+  if (isLoading || !data) return null;
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 mt-6">
+      <SimplePie title="🥧 Riesgos AMFE por nivel" data={data.risks_by_level || []}/>
+      <SimplePie title="👥 Empleados por sector" data={data.employees_by_sector || []}/>
+      <SimpleBar title="📋 NCs por estado" data={data.findings_by_status || []}/>
+      <SimpleBar title="🛒 Compras por estado" data={data.purchases_by_status || []}/>
+      <SimpleBar title="⚠ Incidentes último año" data={data.incidents_by_severity || []}/>
+      <SimplePie title="🎓 Capacitaciones por estado" data={data.trainings_by_status || []}/>
+    </div>
   );
 }

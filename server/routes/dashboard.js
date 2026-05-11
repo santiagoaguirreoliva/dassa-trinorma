@@ -121,8 +121,6 @@ router.get('/calendar', async (req, res) => {
   }
 });
 
-export default router;
-
 // /api/dashboard/charts · datos agregados para charts del home
 router.get('/charts', async (req, res) => {
   try {

@@ -228,6 +228,34 @@ router.post('/', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+// POST /api/purchases/parse-product-info — CAPA 2 · IA parsea URL y/o texto pegado
+router.post('/parse-product-info', async (req, res) => {
+  const perms = await getPerms(req.user.id, req.user.role);
+  if (!perms.can_request) return res.status(403).json({ error: 'Sin permiso para crear solicitudes' });
+
+  const { url, text } = req.body || {};
+  try {
+    const data = await parseProductInfo({ url: url?.trim(), text: text?.trim() });
+    res.json({ ok: true, data });
+  } catch (e) {
+    console.error('[purchases/parse-product-info]', e.message);
+    res.status(400).json({ ok: false, error: e.message });
+  }
+});
+
+// Alias compat (mismo handler) para deploys que ya cachearon el endpoint viejo
+router.post('/import-from-url', async (req, res) => {
+  const perms = await getPerms(req.user.id, req.user.role);
+  if (!perms.can_request) return res.status(403).json({ error: 'Sin permiso para crear solicitudes' });
+  const { url, text } = req.body || {};
+  try {
+    const data = await parseProductInfo({ url: url?.trim(), text: text?.trim() });
+    res.json({ ok: true, data });
+  } catch (e) {
+    res.status(400).json({ ok: false, error: e.message });
+  }
+});
+
 // PATCH /api/purchases/:id — editar campos (borrador o rechazada para re-enviar)
 router.patch('/:id', async (req, res) => {
   const FIELDS = ['description','category','priority','estimated_budget',

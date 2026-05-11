@@ -4,7 +4,7 @@ import {
   Plus, X, Loader2, Save, CheckCircle2, XCircle,
   Play, Package, Lock, BarChart3, ShoppingCart,
   ChevronDown, AlertTriangle, DollarSign,
-  Eye, ExternalLink, FileText, MessageSquare, Image as ImageIcon, Calendar
+  Eye, ExternalLink, FileText, MessageSquare, Image as ImageIcon, Calendar, Sparkles, Wand2
 } from 'lucide-react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid,
@@ -91,10 +91,60 @@ function NewPurchaseModal({ onClose }: { onClose: () => void }) {
   const [error, setError] = useState('');
   const set = (k: string, v: string) => setForm(p => ({ ...p, [k]: v }));
 
+  // CAPA 2 · Auto-completar con IA
+  const [importInput, setImportInput] = useState('');
+  const [importedSpecs, setImportedSpecs] = useState<Record<string, any> | null>(null);
+  const [importedPhotos, setImportedPhotos] = useState<string[]>([]);
+  const [importSuccess, setImportSuccess] = useState(false);
+  const [importError, setImportError] = useState('');
+
+  const importMut = useMutation({
+    mutationFn: async () => {
+      const trimmed = importInput.trim();
+      const isUrl = /^https?:\/\//.test(trimmed);
+      const payload = isUrl
+        ? { url: trimmed.split(/\s/)[0], text: trimmed.includes(' ') ? trimmed : '' }
+        : { text: trimmed };
+      const r = await api.post('/purchases/parse-product-info', payload);
+      return r.data.data;
+    },
+    onSuccess: (data: any) => {
+      setForm(p => ({
+        ...p,
+        description:          data.titulo || p.description,
+        long_description:     [data.descripcion, data.garantia && `Garantía: ${data.garantia}`, data.envio && `Envío: ${data.envio}`, data.condicion && `Condición: ${data.condicion}`].filter(Boolean).join('\n\n') || p.long_description,
+        source_url:           data._meta?.url || p.source_url,
+        recommended_supplier: data.vendedor || p.recommended_supplier,
+        estimated_budget:     (data.precio && (!data.moneda || data.moneda === 'ARS')) ? String(data.precio) : p.estimated_budget,
+        category:             data.categoria_sgi || p.category,
+      }));
+      // Guardar specs y fotos para enviar al crear
+      const specs: Record<string, any> = {};
+      if (data.sku) specs.sku = data.sku;
+      if (data.precio && data.moneda) specs.precio_origen = { valor: data.precio, moneda: data.moneda };
+      if (data.condicion) specs.condicion = data.condicion;
+      if (data.garantia) specs.garantia = data.garantia;
+      if (data.envio) specs.envio = data.envio;
+      if (data.categoria) specs.categoria_origen = data.categoria;
+      if (data.disponible !== null && data.disponible !== undefined) specs.disponible = data.disponible;
+      if (data._meta?.strategy) specs._import_strategy = data._meta.strategy;
+      setImportedSpecs(Object.keys(specs).length ? specs : null);
+      setImportedPhotos(Array.isArray(data.fotos) ? data.fotos : []);
+      setImportSuccess(true);
+      setImportError('');
+    },
+    onError: (e: any) => {
+      setImportError(e.response?.data?.error || e.message || 'Error al parsear');
+      setImportSuccess(false);
+    },
+  });
+
   const create = useMutation({
     mutationFn: () => api.post('/purchases', {
       ...form,
-      estimated_budget: form.estimated_budget ? parseFloat(form.estimated_budget) : undefined
+      estimated_budget: form.estimated_budget ? parseFloat(form.estimated_budget) : undefined,
+      item_specs: importedSpecs || undefined,
+      photo_urls: importedPhotos.length ? importedPhotos : undefined,
     }),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['purchases'] }); onClose(); },
     onError: (e: any) => setError(e.message),
@@ -108,6 +158,48 @@ function NewPurchaseModal({ onClose }: { onClose: () => void }) {
           <button onClick={onClose}><X size={18} className="text-gray-400" /></button>
         </div>
         <div className="p-6 space-y-4 max-h-[75vh] overflow-y-auto">
+          {/* CAPA 2 · Auto-completar con IA */}
+          <div className="rounded-xl border-2 border-dashed border-dassa-celeste/40 bg-dassa-celeste-tint/30 p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <Wand2 size={16} className="text-dassa-celeste-deep" />
+              <h4 className="text-xs font-extrabold text-dassa-celeste-deep uppercase tracking-wide">Auto-completar con IA</h4>
+            </div>
+            <p className="text-[11px] text-gray-600 mb-2">
+              Pegá un <strong>link</strong> de Mercado Libre / sitio del proveedor, o copiá el <strong>texto</strong> del producto desde la web/mail/PDF. La IA extrae título, precio, descripción y categoría.
+            </p>
+            <textarea
+              value={importInput}
+              onChange={e => setImportInput(e.target.value)}
+              rows={3}
+              placeholder="Pegá link y/o texto aquí. Ej: 'https://articulo.mercadolibre.com.ar/...' o 'Casco de seguridad Libus IRAM 3620 - $8500'"
+              className="w-full text-xs border border-gray-200 rounded-lg p-2 resize-none focus:outline-none focus:border-dassa-celeste mb-2"
+            />
+            <div className="flex items-center justify-between gap-2">
+              <div className="text-[10px] text-gray-400 flex-1">
+                {importSuccess && <span className="text-emerald-600 font-semibold">✓ Datos importados. Editá lo que necesites abajo.</span>}
+                {importError && <span className="text-red-600 font-semibold">⚠ {importError}</span>}
+              </div>
+              <button
+                onClick={() => importMut.mutate()}
+                disabled={!importInput.trim() || importMut.isPending}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-dassa-celeste-deep text-white font-bold text-[11px] rounded-lg hover:bg-dassa-celeste disabled:opacity-40"
+              >
+                {importMut.isPending ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}
+                {importMut.isPending ? 'Procesando...' : 'Auto-completar'}
+              </button>
+            </div>
+            {importedPhotos.length > 0 && (
+              <div className="mt-2 pt-2 border-t border-dassa-celeste/30">
+                <p className="text-[10px] text-gray-500 mb-1">{importedPhotos.length} foto(s) importadas:</p>
+                <div className="flex gap-1 overflow-x-auto">
+                  {importedPhotos.slice(0,6).map((u,i) => (
+                    <img key={i} src={u} alt="" className="w-12 h-12 object-cover rounded border border-gray-200 flex-shrink-0" />
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
           <div>
             <label className="label-field">Proveedor sugerido</label>
             <input value={form.recommended_supplier} onChange={e => set('recommended_supplier', e.target.value)}

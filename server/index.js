@@ -44,7 +44,7 @@ import contextRouter        from './routes/context.js';
 import bibliotecaRouter     from './routes/biblioteca.js';
 import surveysRouter        from './routes/surveys.js';
 // import agentRouter (legacy Ollama/Gemini) archivado en _archive/
-// import agentV2Router from './routes/agent-v2.js';
+import agentV2Router from "./routes/agent-v2.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const UPLOADS_DIR = join(__dirname, '../uploads');

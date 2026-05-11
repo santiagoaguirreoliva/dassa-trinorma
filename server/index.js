@@ -31,6 +31,16 @@ import tasksRouter from './routes/tasks.js';
 import { checkOverdueTasks, sendBimonthlyDigest } from './services/email.js';
 import { query as dbQuery } from './db/db.js';
 import cron from 'node-cron';
+// Cron OLA 5 · Wake-up notifications cada 6 horas
+cron.schedule('0 */6 * * *', async () => {
+  try {
+    const { createRequire: cr } = await import('module');
+    const reqCjs = cr(import.meta.url);
+    const { generateWakeUpAlerts } = reqCjs('./server/services/ai-quality.cjs');
+    const stats = await generateWakeUpAlerts();
+    console.log('[wake-up]', stats);
+  } catch (e) { console.error('[wake-up] err:', e.message); }
+});
 import http from 'http';
 
 import documentsRouter      from './routes/documents.js';
@@ -49,6 +59,7 @@ import reviewsRouter from './routes/reviews.js';
 import orgchartRouter from './routes/orgchart.js';
 import { objectivesRouter, changesRouter, proceduresRouter, risksAmfeRouter } from './routes/sgi-modules.js';
 import commRouter, { publicRouter as commPublicRouter } from './routes/comunicaciones.js';
+import aiQualityRouter from './routes/ai-quality.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const UPLOADS_DIR = join(__dirname, '../uploads');
@@ -199,6 +210,7 @@ app.use('/api/procedimientos', proceduresRouter);
 app.use('/api/riesgos-amfe', risksAmfeRouter);
 app.use('/api/comunicaciones/public', commPublicRouter);
 app.use('/api/comunicaciones', commRouter);
+app.use('/api/ai-quality', aiQualityRouter);
 
 app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok', env: process.env.NODE_ENV, ts: new Date().toISOString() });

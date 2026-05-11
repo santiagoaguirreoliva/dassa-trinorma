@@ -1,5 +1,6 @@
 // =============================================================================
 // /api/objetivos · /api/cambios · /api/procedimientos · /api/riesgos-amfe
+// Versión con CRUD completo (GET/POST/PATCH/DELETE)
 // =============================================================================
 import express from 'express';
 import { authenticate, requireRole } from '../middleware/auth.js';
@@ -12,7 +13,11 @@ const risksAmfeRouter = express.Router();
 
 [objectivesRouter, changesRouter, proceduresRouter, risksAmfeRouter].forEach(r => r.use(authenticate));
 
-// ─── OBJETIVOS ──────────────────────────────────────────────────────────────
+const isLeader = (role) => ['master_admin','director','sgi_leader'].includes(role);
+
+// ═══════════════════════════════════════════════════════════════════════════
+// OBJETIVOS
+// ═══════════════════════════════════════════════════════════════════════════
 objectivesRouter.get('/', async (req, res) => {
   try {
     const year = req.query.year ? parseInt(req.query.year) : new Date().getFullYear();
@@ -31,15 +36,54 @@ objectivesRouter.get('/:id', async (req, res) => {
     const { rows: obj } = await query('SELECT * FROM objectives WHERE id = $1', [req.params.id]);
     if (!obj[0]) return res.status(404).json({ error: 'No encontrado' });
     const { rows: indicators } = await query(`
-      SELECT oi.*, (SELECT json_agg(json_build_object('period', period, 'value', value))
-                    FROM objective_measurements om WHERE om.indicator_id = oi.id ORDER BY period) AS measurements
+      SELECT oi.*, (SELECT json_agg(json_build_object('period', period, 'value', value) ORDER BY period)
+                    FROM objective_measurements om WHERE om.indicator_id = oi.id) AS measurements
       FROM objective_indicators oi WHERE oi.objective_id = $1
     `, [req.params.id]);
     res.json({ ok: true, objective: obj[0], indicators });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// ─── CAMBIOS ────────────────────────────────────────────────────────────────
+objectivesRouter.post('/', async (req, res) => {
+  if (!isLeader(req.user.role)) return res.status(403).json({ error: 'No autorizado' });
+  try {
+    const { name, description, year, area, target_metric, target_value, admissible_value, baseline_value } = req.body;
+    if (!name) return res.status(400).json({ error: 'name requerido' });
+    const yr = year || new Date().getFullYear();
+    const { rows: cnt } = await query('SELECT COUNT(*)::int AS n FROM objectives WHERE year = $1', [yr]);
+    const code = `OBJ-${yr}-${String(cnt[0].n + 1).padStart(2, '0')}`;
+    const { rows } = await query(`
+      INSERT INTO objectives (code, name, description, year, area, target_metric, target_value, admissible_value, baseline_value, responsible_id, status)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,'activo') RETURNING *
+    `, [code, name, description||null, yr, area||null, target_metric||null, target_value||null, admissible_value||null, baseline_value||null, req.user.id]);
+    res.status(201).json({ ok: true, objective: rows[0] });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+objectivesRouter.patch('/:id', async (req, res) => {
+  if (!isLeader(req.user.role)) return res.status(403).json({ error: 'No autorizado' });
+  try {
+    const FIELDS = ['name','description','area','target_metric','target_value','admissible_value','baseline_value','current_value','status'];
+    const updates = []; const values = []; let i = 1;
+    for (const f of FIELDS) if (req.body[f] !== undefined) { updates.push(`${f} = $${i++}`); values.push(req.body[f]); }
+    if (!updates.length) return res.status(400).json({ error: 'Sin cambios' });
+    values.push(req.params.id);
+    const { rows } = await query(`UPDATE objectives SET ${updates.join(', ')}, updated_at = NOW() WHERE id = $${i} RETURNING *`, values);
+    res.json({ ok: true, objective: rows[0] });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+objectivesRouter.delete('/:id', async (req, res) => {
+  if (!isLeader(req.user.role)) return res.status(403).json({ error: 'No autorizado' });
+  try {
+    await query('UPDATE objectives SET status = $1, updated_at = NOW() WHERE id = $2', ['cancelado', req.params.id]);
+    res.json({ ok: true, message: 'Objetivo cancelado (soft delete)' });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// CAMBIOS
+// ═══════════════════════════════════════════════════════════════════════════
 changesRouter.get('/', async (req, res) => {
   try {
     const year = req.query.year ? parseInt(req.query.year) : null;
@@ -68,7 +112,46 @@ changesRouter.get('/:id', async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// ─── PROCEDIMIENTOS ─────────────────────────────────────────────────────────
+changesRouter.post('/', async (req, res) => {
+  if (!isLeader(req.user.role)) return res.status(403).json({ error: 'No autorizado' });
+  try {
+    const { title, purpose, impact_description, year, plazo_target, budget_estimated } = req.body;
+    if (!title) return res.status(400).json({ error: 'title requerido' });
+    const yr = year || new Date().getFullYear();
+    const { rows: cnt } = await query('SELECT COUNT(*)::int AS n FROM change_requests WHERE year = $1', [yr]);
+    const code = `CC-${yr}-${String(cnt[0].n + 1).padStart(2, '0')}`;
+    const { rows } = await query(`
+      INSERT INTO change_requests (code, title, purpose, impact_description, year, plazo_target, budget_estimated, responsible_id, status)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,'propuesto') RETURNING *
+    `, [code, title, purpose||null, impact_description||null, yr, plazo_target||null, budget_estimated||null, req.user.id]);
+    res.status(201).json({ ok: true, change: rows[0] });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+changesRouter.patch('/:id', async (req, res) => {
+  if (!isLeader(req.user.role)) return res.status(403).json({ error: 'No autorizado' });
+  try {
+    const FIELDS = ['title','purpose','impact_description','status','plazo_target','plazo_real','budget_estimated','budget_real','related_risks_text'];
+    const updates = []; const values = []; let i = 1;
+    for (const f of FIELDS) if (req.body[f] !== undefined) { updates.push(`${f} = $${i++}`); values.push(req.body[f]); }
+    if (!updates.length) return res.status(400).json({ error: 'Sin cambios' });
+    values.push(req.params.id);
+    const { rows } = await query(`UPDATE change_requests SET ${updates.join(', ')}, updated_at = NOW() WHERE id = $${i} RETURNING *`, values);
+    res.json({ ok: true, change: rows[0] });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+changesRouter.delete('/:id', async (req, res) => {
+  if (!isLeader(req.user.role)) return res.status(403).json({ error: 'No autorizado' });
+  try {
+    await query("UPDATE change_requests SET status = 'cancelado', updated_at = NOW() WHERE id = $1", [req.params.id]);
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// PROCEDIMIENTOS
+// ═══════════════════════════════════════════════════════════════════════════
 proceduresRouter.get('/', async (req, res) => {
   try {
     const { rows } = await query(`
@@ -85,9 +168,7 @@ proceduresRouter.get('/:id', async (req, res) => {
   try {
     const { rows: p } = await query('SELECT * FROM procedures WHERE id = $1', [req.params.id]);
     if (!p[0]) return res.status(404).json({ error: 'No encontrado' });
-    const { rows: steps } = await query(
-      'SELECT * FROM procedure_steps WHERE procedure_id = $1 ORDER BY step_number', [req.params.id]
-    );
+    const { rows: steps } = await query('SELECT * FROM procedure_steps WHERE procedure_id = $1 ORDER BY step_number', [req.params.id]);
     const { rows: risks } = await query(`
       SELECT r.id, r.code, r.activity, r.npr, r.npr_level, prl.contribution
       FROM procedure_risk_links prl JOIN risks r ON r.id = prl.risk_id
@@ -97,7 +178,45 @@ proceduresRouter.get('/:id', async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// ─── RIESGOS AMFE ───────────────────────────────────────────────────────────
+proceduresRouter.post('/', async (req, res) => {
+  if (!isLeader(req.user.role)) return res.status(403).json({ error: 'No autorizado' });
+  try {
+    const { title, module, description, instructions_md, norma } = req.body;
+    if (!title) return res.status(400).json({ error: 'title requerido' });
+    const { rows: cnt } = await query('SELECT COUNT(*)::int AS n FROM procedures');
+    const code = `P-TRI-${String(cnt[0].n + 1).padStart(3, '0')}`;
+    const { rows } = await query(`
+      INSERT INTO procedures (code, title, module, description, instructions_md, norma, responsible_id, status)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,'borrador') RETURNING *
+    `, [code, title, module||null, description||null, instructions_md||null, norma||null, req.user.id]);
+    res.status(201).json({ ok: true, procedure: rows[0] });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+proceduresRouter.patch('/:id', async (req, res) => {
+  if (!isLeader(req.user.role)) return res.status(403).json({ error: 'No autorizado' });
+  try {
+    const FIELDS = ['title','module','description','instructions_md','norma','status','version','effective_date','next_review_date','legacy_doc_url'];
+    const updates = []; const values = []; let i = 1;
+    for (const f of FIELDS) if (req.body[f] !== undefined) { updates.push(`${f} = $${i++}`); values.push(req.body[f]); }
+    if (!updates.length) return res.status(400).json({ error: 'Sin cambios' });
+    values.push(req.params.id);
+    const { rows } = await query(`UPDATE procedures SET ${updates.join(', ')}, updated_at = NOW() WHERE id = $${i} RETURNING *`, values);
+    res.json({ ok: true, procedure: rows[0] });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+proceduresRouter.delete('/:id', async (req, res) => {
+  if (!isLeader(req.user.role)) return res.status(403).json({ error: 'No autorizado' });
+  try {
+    await query("UPDATE procedures SET status = 'obsoleto', updated_at = NOW() WHERE id = $1", [req.params.id]);
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// RIESGOS AMFE
+// ═══════════════════════════════════════════════════════════════════════════
 risksAmfeRouter.get('/', async (req, res) => {
   try {
     const { process: proc, level } = req.query;
@@ -117,37 +236,43 @@ risksAmfeRouter.get('/', async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// POST /api/riesgos-amfe/sugerir-ia · genera propuestas de nuevos riesgos
 risksAmfeRouter.post('/sugerir-ia', requireRole('master_admin','director','sgi_leader'), async (req, res) => {
   try {
     const { createRequire } = await import('module');
     const requireCJS = createRequire(import.meta.url);
     const Anthropic = requireCJS('@anthropic-ai/sdk').default || requireCJS('@anthropic-ai/sdk');
     const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-
     const { rows: foda } = await query(`SELECT foda_type, category, description FROM context_analysis WHERE is_active = TRUE`);
-    const { rows: profiles } = await query(`SELECT role_label, area, mission FROM job_profiles WHERE is_active = TRUE`);
+    const { rows: profiles } = await query(`SELECT role_label, area FROM job_profiles WHERE is_active = TRUE`);
     const { rows: existing } = await query(`SELECT activity, hazard FROM risks WHERE is_active = TRUE LIMIT 30`);
-
     const prompt = `Sos experto AMFE TRINORMA. DASSA SA · depósito fiscal Buenos Aires.
-A partir del FODA, fichas de puesto y riesgos existentes, sugerí 5 nuevos riesgos plausibles que NO estén ya cubiertos.
-FODA actual: ${JSON.stringify(foda).slice(0, 1500)}
+A partir del FODA, fichas y riesgos existentes, sugerí 5 nuevos riesgos plausibles que NO estén ya cubiertos.
+FODA: ${JSON.stringify(foda).slice(0, 1500)}
 Puestos: ${JSON.stringify(profiles.map(p => p.role_label)).slice(0, 800)}
-Riesgos ya existentes: ${JSON.stringify(existing.map(r => r.activity + ' / ' + r.hazard)).slice(0, 1500)}
-
-Devolvé JSON estricto array de 5 sugerencias:
-[{"process":"...", "activity":"...", "hazard":"...", "risk_factor":"...", "severity":1-5, "probability":1-4, "detection":1-4, "causes":"...", "recommended_action":"...", "opportunity":"..." }]`;
-
-    const resp = await client.messages.create({
-      model: 'claude-sonnet-4-5',
-      max_tokens: 2500,
-      messages: [{ role: 'user', content: prompt }],
-    });
+Existentes: ${JSON.stringify(existing.map(r => r.activity + ' / ' + r.hazard)).slice(0, 1500)}
+Devolvé JSON array de 5:
+[{"process":"...", "activity":"...", "hazard":"...", "risk_factor":"...", "severity":1-5, "probability":1-4, "detection":1-4, "causes":"...", "recommended_action":"...", "opportunity":"..."}]`;
+    const resp = await client.messages.create({ model: 'claude-sonnet-4-5', max_tokens: 2500, messages: [{ role: 'user', content: prompt }] });
     const text = resp.content[0].text;
     const match = text.match(/\[[\s\S]*\]/);
     if (!match) return res.status(500).json({ error: 'IA no devolvió JSON' });
-    const suggestions = JSON.parse(match[0]);
-    res.json({ ok: true, suggestions, usage: resp.usage });
+    res.json({ ok: true, suggestions: JSON.parse(match[0]), usage: resp.usage });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+risksAmfeRouter.post('/', requireRole('master_admin','director','sgi_leader'), async (req, res) => {
+  try {
+    const { activity, hazard, risk_factor, severity, probability, detection, causes, current_controls, recommended_action, opportunity, process, affected_parties } = req.body;
+    if (!activity || !hazard) return res.status(400).json({ error: 'activity y hazard requeridos' });
+    const { rows: cnt } = await query('SELECT COUNT(*)::int AS n FROM risks');
+    const code = `R-${String(cnt[0].n + 1).padStart(3, '0')}`;
+    const { rows } = await query(`
+      INSERT INTO risks (code, activity, hazard, risk_factor, severity, probability, detection,
+                         causes, current_controls, recommended_action, opportunity, process, affected_parties, is_active)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,TRUE) RETURNING *
+    `, [code, activity, hazard, risk_factor||null, severity||3, probability||2, detection||null,
+        causes||null, current_controls||null, recommended_action||null, opportunity||null, process||null, affected_parties||null]);
+    res.status(201).json({ ok: true, risk: rows[0] });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 

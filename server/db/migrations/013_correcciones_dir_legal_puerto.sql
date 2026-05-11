@@ -1,0 +1,5 @@
+-- Migration 013 · Correcciones de Santi
+-- Manuel CEO + Santiago Director + Francisco Urtubey Representante Legal
+-- Administración General renombrada a "Administración General y RRHH" (María)
+-- Gerente Comercial: documentar cobertura informal por Santi+Manuel
+-- Personal de Puerto reactivado · Carlos Vera asignado

@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
-import { Megaphone, Send, Eye, Link as LinkIcon, Loader2, CheckCircle2 } from 'lucide-react';
+import { Megaphone, Send, Eye, Link as LinkIcon, Loader2, CheckCircle2, MessageCircle, Copy } from 'lucide-react';
 import { api } from '@/lib/api';
 import { Header } from '@/components/layout/Header';
 import { Spinner, PageContent, KPICard } from '@/components/ui';
@@ -63,9 +63,14 @@ export default function Comunicaciones() {
                 </td>
                 <td className="px-3 py-2">
                   {c.status==='enviada' && (
-                    <a href={`/c/${c.public_token}`} target="_blank" rel="noreferrer" className="text-[10px] text-dassa-celeste-deep font-bold hover:underline flex items-center gap-1">
-                      <LinkIcon size={10}/> Abrir
-                    </a>
+                    <div className="flex flex-col gap-1">
+                      <a href={`/c/${c.public_token}`} target="_blank" rel="noreferrer" className="text-[10px] text-dassa-celeste-deep font-bold hover:underline flex items-center gap-1">
+                        <LinkIcon size={10}/> Abrir
+                      </a>
+                      <button onClick={()=>shareWhatsApp(c.id)} className="text-[10px] text-emerald-700 font-bold hover:underline flex items-center gap-1">
+                        <MessageCircle size={10}/> WhatsApp
+                      </button>
+                    </div>
                   )}
                 </td>
               </tr>
@@ -76,6 +81,22 @@ export default function Comunicaciones() {
       {showNew && <NewCommModal onClose={()=>setShowNew(false)}/>}
     </PageContent>
   );
+}
+
+async function shareWhatsApp(id: string) {
+  try {
+    const r = await fetch(`/api/comunicaciones/${id}/whatsapp-share`, {
+      headers: { Authorization: `Bearer ${localStorage.getItem('dassa_token')}` }
+    });
+    const data = await r.json();
+    if (!data.ok) { alert('Error: ' + data.error); return; }
+    // Copiar texto al clipboard
+    try {
+      await navigator.clipboard.writeText(data.whatsapp_text);
+    } catch {}
+    // Abrir WhatsApp con el texto pre-cargado
+    window.open(data.whatsapp_link, '_blank');
+  } catch (e: any) { alert(e.message); }
 }
 
 function NewCommModal({ onClose }: { onClose:()=>void }) {

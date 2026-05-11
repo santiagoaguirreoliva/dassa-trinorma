@@ -33,14 +33,42 @@ publicRouter.get('/c/:token', async (req, res) => {
 
 publicRouter.post('/c/:token/confirm', async (req, res) => {
   try {
-    const { confirmed_by_name, feedback } = req.body || {};
-    const { rows: comm } = await query(`SELECT id FROM communications WHERE public_token = $1`, [req.params.token]);
+    const { confirmed_by_full_name, feedback, device_fingerprint, screen_resolution,
+            browser_language, browser_timezone, platform_info, connection_type } = req.body || {};
+    if (!confirmed_by_full_name || confirmed_by_full_name.trim().length < 3) {
+      return res.status(400).json({ error: 'Nombre completo requerido (mínimo 3 caracteres)' });
+    }
+    const { rows: comm } = await query(`SELECT id, title FROM communications WHERE public_token = $1`, [req.params.token]);
     if (!comm[0]) return res.status(404).json({ error: 'Token inválido' });
+
+    // Hash forense
+    const crypto = await import('crypto');
+    const ip = req.ip || req.headers['x-forwarded-for'] || 'unknown';
+    const ua = req.headers['user-agent'] || 'unknown';
+    const timestamp = new Date().toISOString();
+    const hashPayload = `${comm[0].id}|${confirmed_by_full_name}|${ip}|${ua}|${timestamp}`;
+    const confirmHash = crypto.createHash('sha256').update(hashPayload).digest('hex');
+
     await query(`
-      INSERT INTO communication_reads (communication_id, read_via, confirmed_at, ip_address, user_agent, feedback_notes, device_info)
-      VALUES ($1, 'web_link_public', NOW(), $2, $3, $4, $5)
-    `, [comm[0].id, req.ip, req.headers['user-agent']||null, feedback||null, confirmed_by_name||null]);
-    res.json({ ok: true, message: 'Lectura confirmada · ¡Gracias!' });
+      INSERT INTO communication_reads (
+        communication_id, read_via, confirmed_at, ip_address, user_agent,
+        feedback_notes, confirmed_by_full_name, device_fingerprint,
+        screen_resolution, browser_language, browser_timezone, platform_info,
+        connection_type, confirmation_hash
+      ) VALUES ($1, 'web_link_public', NOW(), $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+    `, [comm[0].id, ip, ua, feedback||null, confirmed_by_full_name.trim(),
+        device_fingerprint||null, screen_resolution||null, browser_language||null,
+        browser_timezone||null, platform_info||null, connection_type||null, confirmHash]);
+
+    res.json({
+      ok: true,
+      message: `Lectura confirmada · Gracias ${confirmed_by_full_name}`,
+      confirmation: {
+        title: comm[0].title,
+        confirmed_at: timestamp,
+        confirmation_hash: confirmHash.slice(0, 16) + '...'
+      }
+    });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
@@ -152,6 +180,46 @@ router.get('/nixa-inbox', requireRole('auditor_externo','master_admin','director
       WHERE validator_id IN (SELECT id FROM users WHERE role::text = 'auditor_externo')
     `);
     res.json({ ok: true, items: pendingValidation, summary: counts[0] });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+
+// Helper · generar texto + link para compartir por WhatsApp manual
+router.get('/:id/whatsapp-share', async (req, res) => {
+  try {
+    const { rows } = await query(`
+      SELECT id, code, title, body_md, public_token, sent_at, status
+      FROM communications WHERE id = $1
+    `, [req.params.id]);
+    if (!rows[0]) return res.status(404).json({ error: 'No encontrada' });
+    const c = rows[0];
+    const baseUrl = process.env.APP_URL || 'https://trinorma.dassa.com.ar';
+    const publicLink = `${baseUrl}/c/${c.public_token}`;
+    const preview = (c.body_md || '').replace(/[*_#`]/g,'').slice(0, 200);
+
+    const text = `🏛️ *DASSA SGI · TRINORMA*
+📢 ${c.title}
+
+${preview}${preview.length >= 200 ? '...' : ''}
+
+📋 *Confirmar lectura acá:*
+${publicLink}
+
+_Sistema de Gestión Integrado · ISO 9001 · 14001 · 45001_`;
+
+    // wa.me link encoded
+    const waLink = `https://wa.me/?text=${encodeURIComponent(text)}`;
+
+    res.json({
+      ok: true,
+      code: c.code,
+      title: c.title,
+      public_url: publicLink,
+      whatsapp_text: text,
+      whatsapp_link: waLink,
+      // Para grupos · solo copiar el texto al portapapeles
+      copy_to_group: text
+    });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 

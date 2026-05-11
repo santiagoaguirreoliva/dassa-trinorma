@@ -5,6 +5,7 @@ import { api } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { Header } from '@/components/layout/Header';
 import { Spinner, PageContent, KPICard } from '@/components/ui';
+import { SimpleBar, RiskLevelPie } from '@/components/charts';
 
 interface Risk { id:string; code:string; activity:string; hazard:string; severity:number; probability:number; detection:number; npr:number; npr_level:string; process:string; recommended_action:string; causes:string; }
 
@@ -37,6 +38,30 @@ export default function RiesgosAMFE() {
         <KPICard label="Significativos" value={significativos} sub="NPR ≥ 16" alert={significativos>0}/>
         <KPICard label="NPR promedio" value={promNPR}/>
         <KPICard label="Procesos" value={processes.length}/>
+      </div>
+      {/* CHARTS · análisis visual */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
+        <RiskLevelPie
+          title="🥧 Distribución por nivel de significancia"
+          data={[
+            { name: 'Significativos', value: data.risks.filter(r=>r.npr_level==='significativo').length, level: 'significativo' },
+            { name: 'No significativos', value: data.risks.filter(r=>r.npr_level==='no_significativo').length, level: 'no_significativo' },
+            { name: 'Sin evaluar', value: data.risks.filter(r=>!r.npr_level || r.npr_level==='sin_evaluar').length, level: 'sin_evaluar' },
+          ].filter(d=>d.value>0)}
+        />
+        <SimpleBar
+          title="📊 Riesgos por proceso"
+          subtitle="Cantidad total y NPR promedio por proceso"
+          data={processes.map(p => {
+            const procRisks = data.risks.filter(r => r.process === p);
+            return {
+              name: p || 'sin proceso',
+              value: procRisks.length,
+              value2: Math.round(procRisks.reduce((s,r)=>s+(r.npr||0),0) / (procRisks.length||1)),
+            };
+          })}
+          dataKey="value" dataKey2="value2" label="Cantidad" label2="NPR prom"
+        />
       </div>
       <div className="flex items-center gap-2 mb-4">
         <select value={proc} onChange={e=>setProc(e.target.value)} className="input-field text-xs">

@@ -1,0 +1,25 @@
+{
+  "root": true,
+  "env": { "browser": true, "node": true, "es2022": true },
+  "parser": "@typescript-eslint/parser",
+  "plugins": ["@typescript-eslint"],
+  "extends": [
+    "eslint:recommended",
+    "plugin:@typescript-eslint/recommended"
+  ],
+  "parserOptions": { "ecmaVersion": 2022, "sourceType": "module" },
+  "ignorePatterns": ["dist/", "node_modules/", "**/*.bak*", "**/migrations/*.sql", "uploads/"],
+  "rules": {
+    "@typescript-eslint/no-explicit-any": "off",
+    "@typescript-eslint/no-unused-vars": ["warn", { "argsIgnorePattern": "^_", "varsIgnorePattern": "^_" }],
+    "no-console": "off",
+    "no-empty": ["warn", { "allowEmptyCatch": true }]
+  },
+  "overrides": [
+    {
+      "files": ["server/**/*.{js,cjs}"],
+      "env": { "node": true, "browser": false },
+      "rules": { "@typescript-eslint/no-var-requires": "off" }
+    }
+  ]
+}

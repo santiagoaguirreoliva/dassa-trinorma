@@ -8,7 +8,12 @@
     "build": "vite build",
     "start": "node server/index.js",
     "db:migrate": "node server/db/migrate.js",
-    "db:seed": "node server/db/seed.js"
+    "db:seed": "node server/db/seed.js",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint \"src/**/*.{ts,tsx}\" \"server/**/*.{js,cjs}\" --max-warnings 0",
+    "lint:fix": "eslint \"src/**/*.{ts,tsx}\" \"server/**/*.{js,cjs}\" --fix",
+    "check": "npm run typecheck && npm run lint",
+    "db:migrate:dry": "node server/db/migrate.js --dry-run"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.95.1",
@@ -39,9 +44,12 @@
     "@types/pg": "^8.11.8",
     "@types/react": "^18.3.5",
     "@types/react-dom": "^18.3.0",
+    "@typescript-eslint/eslint-plugin": "^8.59.3",
+    "@typescript-eslint/parser": "^8.59.3",
     "@vitejs/plugin-react-swc": "^3.7.0",
     "autoprefixer": "^10.4.20",
     "concurrently": "^9.0.1",
+    "eslint": "^8.57.1",
     "postcss": "^8.4.45",
     "tailwindcss": "^3.4.11",
     "typescript": "^5.5.3",

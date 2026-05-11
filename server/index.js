@@ -197,8 +197,8 @@ app.use('/api/objetivos', objectivesRouter);
 app.use('/api/cambios', changesRouter);
 app.use('/api/procedimientos', proceduresRouter);
 app.use('/api/riesgos-amfe', risksAmfeRouter);
-app.use('/api/comunicaciones', commRouter);
 app.use('/api/comunicaciones/public', commPublicRouter);
+app.use('/api/comunicaciones', commRouter);
 
 app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok', env: process.env.NODE_ENV, ts: new Date().toISOString() });

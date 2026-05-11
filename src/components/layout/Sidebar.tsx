@@ -4,184 +4,204 @@ import {
   LayoutDashboard, Zap, Shield, FileText, Scale, Users, ShoppingCart,
   BookOpen, Leaf, AlertTriangle, BarChart3, Building2, Truck,
   CalendarDays, ChevronDown, ChevronRight, Star, Settings, X,
+  Briefcase, Workflow, Target, GitMerge, BookOpen as BookOpen2,
+  Megaphone, Inbox, Bot, AlertCircle, ListChecks, FolderTree,
 } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
 
-interface NavItem  { path: string; label: string; icon: React.ReactNode; badge?: number; }
-interface NavGroup { group: string; items: NavItem[]; }
+interface NavItem  { path: string; label: string; icon: React.ReactNode; badge?: number; admin?: boolean; }
+interface NavGroup { group: string; subtitle?: string; items: NavItem[]; emoji?: string; }
 
-function buildNav(openFindings: number, legalAlerts: number): NavGroup[] {
+function buildNav(openFindings: number, legalAlerts: number, role?: string): NavGroup[] {
+  const isAdmin = role === 'master_admin' || role === 'director';
+  const isAuditor = role === 'auditor_externo';
+
   return [
     {
+      group: 'Inicio',
+      emoji: '🏠',
+      items: [
+        { path: '/dashboard',     label: 'Dashboard',       icon: <LayoutDashboard size={15} /> },
+        { path: '/mi-puesto',     label: 'Mi Puesto',       icon: <Briefcase size={15} /> },
+        { path: '/mis-pendientes', label: 'Mis Pendientes', icon: <ListChecks size={15} /> },
+        { path: '/calendar',      label: 'Calendario',      icon: <CalendarDays size={15} /> },
+      ],
+    },
+    {
+      group: 'Sistema TRINORMA',
+      emoji: '🛡️',
+      subtitle: 'Ciclo anual + procedimientos',
+      items: [
+        { path: '/ciclo/2026',     label: 'Ciclo 2026 · DAG',     icon: <Workflow size={15} /> },
+        { path: '/procedimientos', label: 'Procedimientos',       icon: <BookOpen2 size={15} /> },
+        ...(isAdmin || isAuditor ? [{ path: '/inbox-nixa', label: 'Inbox NIXA', icon: <Inbox size={15} /> }] : []),
+      ],
+    },
+    {
       group: 'Estrategia',
+      emoji: '🧭',
+      subtitle: 'Contexto · Objetivos · Cambios',
       items: [
-        { path: '/dashboard', label: 'Dashboard',       icon: <LayoutDashboard size={15} /> },
-        { path: '/calendar',  label: 'Calendario',      icon: <CalendarDays size={15} /> },
-        { path: '/context',   label: 'Contexto / FODA', icon: <BarChart3 size={15} /> },
+        { path: '/context',         label: 'Contexto / FODA',     icon: <BarChart3 size={15} /> },
+        { path: '/objetivos',       label: 'Objetivos',           icon: <Target size={15} /> },
+        { path: '/cambios',         label: 'Gestión de Cambios',  icon: <GitMerge size={15} /> },
+        { path: '/sistema-gestion', label: 'Sistema de Gestión',  icon: <Settings size={15} /> },
+        { path: '/committee',       label: 'Comité Mixto',        icon: <Building2 size={15} /> },
       ],
     },
     {
-      group: 'SGI Trinorma',
+      group: 'ISO 9001 · Calidad',
+      emoji: '✅',
       items: [
-        { path: '/findings',      label: 'Hallazgos / NC',   icon: <Zap size={15} />,         badge: openFindings || 0 },
-        { path: '/risks',         label: 'Matriz Riesgos',   icon: <Shield size={15} /> },
-        { path: '/documents',     label: 'Documentos',       icon: <FileText size={15} /> },
-        { path: '/legal',         label: 'Req. Legales',     icon: <Scale size={15} />,        badge: legalAlerts || 0 },
-        { path: '/incidents',     label: 'Incidentes',       icon: <AlertTriangle size={15} /> },
-        { path: '/environmental', label: 'Asp. Ambientales', icon: <Leaf size={15} /> },
+        { path: '/findings',     label: 'Hallazgos / NCs', icon: <Zap size={15} />, badge: openFindings || 0 },
+        { path: '/documents',    label: 'Documentos',      icon: <FileText size={15} /> },
+        { path: '/satisfaction', label: 'Satisfacción',    icon: <Star size={15} /> },
+        { path: '/suppliers',    label: 'Proveedores',     icon: <Truck size={15} /> },
       ],
     },
     {
-      group: 'Operaciones',
+      group: 'ISO 14001 · Ambiente',
+      emoji: '🌱',
       items: [
-        { path: '/purchases', label: 'Compras',     icon: <ShoppingCart size={15} /> },
-        { path: '/suppliers', label: 'Proveedores', icon: <Truck size={15} /> },
+        { path: '/environmental', label: 'Aspectos Ambientales', icon: <Leaf size={15} /> },
       ],
     },
     {
-      group: 'Capital Humano',
+      group: 'ISO 45001 · Seguridad',
+      emoji: '⛑',
       items: [
-        { path: '/trainings', label: 'Capacitaciones', icon: <BookOpen size={15} /> },
-        { path: '/employees', label: 'RRHH',            icon: <Users size={15} /> },
+        { path: '/riesgos-amfe', label: 'Matriz AMFE',     icon: <Shield size={15} /> },
+        { path: '/incidents',    label: 'Incidentes',      icon: <AlertTriangle size={15} /> },
+        { path: '/trainings',    label: 'Capacitaciones',  icon: <BookOpen size={15} /> },
+        { path: '/legal',        label: 'Req. Legales',    icon: <Scale size={15} />, badge: legalAlerts || 0 },
       ],
     },
     {
-      group: 'Satisfacción & SGI',
+      group: 'Operativo',
+      emoji: '📦',
       items: [
-        { path: '/satisfaction',    label: 'Enc. Satisfacción', icon: <Star size={15} /> },
-        { path: '/sistema-gestion', label: 'Sistema Gestión',   icon: <Settings size={15} /> },
+        { path: '/purchases',   label: 'Compras',        icon: <ShoppingCart size={15} /> },
+        { path: '/organigrama', label: 'Organigrama',    icon: <FolderTree size={15} /> },
+        { path: '/puestos',     label: 'Puestos / Fichas', icon: <Briefcase size={15} /> },
+        { path: '/employees',   label: 'Empleados',      icon: <Users size={15} /> },
       ],
     },
     {
-      group: 'Comité & Reuniones',
+      group: 'Comunicaciones',
+      emoji: '📢',
       items: [
-        { path: '/committee', label: 'Comité Mixto', icon: <Building2 size={15} /> },
+        { path: '/comunicaciones', label: 'Comunicaciones', icon: <Megaphone size={15} /> },
       ],
     },
+    ...(isAdmin ? [{
+      group: 'Configuración',
+      emoji: '⚙️',
+      items: [
+        { path: '/users',           label: 'Usuarios',     icon: <Users size={15} /> },
+        { path: '/agent-settings',  label: 'Configurar IA', icon: <Bot size={15} /> },
+      ],
+    }] : []),
   ];
 }
 
-interface Props {
+interface SidebarProps {
   openFindings?: number;
   legalAlerts?: number;
-  isOpen?: boolean;
+  mobile?: boolean;
   onClose?: () => void;
 }
 
-export default function Sidebar({ openFindings = 0, legalAlerts = 0, isOpen = false, onClose }: Props) {
+export default function Sidebar({ openFindings = 0, legalAlerts = 0, mobile = false, onClose }: SidebarProps) {
   const navigate = useNavigate();
   const location = useLocation();
-  const nav = buildNav(openFindings, legalAlerts);
+  const { user } = useAuth();
+  const nav = buildNav(openFindings, legalAlerts, user?.role);
+
+  // Estado de grupos colapsables (todos abiertos por default)
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
+  const toggle = (g: string) => setCollapsed(p => ({ ...p, [g]: !p[g] }));
 
-  const toggle = (group: string) =>
-    setCollapsed(p => ({ ...p, [group]: !p[group] }));
-
-  const handleNavClick = (path: string) => {
-    navigate(path);
-    onClose?.();   // close drawer on mobile after navigation
-  };
+  const isActive = (path: string) => location.pathname === path || location.pathname.startsWith(path + '/');
 
   return (
-    <aside
-      className={[
-        // Base layout
-        'fixed top-14 md:top-16 left-0 z-50',
-        'h-[calc(100dvh-3.5rem)] md:h-[calc(100dvh-4rem)]',
-        'w-72 md:w-[220px]',
-        'flex flex-col',
-        'bg-dassa-navy border-r border-dassa-navy-deep overflow-y-auto',
-        // Drawer slide animation
-        'transition-transform duration-300 ease-in-out',
-        isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0',
-      ].join(' ')}
-    >
-      {/* Close button row — mobile only */}
-      <div className="md:hidden flex items-center justify-between px-4 py-3 border-b border-white/10 flex-shrink-0">
-        <span className="text-white/50 text-[11px] font-bold uppercase tracking-widest">
-          Navegación
-        </span>
-        <button
-          onClick={onClose}
-          className="w-9 h-9 flex items-center justify-center text-white/50
-                     hover:text-white hover:bg-white/10 rounded-lg transition-colors touch-manipulation"
-          aria-label="Cerrar menú"
-        >
-          <X size={18} />
-        </button>
-      </div>
-
-      {/* ISO Strip */}
-      <div className="px-3 py-2.5 border-b border-white/10 bg-dassa-navy-deep flex-shrink-0">
-        <div className="flex items-center justify-center gap-1">
-          {['9001', '14001', '45001'].map(n => (
-            <span
-              key={n}
-              className="text-[9px] font-bold tracking-widest uppercase text-white/50
-                         bg-white/5 border border-white/10 px-1.5 py-0.5 rounded"
-            >
-              {n}
-            </span>
-          ))}
+    <aside className={`
+      ${mobile ? 'fixed inset-y-0 left-0 z-50 w-72' : 'hidden lg:flex lg:w-64 lg:flex-col'}
+      bg-dassa-navy text-white flex-shrink-0
+    `}>
+      {/* Header */}
+      <div className="flex items-center justify-between px-4 py-4 border-b border-white/10">
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 bg-dassa-red rounded-lg flex items-center justify-center">
+            <Shield size={16} className="text-white" />
+          </div>
+          <div>
+            <div className="text-sm font-extrabold tracking-tight">DASSA SGI</div>
+            <div className="text-[9px] opacity-60 uppercase tracking-wider">TRINORMA</div>
+          </div>
         </div>
+        {mobile && onClose && (
+          <button onClick={onClose}><X size={18} /></button>
+        )}
       </div>
 
-      {/* Nav groups */}
-      <nav className="flex-1 px-2 py-2 overflow-y-auto">
-        {nav.map(g => (
-          <div key={g.group} className="mb-1">
+      {/* Nav scrollable */}
+      <div className="flex-1 overflow-y-auto py-3" style={{ scrollbarWidth: 'thin' }}>
+        {nav.map((group) => (
+          <div key={group.group} className="mb-1">
             <button
-              onClick={() => toggle(g.group)}
-              className="w-full flex items-center gap-1.5 px-2 py-1.5 text-[10px] font-bold
-                         text-white/30 uppercase tracking-widest hover:text-white/50 transition-colors"
+              onClick={() => toggle(group.group)}
+              className="w-full flex items-center justify-between px-4 py-1.5 text-[10px] font-bold uppercase tracking-wider text-white/50 hover:text-white/80"
             >
-              <span className="flex-1 text-left">{g.group}</span>
-              {collapsed[g.group]
-                ? <ChevronRight size={10} />
-                : <ChevronDown size={10} />}
+              <span className="flex items-center gap-2">
+                {group.emoji && <span>{group.emoji}</span>}
+                {group.group}
+              </span>
+              {collapsed[group.group]
+                ? <ChevronRight size={11} />
+                : <ChevronDown size={11} />}
             </button>
-
-            {!collapsed[g.group] && g.items.map(item => {
-              const active = location.pathname === item.path ||
-                             location.pathname.startsWith(item.path + '/');
-              return (
-                <button
-                  key={item.path}
-                  onClick={() => handleNavClick(item.path)}
-                  className={[
-                    'w-full flex items-center gap-2.5 px-2 rounded-md mb-0.5 transition-all relative',
-                    'text-[13px] md:text-[12.5px]',
-                    // Taller touch target on mobile
-                    'min-h-[44px] md:min-h-0 md:py-[7px] py-2.5',
-                    'touch-manipulation',
-                    active
-                      ? 'bg-white/10 text-white font-semibold'
-                      : 'text-white/50 hover:bg-white/5 hover:text-white/80',
-                  ].join(' ')}
-                >
-                  {active && (
-                    <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 bg-dassa-celeste rounded-r" />
-                  )}
-                  <span className={`flex-shrink-0 ${active ? 'text-dassa-celeste' : 'opacity-60'}`}>
-                    {item.icon}
-                  </span>
-                  <span className="flex-1 text-left truncate">{item.label}</span>
-                  {!!item.badge && (
-                    <span className="ml-auto bg-dassa-red text-white text-[9px] font-bold rounded-full px-1.5 py-0.5 leading-none">
-                      {item.badge}
+            {!collapsed[group.group] && (
+              <div>
+                {group.subtitle && (
+                  <div className="px-4 pb-1 text-[9px] text-white/30 italic">{group.subtitle}</div>
+                )}
+                {group.items.map((item) => (
+                  <button
+                    key={item.path}
+                    onClick={() => { navigate(item.path); onClose?.(); }}
+                    className={`w-full flex items-center justify-between px-4 py-1.5 text-[12px] font-medium transition
+                      ${isActive(item.path)
+                        ? 'bg-dassa-celeste/20 text-dassa-celeste border-l-2 border-dassa-celeste'
+                        : 'text-white/70 hover:bg-white/5 hover:text-white border-l-2 border-transparent'}`}
+                  >
+                    <span className="flex items-center gap-2.5">
+                      {item.icon}
+                      {item.label}
                     </span>
-                  )}
-                </button>
-              );
-            })}
+                    {item.badge !== undefined && item.badge > 0 && (
+                      <span className="text-[9px] bg-dassa-red text-white rounded-full px-1.5 py-0.5 font-bold min-w-[18px] text-center">
+                        {item.badge}
+                      </span>
+                    )}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         ))}
-      </nav>
+      </div>
 
-      {/* Footer */}
-      <div className="px-3 py-2.5 border-t border-white/10 flex-shrink-0">
-        <p className="text-[9px] text-white/20 text-center tracking-widest uppercase font-medium">
-          SGI TRINORMA v2.0
-        </p>
+      {/* User footer */}
+      <div className="p-3 border-t border-white/10">
+        <div className="flex items-center gap-2 text-xs">
+          <div className="w-7 h-7 bg-dassa-celeste rounded-full flex items-center justify-center text-[10px] font-bold text-dassa-navy">
+            {(user?.full_name?.[0] || 'U').toUpperCase()}
+          </div>
+          <div className="flex-1 overflow-hidden">
+            <div className="font-bold truncate">{user?.full_name || 'Usuario'}</div>
+            <div className="text-[10px] opacity-60 truncate">{user?.role}</div>
+          </div>
+        </div>
       </div>
     </aside>
   );

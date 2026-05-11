@@ -1,0 +1,9 @@
+-- Migration 012 · Reasignación final de operarios según mapa real de Santi (2026-05-11)
+-- Luna Villar → Coordinador de Tráfico (era Operario)
+-- Apuntadores (4): Franco Pérez, Claudio E., Federico E., Nicolás N.
+-- Maquinistas (4): Rodolfo, Fabián, Matías, Emmanuel
+-- Carga/Descarga (2): Mario, Maximiliano
+-- Balanza (1): Cristian Andreini
+-- Plazoleta (1): Franco Di Dio
+-- Mantenimiento: tercerizado
+-- Personal de Puerto y Containero: desactivados

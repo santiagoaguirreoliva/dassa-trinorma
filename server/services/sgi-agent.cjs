@@ -28,6 +28,7 @@ const DEFAULTS = {
     'consultar_tareas','consultar_hallazgos','consultar_riesgos','consultar_legal',
     'consultar_incidentes','consultar_proveedores','resumen_dashboard',
     'consultar_documentos','crear_hallazgo','historial_compras',
+    'consultar_estado_ciclo','iniciar_revision','validar_revision',
   ],
   assistant_system_prompt_extra: '',
 };
@@ -207,6 +208,39 @@ const ALL_TOOLS = [
       },
     },
   },
+  {
+    name: 'consultar_estado_ciclo',
+    description: 'Devuelve el estado completo de un ciclo anual de revisiones del SGI (FODA, Fichas, Procedimientos, AMFE Riesgos, Objetivos, etc.). Muestra qué está validado, qué está bloqueado, qué destraba qué, y qué le falta a NIXA.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        year: { type: 'integer', description: 'Año del ciclo, ej. 2026' },
+      },
+      required: ['year'],
+    },
+  },
+  {
+    name: 'iniciar_revision',
+    description: 'Marca una revisión como en_revision (de programada). Falla si tiene dependencias sin validar.',
+    input_schema: {
+      type: 'object',
+      properties: { review_id: { type: 'string' } },
+      required: ['review_id'],
+    },
+  },
+  {
+    name: 'validar_revision',
+    description: 'Valida (o rechaza) una revisión. Solo el validator asignado puede. Al validarse, se destraban las child reviews automáticamente.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        review_id: { type: 'string' },
+        approve:   { type: 'boolean', description: 'true=validada, false=rechazada' },
+        notes:     { type: 'string' },
+      },
+      required: ['review_id','approve'],
+    },
+  }
 ];
 
 function filterTools(enabledNames) {
@@ -365,6 +399,64 @@ async function h_consultar_documentos({ query, tipo, norma }) {
   return { found: rows.length, documents: rows };
 }
 
+
+
+// ───────────────────────────────────────────────────────────────
+// Handlers · Sistema de Revisiones Encadenadas
+// ───────────────────────────────────────────────────────────────
+async function h_consultar_estado_ciclo({ year }) {
+  const { rows: cycle } = await pool.query(
+    'SELECT id, year, name, status, opened_at FROM review_cycles WHERE year = $1', [year]
+  );
+  if (!cycle[0]) return { error: `Ciclo ${year} no encontrado` };
+  const { rows: reviews } = await pool.query(`
+    SELECT r.id, r.entity_type, r.status, r.scheduled_for::date AS scheduled_for,
+           u_rev.full_name AS reviewer, u_val.full_name AS validator,
+           rt.sort_order, review_is_blocked(r.id) AS is_blocked,
+           rt.depends_on_entity_types AS deps
+      FROM reviews r LEFT JOIN review_templates rt ON rt.entity_type = r.entity_type
+      LEFT JOIN users u_rev ON u_rev.id = r.reviewer_id
+      LEFT JOIN users u_val ON u_val.id = r.validator_id
+     WHERE r.cycle_id = $1 ORDER BY rt.sort_order NULLS LAST
+  `, [cycle[0].id]);
+  return {
+    cycle: cycle[0],
+    total_revisiones: reviews.length,
+    validadas: reviews.filter(r => r.status === 'validada').length,
+    bloqueadas: reviews.filter(r => r.status === 'bloqueada').length,
+    listas_para_iniciar: reviews.filter(r => r.status === 'programada' && !r.is_blocked).length,
+    reviews,
+  };
+}
+
+async function h_iniciar_revision({ review_id }, ctx) {
+  const { rows: check } = await pool.query('SELECT can_start, blockers FROM can_start_review($1)', [review_id]);
+  if (!check[0].can_start) {
+    return { error: 'Tiene dependencias sin validar', blockers: check[0].blockers };
+  }
+  const { rows } = await pool.query(`
+    UPDATE reviews SET status='en_revision', started_at=NOW(), updated_at=NOW()
+     WHERE id=$1 AND status IN ('programada','bloqueada') RETURNING entity_type, status
+  `, [review_id]);
+  if (!rows[0]) return { error: 'Review no encontrada o estado no permite iniciar' };
+  return { ok: true, ...rows[0] };
+}
+
+async function h_validar_revision({ review_id, approve, notes }, ctx) {
+  if (!ctx?.userId) return { error: 'Necesito userId' };
+  const { rows: r } = await pool.query('SELECT validator_id, status, entity_type FROM reviews WHERE id=$1', [review_id]);
+  if (!r[0]) return { error: 'Review no encontrada' };
+  if (r[0].validator_id !== ctx.userId) return { error: 'Solo el validator asignado puede validar' };
+  if (r[0].status !== 'en_revision') return { error: `Estado actual no permite validar: ${r[0].status}` };
+  const status = approve ? 'validada' : 'rechazada';
+  await pool.query(`
+    UPDATE reviews SET status=$2, validated_at=NOW(), validated_by=$3,
+                       notes = COALESCE(notes,'') || $4, updated_at=NOW()
+     WHERE id=$1
+  `, [review_id, status, ctx.userId, notes ? '\n[validate] ' + notes : '']);
+  return { ok: true, status, entity_type: r[0].entity_type, message: approve ? 'Validada. Las child reviews bloqueadas se destrabarán automáticamente.' : 'Rechazada' };
+}
+
 const HANDLERS = {
   consultar_tareas: h_consultar_tareas,
   consultar_hallazgos: h_consultar_hallazgos,
@@ -376,6 +468,9 @@ const HANDLERS = {
   historial_compras: h_historial_compras,
   resumen_dashboard: h_resumen_dashboard,
   consultar_documentos: h_consultar_documentos,
+  consultar_estado_ciclo: h_consultar_estado_ciclo,
+  iniciar_revision: h_iniciar_revision,
+  validar_revision: h_validar_revision,
 };
 
 // ───────────────────────────────────────────────────────────────

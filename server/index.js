@@ -45,6 +45,7 @@ import bibliotecaRouter     from './routes/biblioteca.js';
 import surveysRouter        from './routes/surveys.js';
 // import agentRouter (legacy Ollama/Gemini) archivado en _archive/
 import agentV2Router from "./routes/agent-v2.js";
+import reviewsRouter from './routes/reviews.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const UPLOADS_DIR = join(__dirname, '../uploads');
@@ -187,6 +188,7 @@ app.use('/api/context',         contextRouter);
 app.use('/api/biblioteca',      bibliotecaRouter);
 app.use('/api/surveys',         surveysRouter);
 app.use('/api/agent', agentV2Router);
+app.use('/api/reviews', reviewsRouter);
 
 app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok', env: process.env.NODE_ENV, ts: new Date().toISOString() });

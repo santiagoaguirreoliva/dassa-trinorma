@@ -80,23 +80,42 @@ DEVOLVÉ EXCLUSIVAMENTE JSON ESTRICTO, sin texto antes ni después, con esta est
   "recommendations": "## Prioridad alta\\n- ...\\n## Prioridad media\\n- ..."
 }`;
 
-  const response = await client.messages.create({
-    model,
-    max_tokens: 2000,
-    system: SYSTEM_AUDITOR + '\n\n' + NORMS_KNOWLEDGE,
-    messages: [{ role: 'user', content: userPrompt }],
-  });
+  // Hasta 2 intentos: el segundo refuerza la instrucción JSON si la IA salió de formato.
+  let response, parsed, lastErr;
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    const finalPrompt = attempt === 1
+      ? userPrompt
+      : userPrompt + '\n\nIMPORTANTE: tu respuesta anterior no fue JSON válido. Devolvé EXCLUSIVAMENTE el objeto JSON, sin texto antes ni después, sin markdown, sin comentarios. Asegurate de cerrar todos los arrays y objetos correctamente, y de escapar correctamente los saltos de línea dentro de strings (\\n).';
+    response = await client.messages.create({
+      model,
+      max_tokens: 2000,
+      system: SYSTEM_AUDITOR + '\n\n' + NORMS_KNOWLEDGE,
+      messages: [{ role: 'user', content: finalPrompt }],
+    });
+    const text = response.content[0].text;
+    try {
+      parsed = extractAndParseJson(text);
+      break;
+    } catch (e) {
+      lastErr = e;
+      console.warn(`[auditor] Intento ${attempt} JSON parse falló: ${e.message}. Snippet: ${text.slice(0, 200)}...`);
+    }
+  }
 
-  const text = response.content[0].text;
-  // Extraer JSON (la IA a veces lo envuelve en ```json)
-  const jsonMatch = text.match(/\{[\s\S]*\}/);
-  if (!jsonMatch) throw new Error('La IA no devolvió JSON parseable');
-
-  let parsed;
-  try {
-    parsed = JSON.parse(jsonMatch[0]);
-  } catch (e) {
-    throw new Error('JSON inválido de la IA: ' + e.message);
+  if (!parsed) {
+    // Fallback: devolver un reporte mínimo válido para que el usuario reciba al menos algo.
+    console.error('[auditor] Fallback activado tras 2 intentos. Último error:', lastErr?.message);
+    parsed = {
+      summary: 'No se pudo generar el reporte automático esta semana. Revisá manualmente tus pendientes.',
+      riesgo_score: 50,
+      alertas: [{
+        severity: 'warning',
+        title: 'Reporte degradado',
+        message: 'El auditor IA tuvo un problema al estructurar la respuesta. El equipo técnico ya fue notificado.',
+      }],
+      recommendations: '## Acción manual\n- Revisar pendientes en /mis-pendientes\n- Reportar al admin si ves algo crítico\n\n_(Reporte degradado — error: ' + (lastErr?.message || 'desconocido') + ')_',
+      _degraded: true,
+    };
   }
 
   return {
@@ -104,6 +123,64 @@ DEVOLVÉ EXCLUSIVAMENTE JSON ESTRICTO, sin texto antes ni después, con esta est
     _usage: response.usage,
     _model: response.model,
   };
+}
+
+/**
+ * Extrae y parsea JSON de una respuesta de Claude, tolerando:
+ * - Code fences ```json ... ```
+ * - Texto antes/después del JSON
+ * - Trailing commas
+ * - Saltos de línea reales dentro de strings (los normaliza a \n)
+ */
+function extractAndParseJson(text) {
+  if (!text || typeof text !== 'string') {
+    throw new Error('respuesta vacía o no-string');
+  }
+  // Strip code fences
+  let s = text.replace(/```(?:json)?\s*/gi, '').replace(/```/g, '').trim();
+  // Find first '{' and matching '}' por bracket counting (ignora llaves dentro de strings)
+  const start = s.indexOf('{');
+  if (start < 0) throw new Error('no se encontró { en la respuesta');
+  let depth = 0, inStr = false, esc = false, end = -1;
+  for (let i = start; i < s.length; i++) {
+    const c = s[i];
+    if (esc) { esc = false; continue; }
+    if (c === '\\') { esc = true; continue; }
+    if (c === '"') { inStr = !inStr; continue; }
+    if (inStr) continue;
+    if (c === '{') depth++;
+    else if (c === '}') {
+      depth--;
+      if (depth === 0) { end = i; break; }
+    }
+  }
+  if (end < 0) throw new Error('JSON sin cerrar (sin } final)');
+  let candidate = s.slice(start, end + 1);
+  // Intento directo
+  try { return JSON.parse(candidate); } catch (_) {}
+  // Reparaciones livianas: quitar trailing commas y escapar newlines crudos dentro de strings
+  const repaired = repairJson(candidate);
+  try { return JSON.parse(repaired); }
+  catch (e) { throw new Error('JSON inválido tras reparación: ' + e.message); }
+}
+
+function repairJson(s) {
+  // Quitar trailing commas: , antes de } o ]
+  let out = s.replace(/,(\s*[}\]])/g, '$1');
+  // Escapar saltos de línea crudos dentro de strings
+  let result = '';
+  let inStr = false, esc = false;
+  for (let i = 0; i < out.length; i++) {
+    const c = out[i];
+    if (esc) { result += c; esc = false; continue; }
+    if (c === '\\') { result += c; esc = true; continue; }
+    if (c === '"') { inStr = !inStr; result += c; continue; }
+    if (inStr && c === '\n') { result += '\\n'; continue; }
+    if (inStr && c === '\r') { result += '\\r'; continue; }
+    if (inStr && c === '\t') { result += '\\t'; continue; }
+    result += c;
+  }
+  return result;
 }
 
 /**

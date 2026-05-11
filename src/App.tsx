@@ -83,6 +83,7 @@ export default function App() {
           <Routes>
             <Route path="/login"      element={<Login />} />
             <Route path="/register"   element={<Register />} />
+            <Route path="/signup-empresa" element={<SignupEmpresa />} />
             <Route path="/reporte-nc" element={<PublicNC />} />
             <Route path="/c/:token"   element={<PublicComm />} />
             <Route path="/"           element={<Navigate to="/dashboard" replace />} />

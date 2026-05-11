@@ -6,6 +6,7 @@ const usersExtraRouter = require('./routes/users-extra.cjs');
 const auditorRouter = require('./routes/auditor.cjs');
 const tasksMineRouter = require('./routes/tasks-mine.cjs');
 const profilesRouter = require('./routes/profiles.cjs');
+const agentV2Router = require('./routes/agent-v2.cjs');
 const { startScheduler: startAuditorScheduler } = require('./services/auditor-cron.cjs');
 
 import express from 'express';
@@ -42,7 +43,8 @@ import suppliersRouter      from './routes/suppliers.js';
 import contextRouter        from './routes/context.js';
 import bibliotecaRouter     from './routes/biblioteca.js';
 import surveysRouter        from './routes/surveys.js';
-import agentRouter          from './routes/agent.js';
+// import agentRouter (legacy Ollama/Gemini) archivado en _archive/
+// import agentRouter          from './routes/agent.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const UPLOADS_DIR = join(__dirname, '../uploads');
@@ -184,7 +186,7 @@ app.use('/api/suppliers',       suppliersRouter);
 app.use('/api/context',         contextRouter);
 app.use('/api/biblioteca',      bibliotecaRouter);
 app.use('/api/surveys',         surveysRouter);
-app.use('/api/agent',           agentRouter);
+app.use('/api/agent', agentV2Router);
 
 app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok', env: process.env.NODE_ENV, ts: new Date().toISOString() });

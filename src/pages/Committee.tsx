@@ -1,597 +1,421 @@
-import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import {
-  Building2, Plus, ChevronRight, CheckCircle2, Clock, Sparkles,
-  Users, Calendar, FileText, X, Save, Loader2, AlertTriangle,
-  ClipboardList, RotateCcw, ChevronLeft, Eye
-} from 'lucide-react';
+// /committee · Comité Mixto rediseñado + Wizard de nueva reunión
+import { useEffect, useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { api } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
-import { Header } from '@/components/layout/Header';
-import { Badge, Avatar, Spinner, PageContent, PriorityDot } from '@/components/ui';
+import {
+  Building2, Plus, Calendar, Users, ChevronRight, CheckCircle2, Clock,
+  Loader2, X, ChevronLeft, FileSignature, AlertCircle, Save, Trash2, UserPlus,
+} from 'lucide-react';
 
-// ─── Tipos ─────────────────────────────────────────────────
 interface Meeting {
-  id: string; meeting_date: string; year: number; month: number;
-  meeting_number?: number; attendees: string[]; agenda?: string;
-  minutes?: string; status: string; ai_processed: boolean;
-  ai_summary?: string; tasks_count: number; tasks_done: number;
-  created_by_name?: string; next_meeting_date?: string;
-}
-interface Task {
-  id: string; title: string; description?: string; status: string;
-  priority: string; due_date?: string; source: string;
-  responsible_id?: string; responsible_name?: string; completed_at?: string;
+  id: string;
+  meeting_date: string;
+  year: number;
+  month: number;
+  attendees: string[];
+  location?: string;
+  status: string;
+  closed_at?: string;
+  signatures?: any[];
+  preamble?: string;
 }
 
-const ATTENDEES_DEFAULT = [
-  'Santiago Aguirre Oliva', 'Manuel De La Arena', 'María Del Carmen',
-  'Fernando Ponzi', 'Christian Carrasco', 'NIXA Consultora', 'Maximiliano (Sindicato)'
-];
+interface User { id: string; full_name: string; email: string; role: string; }
+interface PendingTask {
+  id: string; task_number: string; title: string; description?: string;
+  status: string; priority: string; due_date?: string;
+  origin_meeting_date?: string;
+  assignees: { id: string; name: string; role: string }[];
+}
+interface NewTaskDraft {
+  title: string;
+  description: string;
+  priority: 'alta' | 'media' | 'baja';
+  due_date: string;
+  assignees: string[];
+}
 
-const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
-  programada: { label: 'Programada', color: 'text-dassa-red-deep',    bg: 'bg-dassa-red-tint' },
-  realizada:  { label: 'Realizada',  color: 'text-emerald-700', bg: 'bg-emerald-100' },
-  cancelada:  { label: 'Cancelada',  color: 'text-gray-500',   bg: 'bg-gray-100' },
+const ROLE_LABEL: Record<string, string> = {
+  master_admin: 'Master Admin', sgi_leader: 'SGI Leader', rrhh: 'RRHH',
+  operaciones: 'Operaciones', seguridad_higiene: 'SySO',
+  compras_approver: 'Compras', auditor_externo: 'Auditor Externo',
 };
 
-// ─── Modal nueva reunión ────────────────────────────────────
-function NewMeetingModal({ onClose }: { onClose: () => void }) {
-  const qc = useQueryClient();
+function getInitials(name: string) { return name.split(' ').slice(0,2).map(p=>p[0]||'').join('').toUpperCase(); }
+function colorForUser(name: string) {
+  const colors = ['#BF1E2E','#0EA5E9','#10B981','#F59E0B','#8B5CF6','#EC4899','#6366F1','#84CC16'];
+  return colors[(name.charCodeAt(0) + name.length) % colors.length];
+}
+
+export default function Committee() {
   const { user } = useAuth();
-  const [form, setForm] = useState({
-    meeting_date: '', attendees: [...ATTENDEES_DEFAULT],
-    agenda: '', location: 'DASSA — Sarandi', next_meeting_date: ''
-  });
-  const [error, setError] = useState('');
-  const set = (k: string, v: any) => setForm(p => ({ ...p, [k]: v }));
+  const navigate = useNavigate();
+  const [meetings, setMeetings] = useState<Meeting[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [wizardOpen, setWizardOpen] = useState(false);
 
-  const create = useMutation({
-    mutationFn: () => api.post('/committee', form),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['committee'] }); onClose(); },
-    onError: (e: any) => setError(e.message),
-  });
+  async function loadMeetings() {
+    setLoading(true);
+    try {
+      const m = await api.get<Meeting[]>('/committee');
+      setMeetings(m || []);
+    } finally { setLoading(false); }
+  }
+  useEffect(() => { loadMeetings(); }, []);
 
-  const toggleAttendee = (name: string) => {
-    set('attendees', form.attendees.includes(name)
-      ? form.attendees.filter(a => a !== name)
-      : [...form.attendees, name]
-    );
-  };
+  const isAdmin = ['master_admin','sgi_leader'].includes(user?.role || '');
 
   return (
-    <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-        <div className="flex items-center justify-between px-6 py-4 border-b">
-          <h3 className="text-[15px] font-extrabold text-gray-900">Nueva Reunión del Comité</h3>
-          <button onClick={onClose}><X size={18} className="text-gray-400" /></button>
-        </div>
-        <div className="p-6 space-y-4">
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="label-field">Fecha de reunión <span className="text-red-500">*</span></label>
-              <input type="date" value={form.meeting_date} onChange={e => set('meeting_date', e.target.value)} className="input-field" />
-            </div>
-            <div>
-              <label className="label-field">Próxima reunión</label>
-              <input type="date" value={form.next_meeting_date} onChange={e => set('next_meeting_date', e.target.value)} className="input-field" />
-            </div>
-            <div className="col-span-2">
-              <label className="label-field">Lugar</label>
-              <input value={form.location} onChange={e => set('location', e.target.value)} className="input-field" />
-            </div>
-          </div>
+    <div className="flex-1 overflow-y-auto bg-slate-50">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
           <div>
-            <label className="label-field mb-2">Participantes</label>
-            <div className="flex flex-wrap gap-2">
-              {ATTENDEES_DEFAULT.map(a => (
-                <button key={a} type="button" onClick={() => toggleAttendee(a)}
-                  className={`px-3 py-1 rounded-full text-xs font-semibold border transition-colors
-                    ${form.attendees.includes(a)
-                      ? 'bg-dassa-red text-white border-dassa-red'
-                      : 'bg-white text-gray-500 border-gray-200 hover:border-blue-300'}`}>
-                  {a.split(' ')[0]}
-                </button>
-              ))}
-            </div>
+            <p className="text-xs font-bold text-[#BF1E2E] uppercase tracking-widest">SGI · ISO 45001</p>
+            <h1 className="text-3xl font-black text-gray-900 flex items-center gap-3">
+              <Building2 className="w-8 h-8 text-[#BF1E2E]" />
+              Comité Mixto
+            </h1>
+            <p className="text-gray-600 mt-1">Reuniones bimestrales · participación y consulta</p>
           </div>
-          <div>
-            <label className="label-field">Agenda (temas a tratar)</label>
-            <textarea value={form.agenda} onChange={e => set('agenda', e.target.value)}
-              rows={3} placeholder="1. Seguimiento tareas del mes anterior&#10;2. Nuevos temas..." className="input-field resize-none" />
-          </div>
-          {error && <p className="text-xs text-red-500 bg-red-50 px-3 py-2 rounded-lg">{error}</p>}
-          <div className="flex gap-2 pt-1">
-            <button onClick={onClose} className="flex-1 py-2.5 border border-gray-200 rounded-xl text-sm font-semibold text-gray-600">Cancelar</button>
-            <button onClick={() => !create.isPending && create.mutate()} disabled={!form.meeting_date || create.isPending}
-              className="flex-1 py-2.5 bg-dassa-red-deep text-white font-bold text-sm rounded-xl hover:bg-dassa-red flex items-center justify-center gap-2 disabled:opacity-50">
-              {create.isPending && <Loader2 size={14} className="animate-spin" />}
-              Crear Reunión
+          {isAdmin && (
+            <button onClick={() => setWizardOpen(true)}
+              className="bg-[#BF1E2E] hover:bg-[#a01825] text-white font-bold px-5 py-2.5 rounded-lg flex items-center gap-2">
+              <Plus className="w-5 h-5" /> Nueva reunión
             </button>
+          )}
+        </div>
+
+        {loading ? (
+          <div className="text-center py-12"><Loader2 className="w-10 h-10 animate-spin text-[#BF1E2E] mx-auto" /></div>
+        ) : (
+          <div className="space-y-3">
+            {meetings.sort((a,b) => b.meeting_date.localeCompare(a.meeting_date)).map(m => (
+              <MeetingCard key={m.id} meeting={m} />
+            ))}
+          </div>
+        )}
+      </div>
+
+      {wizardOpen && <Wizard onClose={() => { setWizardOpen(false); loadMeetings(); }} />}
+    </div>
+  );
+}
+
+function MeetingCard({ meeting }: { meeting: Meeting }) {
+  const navigate = useNavigate();
+  const isFuture = new Date(meeting.meeting_date) > new Date();
+  const isClosed = meeting.status === 'cerrada' || !!meeting.closed_at;
+  const sigCount = (meeting.signatures || []).length;
+  const attCount = (meeting.attendees || []).length;
+
+  return (
+    <div onClick={() => navigate(`/committee/${meeting.id}`)}
+      className="bg-white rounded-xl border border-gray-200 p-5 cursor-pointer hover:border-[#BF1E2E] hover:shadow-md transition">
+      <div className="flex items-start gap-4 flex-wrap">
+        <div className="bg-[#BF1E2E] text-white rounded-lg w-20 text-center py-3 shrink-0">
+          <div className="text-xs uppercase">{new Date(meeting.meeting_date).toLocaleString('es-AR',{month:'short'})}</div>
+          <div className="text-2xl font-black">{new Date(meeting.meeting_date).getDate()}</div>
+          <div className="text-xs">{meeting.year}</div>
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap mb-1">
+            <h3 className="text-lg font-bold text-gray-900">Comité Mixto · {meeting.location || 'DASSA'}</h3>
+            {isFuture && <span className="bg-violet-100 text-violet-800 text-xs px-2 py-0.5 rounded-full font-semibold">Próxima</span>}
+            {isClosed && <span className="bg-emerald-100 text-emerald-800 text-xs px-2 py-0.5 rounded-full font-semibold">Cerrada</span>}
+            {!isFuture && !isClosed && <span className="bg-amber-100 text-amber-800 text-xs px-2 py-0.5 rounded-full font-semibold">Realizada</span>}
+          </div>
+          <div className="flex items-center gap-4 text-sm text-gray-600 flex-wrap">
+            <span className="flex items-center gap-1"><Users className="w-4 h-4" /> {attCount} asistentes</span>
+            {sigCount > 0 && <span className="flex items-center gap-1 text-emerald-700"><FileSignature className="w-4 h-4" /> {sigCount} firmas</span>}
           </div>
         </div>
+        <ChevronRight className="w-5 h-5 text-gray-400" />
       </div>
     </div>
   );
 }
 
-// ─── Meeting Detail ─────────────────────────────────────────
-function MeetingDetail({ meetingId, onBack }: { meetingId: string; onBack: () => void }) {
-  const qc = useQueryClient();
-  const { isAdmin } = useAuth();
-  const [tab, setTab] = useState<'acta' | 'tareas' | 'resumen'>('acta');
-  const [minutes, setMinutes] = useState('');
-  const [minutesEdited, setMinutesEdited] = useState(false);
-  const [aiLoading, setAiLoading] = useState(false);
-  const [aiError, setAiError] = useState('');
-  const [newTask, setNewTask] = useState({ title: '', due_date: '', responsible_id: '', priority: 'media' });
-  const [showNewTask, setShowNewTask] = useState(false);
+// ───────────────────── WIZARD: nueva reunión 3 pasos ─────────────────────
+function Wizard({ onClose }: { onClose: () => void }) {
+  const [step, setStep] = useState(1);
+  const [users, setUsers] = useState<User[]>([]);
+  const [pending, setPending] = useState<PendingTask[]>([]);
+  const [loadingPrev, setLoadingPrev] = useState(false);
 
-  const { data: meeting, isLoading } = useQuery<Meeting & { tasks: Task[] }>({
-    queryKey: ['committee', meetingId],
-    queryFn: () => api.get(`/committee/${meetingId}`),
-    onSuccess: (d) => { if (!minutesEdited) setMinutes(d.minutes || ''); }
-  } as any);
+  // Step 1 data
+  const [meetingDate, setMeetingDate] = useState(new Date().toISOString().slice(0,10));
+  const [location, setLocation] = useState('DASSA — Sarandí');
+  const [preamble, setPreamble] = useState('Temas generales: OEA · Huella de carbono · Reciclaje pallets y hojas');
+  const [attendees, setAttendees] = useState<string[]>([]);
 
-  const { data: users = [] } = useQuery<any[]>({
-    queryKey: ['users'],
-    queryFn: () => api.get('/users'),
-  });
+  // Step 2: review pending
+  const [reviewedTasks, setReviewedTasks] = useState<Record<string, 'sigue'|'completada'|'cancelada'>>({});
 
-  const saveMinutes = useMutation({
-    mutationFn: () => api.patch(`/committee/${meetingId}`, { minutes, status: 'realizada' }),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['committee', meetingId] }); qc.invalidateQueries({ queryKey: ['committee'] }); setMinutesEdited(false); },
-  });
+  // Step 3: new tasks
+  const [newTasks, setNewTasks] = useState<NewTaskDraft[]>([]);
+  const [draft, setDraft] = useState<NewTaskDraft>({ title:'', description:'', priority:'media', due_date:'', assignees:[] });
 
-  const addTask = useMutation({
-    mutationFn: () => api.post(`/committee/${meetingId}/tasks`, newTask),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['committee', meetingId] }); setShowNewTask(false); setNewTask({ title: '', due_date: '', responsible_id: '', priority: 'media' }); },
-  });
+  const [saving, setSaving] = useState(false);
+  const [savedId, setSavedId] = useState<string | null>(null);
 
-  const toggleTask = useMutation({
-    mutationFn: ({ tid, status }: { tid: string; status: string }) =>
-      api.patch(`/committee/${meetingId}/tasks/${tid}`, { status }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['committee', meetingId] }),
-  });
+  useEffect(() => {
+    api.get<User[]>('/users').then(setUsers).catch(()=>{});
+    setLoadingPrev(true);
+    api.get<PendingTask[]>('/committee/pending-alive').then(p => {
+      setPending(p || []);
+      const init: any = {};
+      (p || []).forEach(t => init[t.id] = 'sigue');
+      setReviewedTasks(init);
+    }).finally(() => setLoadingPrev(false));
+  }, []);
 
-  async function processWithAI() {
-    setAiLoading(true);
-    setAiError('');
-    try {
-      const result: any = await api.post(`/committee/${meetingId}/process-ai`, {});
-      qc.invalidateQueries({ queryKey: ['committee', meetingId] });
-      qc.invalidateQueries({ queryKey: ['committee'] });
-      setTab('tareas');
-    } catch (e: any) {
-      setAiError(e.message);
-    } finally {
-      setAiLoading(false);
+  function toggleAttendee(name: string) {
+    setAttendees(a => a.includes(name) ? a.filter(x=>x!==name) : [...a, name]);
+  }
+  function toggleDraftAssignee(uid: string) {
+    setDraft(d => ({ ...d, assignees: d.assignees.includes(uid) ? d.assignees.filter(x=>x!==uid) : [...d.assignees, uid] }));
+  }
+  function addDraftToList() {
+    if (!draft.title || draft.assignees.length === 0) {
+      alert('Título y al menos un responsable son obligatorios');
+      return;
     }
+    setNewTasks(n => [...n, draft]);
+    setDraft({ title:'', description:'', priority:'media', due_date:'', assignees:[] });
   }
 
-  if (isLoading) return <div className="flex justify-center py-16"><Spinner size={32} /></div>;
-  if (!meeting) return null;
+  async function save() {
+    setSaving(true);
+    try {
+      // 1. Crear reunión + new_tasks vía wizard
+      const r: any = await api.post('/committee/wizard', {
+        meeting_date: meetingDate,
+        location,
+        attendees,
+        preamble,
+        new_tasks: newTasks.map(t => ({
+          title: t.title, description: t.description, priority: t.priority,
+          due_date: t.due_date || null, assignees: t.assignees
+        }))
+      });
+      // 2. Actualizar pendientes según review
+      for (const tid of Object.keys(reviewedTasks)) {
+        const newStatus = reviewedTasks[tid];
+        if (newStatus === 'completada' || newStatus === 'cancelada') {
+          await api.patch(`/tasks/mine/${tid}`, { status: newStatus, completed_at: new Date().toISOString() }).catch(()=>{});
+        }
+        // "sigue" → no se toca el status, pero se podría revincular al nuevo meeting (no implementado)
+      }
+      setSavedId(r.meeting_id);
+    } catch (e: any) {
+      alert('Error: ' + e.message);
+    } finally { setSaving(false); }
+  }
 
-  const sc = STATUS_CONFIG[meeting.status] || STATUS_CONFIG.programada;
-  const pendingTasks = (meeting.tasks || []).filter(t => t.status !== 'completada');
-  const doneTasks = (meeting.tasks || []).filter(t => t.status === 'completada');
-  const progress = meeting.tasks_count > 0
-    ? Math.round((meeting.tasks_done / meeting.tasks_count) * 100) : 0;
+  if (savedId) {
+    return (
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-2xl max-w-md w-full p-8 text-center">
+          <CheckCircle2 className="w-16 h-16 text-emerald-500 mx-auto mb-4" />
+          <h2 className="text-2xl font-bold mb-2">Reunión guardada</h2>
+          <p className="text-gray-600 mb-6">
+            La reunión fue creada con {newTasks.length} tareas nuevas.
+            Los responsables ya las tienen en Mis Pendientes.
+          </p>
+          <button onClick={onClose} className="w-full bg-[#BF1E2E] text-white py-3 rounded-lg font-bold">Listo</button>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <>
-      <Header
-        title={`Reunión #${meeting.meeting_number || '—'} — ${new Date(meeting.meeting_date).toLocaleDateString('es-AR', { day: 'numeric', month: 'long', year: 'numeric' })}`}
-        subtitle={`${meeting.attendees?.length || 0} participantes · ${meeting.tasks_count} tareas`}
-        actions={
-          <button onClick={onBack} className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 text-gray-600 rounded-lg text-xs font-semibold hover:bg-gray-200">
-            <ChevronLeft size={14} /> Volver
-          </button>
-        }
-      />
-
-      {/* Status bar */}
-      <div className="bg-white border-b border-gray-200 px-6 py-3 flex items-center gap-4">
-        <span className={`px-2.5 py-1 rounded-full text-[10px] font-extrabold ${sc.bg} ${sc.color}`}>
-          {sc.label}
-        </span>
-        <div className="flex items-center gap-1.5">
-          <Users size={12} className="text-gray-400" />
-          <span className="text-xs text-gray-500">{meeting.attendees?.join(', ')}</span>
+    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[92vh] overflow-hidden flex flex-col">
+        {/* Header */}
+        <div className="bg-[#BF1E2E] text-white p-5 flex items-center justify-between">
+          <div>
+            <h2 className="text-xl font-bold">Nueva reunión de Comité Mixto</h2>
+            <p className="text-white/80 text-sm">Paso {step} de 3</p>
+          </div>
+          <button onClick={onClose}><X className="w-6 h-6" /></button>
         </div>
-        {meeting.tasks_count > 0 && (
-          <div className="flex items-center gap-2 ml-auto">
-            <div className="w-24 h-1.5 bg-gray-200 rounded-full overflow-hidden">
-              <div className="h-full bg-emerald-500 rounded-full transition-all" style={{ width: `${progress}%` }} />
-            </div>
-            <span className="text-[10px] text-gray-500 font-semibold">{progress}% completado</span>
-          </div>
-        )}
-      </div>
 
-      {/* Tabs */}
-      <div className="bg-white border-b border-gray-200 px-6 flex">
-        {[
-          { key: 'acta',    label: 'Acta',       icon: <FileText size={13} /> },
-          { key: 'tareas',  label: `Tareas (${meeting.tasks_count})`, icon: <ClipboardList size={13} /> },
-          { key: 'resumen', label: 'Resumen IA',  icon: <Sparkles size={13} /> },
-        ].map(t => (
-          <button key={t.key} onClick={() => setTab(t.key as any)}
-            className={`flex items-center gap-1.5 px-4 py-3 text-xs font-bold border-b-2 transition-colors
-              ${tab === t.key ? 'border-dassa-red text-dassa-red-deep' : 'border-transparent text-gray-400 hover:text-gray-700'}`}>
-            {t.icon}{t.label}
-          </button>
-        ))}
-      </div>
+        {/* Progress bar */}
+        <div className="bg-gray-100 h-1">
+          <div className="bg-[#BF1E2E] h-1 transition-all" style={{ width: `${(step/3)*100}%` }} />
+        </div>
 
-      <PageContent>
-        {/* ─── ACTA ─── */}
-        {tab === 'acta' && (
-          <div className="space-y-4 max-w-3xl">
-            {meeting.agenda && (
-              <div className="bg-dassa-red-tint rounded-xl p-4 border border-blue-100">
-                <p className="text-[10px] font-bold text-dassa-red uppercase tracking-wider mb-2">Agenda</p>
-                <p className="text-sm text-gray-700 whitespace-pre-wrap">{meeting.agenda}</p>
-              </div>
-            )}
-
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <label className="label-field">Texto del Acta</label>
-                {minutesEdited && (
-                  <button onClick={() => saveMinutes.mutate()} disabled={saveMinutes.isPending}
-                    className="flex items-center gap-1.5 px-3 py-1.5 bg-dassa-red text-white rounded-lg text-xs font-bold hover:bg-dassa-red-deep">
-                    {saveMinutes.isPending ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />}
-                    Guardar acta
-                  </button>
-                )}
-              </div>
-              <textarea
-                value={minutes}
-                onChange={e => { setMinutes(e.target.value); setMinutesEdited(true); }}
-                rows={16}
-                placeholder={`Pegá el texto completo del acta acá...
-
-Ejemplo:
-COMITÉ MIXTO DE HIGIENE Y SEGURIDAD
-REUNIÓN: ${new Date(meeting.meeting_date).toLocaleDateString('es-AR')}
-Participantes: Santiago, María, Fernando, Christian, NIXA...
-
-MINUTA DEL MES ANTERIOR:
-- Tarea 1: REALIZADO
-- Tarea 2: PENDIENTE
-
-NUEVAS TAREAS:
-- Descripción de la tarea. Fecha máx: DD/MM/AA. Responsable: Nombre`}
-                className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-800 focus:outline-none focus:border-blue-400 resize-none font-mono leading-relaxed"
-              />
-            </div>
-
-            {/* AI Process button */}
-            <div className="bg-gradient-to-r from-violet-50 to-blue-50 rounded-xl p-5 border border-violet-200">
-              <div className="flex items-start gap-3">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-600 to-blue-500 flex items-center justify-center flex-shrink-0">
-                  <Sparkles size={18} className="text-white" />
+        {/* Body */}
+        <div className="flex-1 overflow-y-auto p-6">
+          {/* PASO 1 */}
+          {step === 1 && (
+            <div className="space-y-4">
+              <h3 className="font-bold text-lg">Datos de la reunión</h3>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-semibold mb-1">Fecha</label>
+                  <input type="date" value={meetingDate} onChange={e=>setMeetingDate(e.target.value)}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2" />
                 </div>
-                <div className="flex-1">
-                  <p className="text-sm font-extrabold text-gray-800 mb-1">Procesamiento con IA</p>
-                  <p className="text-xs text-gray-500 mb-3">
-                    Claude lee el acta, genera un resumen ejecutivo y extrae automáticamente todas las tareas con responsable y fecha límite.
-                  </p>
-                  {aiError && (
-                    <div className="mb-3 flex items-center gap-2 text-xs text-red-600 bg-red-50 px-3 py-2 rounded-lg">
-                      <AlertTriangle size={13} /> {aiError}
-                    </div>
-                  )}
-                  <button
-                    onClick={processWithAI}
-                    disabled={aiLoading || !minutes.trim()}
-                    className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-violet-700 to-blue-600 text-white font-bold text-sm rounded-xl hover:from-violet-600 hover:to-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-                  >
-                    {aiLoading
-                      ? <><Loader2 size={15} className="animate-spin" /> Procesando con IA...</>
-                      : <><Sparkles size={15} /> {meeting.ai_processed ? 'Reprocesar con IA' : 'Procesar con IA'}</>
-                    }
-                  </button>
-                  {meeting.ai_processed && !aiLoading && (
-                    <p className="text-[10px] text-emerald-600 mt-2 flex items-center gap-1">
-                      <CheckCircle2 size={11} /> Procesado — {(meeting.tasks || []).filter(t => t.source === 'ai_extracted').length} tareas extraídas
-                    </p>
-                  )}
+                <div>
+                  <label className="block text-sm font-semibold mb-1">Ubicación</label>
+                  <input type="text" value={location} onChange={e=>setLocation(e.target.value)}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2" />
                 </div>
               </div>
-            </div>
-          </div>
-        )}
-
-        {/* ─── TAREAS ─── */}
-        {tab === 'tareas' && (
-          <div className="space-y-4 max-w-3xl">
-            {/* Pendientes */}
-            <div>
-              <div className="flex items-center justify-between mb-3">
-                <p className="text-xs font-bold text-gray-700 uppercase tracking-wider">
-                  Pendientes ({pendingTasks.length})
-                </p>
-                {isAdmin && (
-                  <button onClick={() => setShowNewTask(!showNewTask)}
-                    className="flex items-center gap-1.5 px-2.5 py-1.5 bg-dassa-red text-white rounded-lg text-[10px] font-bold hover:bg-dassa-red-deep">
-                    <Plus size={11} /> Nueva tarea
-                  </button>
-                )}
-              </div>
-
-              {showNewTask && (
-                <div className="bg-gray-50 rounded-xl p-4 border border-gray-200 mb-3 space-y-3">
-                  <input value={newTask.title} onChange={e => setNewTask(p => ({...p, title: e.target.value}))}
-                    placeholder="Descripción de la tarea..." className="input-field" />
-                  <div className="grid grid-cols-3 gap-2">
-                    <select value={newTask.responsible_id} onChange={e => setNewTask(p => ({...p, responsible_id: e.target.value}))}
-                      className="input-field">
-                      <option value="">Sin responsable</option>
-                      {users.map((u: any) => <option key={u.id} value={u.id}>{u.full_name}</option>)}
-                    </select>
-                    <input type="date" value={newTask.due_date} onChange={e => setNewTask(p => ({...p, due_date: e.target.value}))} className="input-field" />
-                    <select value={newTask.priority} onChange={e => setNewTask(p => ({...p, priority: e.target.value}))} className="input-field">
-                      <option value="baja">Baja</option>
-                      <option value="media">Media</option>
-                      <option value="alta">Alta</option>
-                    </select>
-                  </div>
-                  <div className="flex gap-2">
-                    <button onClick={() => setShowNewTask(false)} className="flex-1 py-2 border border-gray-200 rounded-lg text-xs font-semibold text-gray-600">Cancelar</button>
-                    <button onClick={() => newTask.title && addTask.mutate()} disabled={!newTask.title || addTask.isPending}
-                      className="flex-1 py-2 bg-dassa-red text-white font-bold text-xs rounded-lg hover:bg-dassa-red-deep disabled:opacity-50">
-                      Agregar
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              <div className="space-y-2">
-                {pendingTasks.map(t => {
-                  const overdue = t.due_date && new Date(t.due_date) < new Date();
-                  return (
-                    <div key={t.id}
-                      className={`flex items-start gap-3 p-3.5 rounded-xl border transition-colors
-                        ${overdue ? 'bg-red-50 border-red-200' : 'bg-white border-gray-200 hover:border-gray-300'}`}>
-                      <button
-                        onClick={() => toggleTask.mutate({ tid: t.id, status: 'completada' })}
-                        className="w-5 h-5 rounded-full border-2 border-gray-300 hover:border-emerald-400 flex-shrink-0 mt-0.5 transition-colors"
-                      />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs font-semibold text-gray-800 leading-snug">{t.title}</p>
-                        <div className="flex items-center gap-3 mt-1">
-                          {t.responsible_name && (
-                            <span className="flex items-center gap-1 text-[10px] text-gray-400">
-                              <Avatar name={t.responsible_name} size={14} />
-                              {t.responsible_name.split(' ')[0]}
-                            </span>
-                          )}
-                          {t.due_date && (
-                            <span className={`flex items-center gap-0.5 text-[10px] font-semibold ${overdue ? 'text-red-500' : 'text-gray-400'}`}>
-                              <Clock size={10} />
-                              {new Date(t.due_date).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit' })}
-                              {overdue && ' — VENCIDA'}
-                            </span>
-                          )}
-                          <PriorityDot priority={t.priority} />
-                          {t.source === 'ai_extracted' && (
-                            <span className="text-[9px] font-bold text-violet-600 bg-violet-50 px-1.5 py-0.5 rounded flex items-center gap-0.5">
-                              <Sparkles size={8} /> IA
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-                {pendingTasks.length === 0 && (
-                  <div className="text-center py-8 text-gray-400">
-                    <CheckCircle2 size={28} className="mx-auto mb-2 text-emerald-300" />
-                    <p className="text-sm font-medium">Todas las tareas completadas</p>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Completadas */}
-            {doneTasks.length > 0 && (
               <div>
-                <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">
-                  Completadas ({doneTasks.length})
-                </p>
-                <div className="space-y-1.5">
-                  {doneTasks.map(t => (
-                    <div key={t.id} className="flex items-center gap-3 px-3.5 py-2.5 bg-emerald-50 rounded-xl border border-emerald-100">
-                      <CheckCircle2 size={16} className="text-emerald-500 flex-shrink-0" />
-                      <span className="text-xs text-gray-500 line-through flex-1">{t.title}</span>
-                      {t.responsible_name && (
-                        <span className="text-[10px] text-gray-400 flex-shrink-0">{t.responsible_name.split(' ')[0]}</span>
-                      )}
-                    </div>
+                <label className="block text-sm font-semibold mb-1">Preámbulo / temas generales</label>
+                <textarea value={preamble} onChange={e=>setPreamble(e.target.value)} rows={3}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2" />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold mb-2">Asistentes ({attendees.length} marcados)</label>
+                <div className="grid grid-cols-2 gap-2">
+                  {users.map(u => (
+                    <label key={u.id} className="flex items-center gap-2 cursor-pointer p-2 hover:bg-gray-50 rounded">
+                      <input type="checkbox" checked={attendees.includes(u.full_name)} onChange={()=>toggleAttendee(u.full_name)} />
+                      <div className="w-7 h-7 rounded-full text-white text-xs font-bold flex items-center justify-center"
+                        style={{ backgroundColor: colorForUser(u.full_name) }}>
+                        {getInitials(u.full_name)}
+                      </div>
+                      <div>
+                        <div className="text-sm font-medium">{u.full_name}</div>
+                        <div className="text-xs text-gray-500">{ROLE_LABEL[u.role] || u.role}</div>
+                      </div>
+                    </label>
                   ))}
                 </div>
               </div>
-            )}
-          </div>
-        )}
+            </div>
+          )}
 
-        {/* ─── RESUMEN IA ─── */}
-        {tab === 'resumen' && (
-          <div className="max-w-3xl space-y-4">
-            {meeting.ai_processed && meeting.ai_summary ? (
-              <>
-                <div className="bg-gradient-to-r from-violet-50 to-blue-50 rounded-xl p-5 border border-violet-200">
-                  <div className="flex items-center gap-2 mb-3">
-                    <Sparkles size={16} className="text-violet-600" />
-                    <p className="text-xs font-bold text-violet-700 uppercase tracking-wider">Resumen ejecutivo generado por IA</p>
-                  </div>
-                  <p className="text-sm text-gray-700 leading-relaxed">{meeting.ai_summary}</p>
-                </div>
-
-                <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-                  <div className="px-5 py-3 border-b border-gray-100 bg-gray-50">
-                    <p className="text-xs font-bold text-gray-600">Tareas extraídas por IA</p>
-                  </div>
-                  {(meeting.tasks || []).filter(t => t.source === 'ai_extracted').map((t, i) => (
-                    <div key={t.id} className="flex items-start gap-3 px-5 py-3 border-b border-gray-100 last:border-0">
-                      <span className="w-5 h-5 rounded-full bg-violet-100 text-violet-700 text-[10px] font-extrabold flex items-center justify-center flex-shrink-0 mt-0.5">{i+1}</span>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs font-semibold text-gray-800">{t.title}</p>
-                        <div className="flex items-center gap-3 mt-1">
-                          {t.responsible_name && <span className="text-[10px] text-gray-400">{t.responsible_name}</span>}
-                          {t.due_date && <span className="text-[10px] text-gray-400">{new Date(t.due_date).toLocaleDateString('es-AR')}</span>}
-                          <PriorityDot priority={t.priority} />
-                          <Badge label={t.status === 'completada' ? 'Completada' : 'Pendiente'}
-                            variant={t.status === 'completada' ? 'green' : 'amber'} size="sm" />
-                        </div>
+          {/* PASO 2: pendientes anteriores */}
+          {step === 2 && (
+            <div className="space-y-3">
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-sm">
+                <strong>Revisión de pendientes ({pending.length} tareas vivas)</strong> · marcar el estado actual de cada una
+              </div>
+              {loadingPrev ? <Loader2 className="w-6 h-6 animate-spin mx-auto" /> : pending.map(t => (
+                <div key={t.id} className="border border-gray-200 rounded-lg p-3">
+                  <div className="flex items-start gap-3">
+                    <span className="bg-gray-900 text-white text-xs font-mono px-2 py-1 rounded">{t.task_number}</span>
+                    <div className="flex-1">
+                      <div className="font-medium text-sm">{t.title}</div>
+                      <div className="text-xs text-gray-500 mt-0.5">
+                        Resp: {t.assignees.map(a=>a.name).join(', ') || 'sin asignar'}
                       </div>
                     </div>
-                  ))}
+                  </div>
+                  <div className="flex gap-1 mt-2">
+                    {[
+                      {v:'sigue',l:'Sigue pendiente'},
+                      {v:'completada',l:'✓ Completada'},
+                      {v:'cancelada',l:'Cancelar'},
+                    ].map(o => (
+                      <button key={o.v}
+                        onClick={()=>setReviewedTasks(r=>({...r, [t.id]:o.v as any}))}
+                        className={`text-xs px-3 py-1 rounded font-medium ${
+                          reviewedTasks[t.id]===o.v
+                            ? (o.v==='completada' ? 'bg-emerald-600 text-white' :
+                               o.v==='cancelada' ? 'bg-red-100 text-red-800' : 'bg-amber-100 text-amber-900')
+                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        }`}>
+                        {o.l}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </>
-            ) : (
-              <div className="text-center py-16 text-gray-400">
-                <Sparkles size={36} className="mx-auto mb-3 opacity-30" />
-                <p className="font-semibold text-gray-500">Aún no se procesó esta reunión con IA</p>
-                <p className="text-sm mt-1">Cargá el acta en la pestaña "Acta" y hacé click en "Procesar con IA"</p>
-                <button onClick={() => setTab('acta')}
-                  className="mt-4 px-4 py-2 bg-violet-600 text-white font-bold text-sm rounded-xl hover:bg-violet-700">
-                  Ir al Acta
+              ))}
+            </div>
+          )}
+
+          {/* PASO 3: nuevas tareas */}
+          {step === 3 && (
+            <div className="space-y-4">
+              <h3 className="font-bold text-lg">Tareas NUEVAS de esta reunión</h3>
+              {/* Lista de tareas ya agregadas */}
+              {newTasks.map((t, i) => (
+                <div key={i} className="bg-emerald-50 border border-emerald-200 rounded-lg p-3 flex items-center gap-3">
+                  <div className="flex-1">
+                    <div className="font-medium">{t.title}</div>
+                    <div className="text-xs text-gray-600">
+                      Resp: {t.assignees.map(uid => users.find(u=>u.id===uid)?.full_name).filter(Boolean).join(', ')}
+                      {t.due_date && ` · Vence: ${t.due_date}`}
+                    </div>
+                  </div>
+                  <button onClick={()=>setNewTasks(n => n.filter((_,j)=>j!==i))}>
+                    <Trash2 className="w-4 h-4 text-red-600" />
+                  </button>
+                </div>
+              ))}
+              {/* Form para agregar */}
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 space-y-3">
+                <input type="text" value={draft.title} onChange={e=>setDraft({...draft,title:e.target.value})}
+                  placeholder="Título de la tarea"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2" />
+                <textarea value={draft.description} onChange={e=>setDraft({...draft,description:e.target.value})}
+                  placeholder="Descripción (opcional)" rows={2}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2" />
+                <div className="grid grid-cols-2 gap-3">
+                  <select value={draft.priority} onChange={e=>setDraft({...draft,priority:e.target.value as any})}
+                    className="border border-gray-300 rounded-lg px-3 py-2">
+                    <option value="alta">Prioridad alta</option>
+                    <option value="media">Prioridad media</option>
+                    <option value="baja">Prioridad baja</option>
+                  </select>
+                  <input type="date" value={draft.due_date} onChange={e=>setDraft({...draft,due_date:e.target.value})}
+                    className="border border-gray-300 rounded-lg px-3 py-2" />
+                </div>
+                <div>
+                  <div className="text-sm font-semibold mb-1">Responsables (obligatorio, al menos 1)</div>
+                  <div className="flex flex-wrap gap-1">
+                    {users.map(u => (
+                      <button key={u.id} onClick={()=>toggleDraftAssignee(u.id)}
+                        className={`text-xs px-3 py-1.5 rounded-full font-medium flex items-center gap-1 ${
+                          draft.assignees.includes(u.id) ? 'bg-[#BF1E2E] text-white' : 'bg-white border border-gray-300 hover:bg-gray-50'
+                        }`}>
+                        <UserPlus className="w-3 h-3" /> {u.full_name.split(' ')[0]}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <button onClick={addDraftToList}
+                  disabled={!draft.title || draft.assignees.length === 0}
+                  className="w-full bg-emerald-600 disabled:bg-gray-300 text-white py-2 rounded-lg font-medium flex items-center justify-center gap-2">
+                  <Plus className="w-4 h-4" /> Agregar tarea
                 </button>
               </div>
-            )}
-          </div>
-        )}
-      </PageContent>
-    </>
-  );
-}
-
-// ─── MAIN PAGE ─────────────────────────────────────────────
-export default function Committee() {
-  const { isAdmin } = useAuth();
-  const [selected, setSelected] = useState<string | null>(null);
-  const [showNew, setShowNew] = useState(false);
-
-  const { data: meetings = [], isLoading } = useQuery<Meeting[]>({
-    queryKey: ['committee'],
-    queryFn: () => api.get('/committee'),
-  });
-
-  if (selected) return <MeetingDetail meetingId={selected} onBack={() => setSelected(null)} />;
-
-  const upcoming = meetings.filter(m => m.status === 'programada');
-  const done = meetings.filter(m => m.status === 'realizada');
-
-  return (
-    <>
-      <Header
-        title="Comité Mixto"
-        subtitle="Higiene y Seguridad — Reuniones + IA extrae tareas"
-        actions={
-          isAdmin && (
-            <button onClick={() => setShowNew(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-dassa-red-deep text-white rounded-lg text-xs font-bold hover:bg-dassa-red">
-              <Plus size={14} /> Nueva Reunión
-            </button>
-          )
-        }
-      />
-      <PageContent>
-        {isLoading ? <div className="flex justify-center py-16"><Spinner size={32} /></div> : (
-          <div className="space-y-6 max-w-4xl">
-            {/* Próximas */}
-            {upcoming.length > 0 && (
-              <div>
-                <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Próximas reuniones</p>
-                <div className="space-y-3">
-                  {upcoming.map(m => (
-                    <MeetingCard key={m.id} meeting={m} onClick={() => setSelected(m.id)} />
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Historial */}
-            <div>
-              <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">
-                Historial ({done.length} reuniones)
-              </p>
-              <div className="space-y-3">
-                {done.map(m => (
-                  <MeetingCard key={m.id} meeting={m} onClick={() => setSelected(m.id)} />
-                ))}
-              </div>
             </div>
-
-            {meetings.length === 0 && (
-              <div className="text-center py-16 text-gray-400">
-                <Building2 size={36} className="mx-auto mb-3 opacity-30" />
-                <p className="font-semibold text-gray-500">Sin reuniones registradas</p>
-                <p className="text-sm mt-1">Creá la primera reunión del Comité</p>
-              </div>
-            )}
-          </div>
-        )}
-      </PageContent>
-      {showNew && <NewMeetingModal onClose={() => setShowNew(false)} />}
-    </>
-  );
-}
-
-function MeetingCard({ meeting, onClick }: { meeting: Meeting; onClick: () => void }) {
-  const sc = STATUS_CONFIG[meeting.status] || STATUS_CONFIG.programada;
-  const progress = meeting.tasks_count > 0
-    ? Math.round((meeting.tasks_done / meeting.tasks_count) * 100) : 0;
-
-  return (
-    <div onClick={onClick}
-      className="bg-white rounded-xl border border-gray-200 p-5 cursor-pointer hover:shadow-md hover:border-blue-200 transition-all group">
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1">
-            <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full ${sc.bg} ${sc.color}`}>
-              {sc.label}
-            </span>
-            {meeting.ai_processed && (
-              <span className="text-[9px] font-bold text-violet-600 bg-violet-50 px-1.5 py-0.5 rounded flex items-center gap-0.5">
-                <Sparkles size={8} /> IA procesada
-              </span>
-            )}
-            {meeting.meeting_number && (
-              <span className="text-[10px] text-gray-400">Reunión #{meeting.meeting_number}</span>
-            )}
-          </div>
-          <p className="text-[15px] font-extrabold text-gray-900">
-            {new Date(meeting.meeting_date).toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
-          </p>
-          {meeting.attendees?.length > 0 && (
-            <p className="text-xs text-gray-400 mt-1 truncate">
-              {meeting.attendees.join(' · ')}
-            </p>
           )}
         </div>
-        <ChevronRight size={18} className="text-gray-300 group-hover:text-dassa-red flex-shrink-0 mt-1 transition-colors" />
-      </div>
 
-      {meeting.tasks_count > 0 && (
-        <div className="mt-3 flex items-center gap-3">
-          <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
-            <div className="h-full bg-emerald-500 rounded-full" style={{ width: `${progress}%` }} />
+        {/* Footer navegación */}
+        <div className="bg-gray-50 border-t border-gray-200 p-4 flex items-center justify-between">
+          <button onClick={() => step > 1 ? setStep(step-1) : onClose()}
+            className="bg-white border border-gray-300 px-5 py-2 rounded-lg flex items-center gap-2 font-medium">
+            <ChevronLeft className="w-4 h-4" /> {step === 1 ? 'Cancelar' : 'Atrás'}
+          </button>
+          <div className="text-sm text-gray-500">
+            {step === 1 && `${attendees.length} asistentes`}
+            {step === 2 && `${Object.values(reviewedTasks).filter(v=>v==='completada').length} completadas · ${Object.values(reviewedTasks).filter(v=>v==='sigue').length} siguen`}
+            {step === 3 && `${newTasks.length} tareas nuevas`}
           </div>
-          <span className="text-[10px] text-gray-500 font-semibold flex-shrink-0">
-            {meeting.tasks_done}/{meeting.tasks_count} tareas
-          </span>
+          {step < 3 ? (
+            <button onClick={() => setStep(step+1)}
+              disabled={step === 1 && attendees.length === 0}
+              className="bg-[#BF1E2E] disabled:bg-gray-300 text-white px-5 py-2 rounded-lg flex items-center gap-2 font-bold">
+              Siguiente <ChevronRight className="w-4 h-4" />
+            </button>
+          ) : (
+            <button onClick={save} disabled={saving}
+              className="bg-emerald-600 disabled:bg-gray-300 text-white px-5 py-2 rounded-lg flex items-center gap-2 font-bold">
+              {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+              Guardar reunión
+            </button>
+          )}
         </div>
-      )}
-
-      {meeting.ai_summary && (
-        <p className="text-xs text-gray-400 mt-2 line-clamp-2 leading-relaxed">
-          {meeting.ai_summary}
-        </p>
-      )}
+      </div>
     </div>
   );
 }

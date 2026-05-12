@@ -21,6 +21,26 @@ router.get('/', async (req, res) => {
 });
 
 // GET /api/committee/:id
+// GET /api/committee/pending-alive · todas las tareas vivas (pendiente/en_curso) del módulo comité
+router.get('/pending-alive', async (req, res) => {
+  try {
+    const r = await query(`
+      SELECT t.id, t.task_number, t.title, t.description, t.status, t.priority, t.due_date,
+             t.committee_id, cm.meeting_date::date AS origin_meeting_date,
+             COALESCE((SELECT json_agg(json_build_object('id',u.id,'name',u.full_name,'role',ta.role))
+                       FROM task_assignees ta JOIN users u ON u.id=ta.user_id
+                       WHERE ta.task_id=t.id),'[]'::json) AS assignees
+      FROM tasks t
+      LEFT JOIN committee_meetings cm ON cm.id = t.committee_id
+      WHERE t.source_module='committee' AND t.status IN ('pendiente','en_curso')
+      ORDER BY cm.meeting_date NULLS FIRST, t.task_number
+    `);
+    res.json(r.rows);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 router.get('/:id', async (req, res) => {
   try {
     const { rows } = await query(
@@ -228,5 +248,132 @@ router.patch('/:id/tasks/:tid', async (req, res) => {
     res.json(rows[0]);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
+
+// ─── WIZARD: crear nueva reunión + traer pendientes anteriores ─────────────
+// POST /api/committee/wizard
+router.post('/wizard', async (req, res) => {
+  const { meeting_date, location, attendees, topics_discussed, preamble, new_tasks } = req.body || {};
+  if (!meeting_date || !Array.isArray(attendees) || attendees.length === 0) {
+    return res.status(400).json({ error: 'meeting_date y attendees requeridos' });
+  }
+  const client = await req.app.locals.pool?.connect() || (await import('pg').then(m => new m.Pool({connectionString: process.env.DATABASE_URL}).connect()));
+  try {
+    await client.query('BEGIN');
+    // Crear reunión
+    const d = new Date(meeting_date);
+    const r = await client.query(
+      `INSERT INTO committee_meetings (meeting_date, year, month, attendees, location, status, topics_discussed, preamble, created_by, ai_processed)
+       VALUES ($1,$2,$3,$4,$5,'programada',$6,$7,$8,false) RETURNING id`,
+      [meeting_date, d.getFullYear(), d.getMonth()+1, attendees, location || 'DASSA Sarandí', JSON.stringify(topics_discussed || []), preamble || null, req.user.id]
+    );
+    const meetingId = r.rows[0].id;
+
+    // Insertar new_tasks (cada una con responsables múltiples)
+    let inserted = 0;
+    for (const nt of (new_tasks || [])) {
+      if (!nt.title || !Array.isArray(nt.assignees) || nt.assignees.length === 0) continue;
+      const ins = await client.query(
+        `INSERT INTO tasks (title, description, status, priority, due_date, source_module, committee_id, created_by, origin_type, observations)
+         VALUES ($1,$2,'pendiente',$3,$4,'committee',$5,$6,'comite',$7) RETURNING id`,
+        [nt.title.substring(0,500), nt.description || null, nt.priority || 'media', nt.due_date || null, meetingId, req.user.id, nt.observations || null]
+      );
+      const tid = ins.rows[0].id;
+      for (let i=0; i<nt.assignees.length; i++) {
+        await client.query(
+          "INSERT INTO task_assignees (task_id, user_id, role) VALUES ($1,$2,$3) ON CONFLICT DO NOTHING",
+          [tid, nt.assignees[i], i===0 ? 'principal' : 'principal']
+        );
+      }
+      await client.query("UPDATE tasks SET assigned_to=$1 WHERE id=$2", [nt.assignees[0], tid]);
+      if (nt.assignees[1]) await client.query("UPDATE tasks SET collaborator_id=$1 WHERE id=$2", [nt.assignees[1], tid]);
+      inserted++;
+    }
+    await client.query('COMMIT');
+    res.json({ ok: true, meeting_id: meetingId, tasks_inserted: inserted });
+  } catch (e) {
+    await client.query('ROLLBACK').catch(()=>{});
+    console.error('[wizard]', e);
+    res.status(500).json({ error: e.message });
+  } finally {
+    client.release();
+  }
+});
+
+// GET /api/committee/:id/pending-from-previous · lista de tasks vivas que vienen de reuniones anteriores
+router.get('/:id/pending-from-previous', async (req, res) => {
+  try {
+    const m = await query('SELECT meeting_date FROM committee_meetings WHERE id=$1', [req.params.id]);
+    if (m.rowCount === 0) return res.status(404).json({ error: 'meeting not found' });
+    const meetingDate = m.rows[0].meeting_date;
+    const r = await query(`
+      SELECT t.id, t.task_number, t.title, t.description, t.status, t.priority, t.due_date,
+             t.committee_id, cm.meeting_date AS origin_meeting_date,
+             COALESCE((SELECT json_agg(json_build_object('id',u.id,'name',u.full_name,'role',ta.role))
+                       FROM task_assignees ta JOIN users u ON u.id=ta.user_id
+                       WHERE ta.task_id=t.id),'[]'::json) AS assignees
+      FROM tasks t
+      LEFT JOIN committee_meetings cm ON cm.id = t.committee_id
+      WHERE t.source_module='committee'
+        AND t.status IN ('pendiente','en_curso')
+        -- todas las vivas, sin filtrar por meeting
+      ORDER BY cm.meeting_date NULLS FIRST, t.task_number
+    `, [req.params.id]);
+    res.json(r.rows);
+  } catch (e) {
+    console.error('[pending-from-previous]', e);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// PATCH /api/committee/:id/close-with-signature · cerrar reunión con firma digital
+router.patch('/:id/close-with-signature', async (req, res) => {
+  try {
+    const m = await query('SELECT signatures, attendees FROM committee_meetings WHERE id=$1', [req.params.id]);
+    if (m.rowCount === 0) return res.status(404).json({ error: 'meeting not found' });
+    const sigs = m.rows[0].signatures || [];
+    const userR = await query('SELECT email, full_name FROM users WHERE id=$1', [req.user.id]);
+    const u = userR.rows[0];
+    if (sigs.find(s => s.user_id === req.user.id)) {
+      return res.status(400).json({ error: 'Ya firmaste esta reunión' });
+    }
+    sigs.push({
+      user_id: req.user.id, email: u.email, name: u.full_name,
+      signed_at: new Date().toISOString(),
+      ip: req.ip, user_agent: req.get('user-agent')
+    });
+    await query('UPDATE committee_meetings SET signatures=$1, updated_at=NOW() WHERE id=$2', [JSON.stringify(sigs), req.params.id]);
+    // Si firmaron TODOS los asistentes registrados, marcar como cerrada
+    const attendees = m.rows[0].attendees || [];
+    const allSigned = attendees.every(a => sigs.find(s => s.name && (a.includes(s.name) || s.name.includes(a))));
+    if (allSigned) {
+      await query("UPDATE committee_meetings SET status='cerrada', closed_at=NOW() WHERE id=$1", [req.params.id]);
+    }
+    res.json({ ok: true, signatures_count: sigs.length, all_signed: allSigned });
+  } catch (e) {
+    console.error('[close-sig]', e);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// GET /api/committee/:id/full · meeting + tareas creadas + heredadas + firmas
+router.get('/:id/full', async (req, res) => {
+  try {
+    const m = await query('SELECT * FROM committee_meetings WHERE id=$1', [req.params.id]);
+    if (m.rowCount === 0) return res.status(404).json({ error: 'meeting not found' });
+    const tasks = await query(`
+      SELECT t.id, t.task_number, t.title, t.status, t.priority, t.due_date,
+             COALESCE((SELECT json_agg(json_build_object('id',u.id,'name',u.full_name))
+                       FROM task_assignees ta JOIN users u ON u.id=ta.user_id
+                       WHERE ta.task_id=t.id),'[]'::json) AS assignees
+      FROM tasks t
+      WHERE t.committee_id=$1 ORDER BY t.task_number
+    `, [req.params.id]);
+    res.json({ meeting: m.rows[0], tasks: tasks.rows });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+
 
 export default router;

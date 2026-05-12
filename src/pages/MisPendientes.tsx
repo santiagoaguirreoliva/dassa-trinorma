@@ -1,48 +1,74 @@
-import { useState, useEffect } from 'react';
-import { CheckSquare, AlertTriangle, Clock, Filter, Loader2, Brain } from 'lucide-react';
+// /mis-pendientes · Centro nervioso de tareas asignadas al user actual
+// Soporta multi-responsable: tareas compartidas muestran avatares de todos los assignees
+import { useEffect, useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { api } from '@/lib/api';
+import { useAuth } from '@/contexts/AuthContext';
+import {
+  CheckSquare, AlertCircle, Clock, Calendar, Users, Filter,
+  Loader2, CheckCircle2, ChevronRight, Building2, AlertTriangle,
+  GraduationCap, ShoppingCart, FileText, Sparkles, X,
+} from 'lucide-react';
 
+interface Assignee { id: string; name: string; email: string; role: 'principal' | 'colaborador'; }
 interface Task {
   id: string;
+  task_number: string | null;
   title: string;
-  description: string;
-  status: string;
-  priority: string;
-  due_date: string;
-  category: string;
-  iso_norm: string;
+  description?: string;
+  status: 'pendiente' | 'en_curso' | 'completada' | 'cancelada';
+  priority: 'alta' | 'media' | 'baja';
+  due_date?: string;
   source_module: string;
-  origin_type: string;
+  origin_type?: string;
+  origin_detail?: string;
+  committee_id?: string;
+  committee_meeting_date?: string;
+  finding_id?: string;
+  overdue?: boolean;
+  assignees: Assignee[];
   created_at: string;
 }
 
-interface Report {
-  summary: string;
-  riesgo_score: number;
-  pendientes_total: number;
-  pendientes_vencidos: number;
-  ncs_asignadas: number;
-  recommendations: string;
-  alertas: any[];
-  created_at: string;
+const SOURCE_LABEL: Record<string, { label: string; icon: any; color: string }> = {
+  committee:     { label: 'Comité Mixto', icon: Building2,      color: 'bg-violet-100 text-violet-800' },
+  findings:      { label: 'NC / Desvío',  icon: AlertTriangle,  color: 'bg-orange-100 text-orange-800' },
+  trainings:     { label: 'Capacitación', icon: GraduationCap,  color: 'bg-blue-100 text-blue-800' },
+  purchases:     { label: 'Compras',      icon: ShoppingCart,   color: 'bg-emerald-100 text-emerald-800' },
+  general:       { label: 'General',      icon: FileText,       color: 'bg-gray-100 text-gray-700' },
+};
+
+const PRIORITY_COLOR: Record<string, string> = {
+  alta:  'bg-red-100 text-red-700 border-red-300',
+  media: 'bg-amber-100 text-amber-700 border-amber-300',
+  baja:  'bg-gray-100 text-gray-600 border-gray-300',
+};
+
+function getInitials(name: string) {
+  return name.split(' ').slice(0, 2).map(p => p[0] || '').join('').toUpperCase();
+}
+
+function colorForUser(name: string) {
+  const colors = ['#BF1E2E', '#0EA5E9', '#10B981', '#F59E0B', '#8B5CF6', '#EC4899', '#6366F1', '#84CC16'];
+  const idx = (name.charCodeAt(0) + name.length) % colors.length;
+  return colors[idx];
 }
 
 export default function MisPendientes() {
+  const { user } = useAuth();
+  const navigate = useNavigate();
   const [tasks, setTasks] = useState<Task[]>([]);
-  const [report, setReport] = useState<Report | null>(null);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<'all' | 'overdue' | 'this_week' | 'high'>('all');
-  const [generating, setGenerating] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<'all' | 'pendiente' | 'en_curso' | 'overdue'>('all');
+  const [sourceFilter, setSourceFilter] = useState<string>('all');
+  const [completing, setCompleting] = useState<string | null>(null);
+  const [selected, setSelected] = useState<Task | null>(null);
 
   async function load() {
     setLoading(true);
     try {
-      const [tasksR, reportR] = await Promise.all([
-        api.get('/tasks/mine'),
-        api.get('/auditor/my-latest-report').catch(() => ({ data: null })),
-      ]);
-      setTasks(tasksR.data);
-      setReport(reportR.data);
+      const items = await api.get<Task[]>('/tasks/mine');
+      setTasks(items || []);
     } catch (e) {
       console.error(e);
     } finally {
@@ -53,160 +79,281 @@ export default function MisPendientes() {
   useEffect(() => { load(); }, []);
 
   async function markDone(id: string) {
-    await api.patch(`/tasks/mine/${id}`, { status: 'completada', completed_at: new Date().toISOString() });
-    setTasks(t => t.filter(x => x.id !== id));
-  }
-
-  async function generateMyReport() {
-    setGenerating(true);
+    setCompleting(id);
     try {
-      const userId = ((await api.get('/auth/me')) as any).id;
-      const r = await api.post(`/auditor/run-for-user/${userId}`);
-      setReport({ ...(r as any).report, ...(r as any).context_metrics, created_at: new Date().toISOString() });
+      await api.patch(`/tasks/mine/${id}`, { status: 'completada', completed_at: new Date().toISOString() });
+      setTasks(t => t.filter(x => x.id !== id));
+      setSelected(null);
     } catch (e: any) {
-      alert('Error: ' + (e.response?.data?.error || e.message));
+      alert('Error: ' + e.message);
     } finally {
-      setGenerating(false);
+      setCompleting(null);
     }
   }
 
-  const filteredTasks = tasks.filter(t => {
-    const now = new Date();
-    const due = t.due_date ? new Date(t.due_date) : null;
-    if (filter === 'overdue') return due && due < now;
-    if (filter === 'this_week') {
-      const weekFromNow = new Date(now.getTime() + 7 * 86400000);
-      return due && due <= weekFromNow;
-    }
-    if (filter === 'high') return t.priority === 'alta';
-    return true;
-  });
+  const filtered = useMemo(() => {
+    return tasks.filter(t => {
+      if (statusFilter === 'overdue' && !t.overdue) return false;
+      if (statusFilter === 'pendiente' && t.status !== 'pendiente') return false;
+      if (statusFilter === 'en_curso' && t.status !== 'en_curso') return false;
+      if (sourceFilter !== 'all' && t.source_module !== sourceFilter) return false;
+      return true;
+    });
+  }, [tasks, statusFilter, sourceFilter]);
+
+  const stats = useMemo(() => ({
+    total: tasks.length,
+    pendientes: tasks.filter(t => t.status === 'pendiente').length,
+    en_curso: tasks.filter(t => t.status === 'en_curso').length,
+    overdue: tasks.filter(t => t.overdue).length,
+    shared: tasks.filter(t => t.assignees.length > 1).length,
+  }), [tasks]);
+
+  const sourcesPresent = useMemo(() => {
+    const set = new Set(tasks.map(t => t.source_module));
+    return Array.from(set);
+  }, [tasks]);
+
+  if (!user) return null;
 
   return (
-    <div className="p-6 max-w-6xl mx-auto">
-      <div className="mb-6">
-        <p className="text-[11px] font-bold text-dassa-red uppercase tracking-widest">Mis tareas</p>
-        <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
-          <CheckSquare className="w-8 h-8 text-dassa-red" />
-          Mis pendientes
-        </h1>
-        <p className="text-gray-600 mt-1">Tus tareas, NCs y compromisos del SGI</p>
-      </div>
-
-      {/* Reporte del Auditor IA */}
-      <div className="bg-gradient-to-br from-dassa-red/5 to-dassa-celeste/5 border border-dassa-red/20 p-5 mb-6">
-        <div className="flex justify-between items-start mb-3">
-          <div className="flex items-center gap-2">
-            <Brain className="w-6 h-6 text-dassa-red" />
-            <h3 className="font-bold text-lg">Tu auditoría individual</h3>
+    <div className="flex-1 overflow-y-auto bg-slate-50">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
+          <div>
+            <p className="text-xs font-bold text-[#BF1E2E] uppercase tracking-widest">Mis tareas</p>
+            <h1 className="text-3xl font-black text-gray-900 flex items-center gap-3">
+              <CheckSquare className="w-8 h-8 text-[#BF1E2E]" />
+              Mis Pendientes
+            </h1>
+            <p className="text-gray-600 mt-1">Todas tus tareas asignadas — comité, NCs, capacitaciones, todo.</p>
           </div>
-          <button onClick={generateMyReport} disabled={generating}
-            className="text-xs bg-dassa-red text-white px-3 py-2 hover:bg-dassa-red-deep flex items-center gap-1 font-bold disabled:opacity-50">
-            {generating ? <><Loader2 className="w-3 h-3 animate-spin" /> Analizando...</> : 'Generar nuevo'}
+          <button onClick={load} className="bg-white border border-gray-300 hover:bg-gray-50 rounded-lg px-4 py-2 text-sm font-medium">
+            Refrescar
           </button>
         </div>
-        {report ? (
-          <>
-            <div className="flex gap-6 mb-3">
-              <div>
-                <div className="text-xs text-gray-500 uppercase font-bold">Score de riesgo</div>
-                <div className={`text-3xl font-bold ${
-                  report.riesgo_score >= 80 ? 'text-dassa-celeste-deep' :
-                  report.riesgo_score >= 60 ? 'text-amber-600' :
-                  'text-dassa-red'
-                }`}>{report.riesgo_score}/100</div>
-              </div>
-              <div>
-                <div className="text-xs text-gray-500 uppercase font-bold">Pendientes</div>
-                <div className="text-3xl font-bold text-gray-900">{report.pendientes_total}</div>
-                <div className="text-xs text-dassa-red">{report.pendientes_vencidos} vencidos</div>
-              </div>
-              <div>
-                <div className="text-xs text-gray-500 uppercase font-bold">NCs asignadas</div>
-                <div className="text-3xl font-bold text-gray-900">{report.ncs_asignadas}</div>
-              </div>
-            </div>
-            <div className="bg-white p-4 border-l-4 border-dassa-red mb-3">
-              <p className="text-sm leading-relaxed">{report.summary}</p>
-            </div>
-            {report.recommendations && (
-              <details className="text-sm">
-                <summary className="cursor-pointer font-bold text-dassa-red">Ver recomendaciones</summary>
-                <div className="mt-2 bg-white p-4 border whitespace-pre-wrap">{report.recommendations}</div>
-              </details>
-            )}
-            <p className="text-xs text-gray-400 mt-2">
-              Generado por Auditor IA TRINORMA · {new Date(report.created_at).toLocaleString('es-AR')}
-            </p>
-          </>
+
+        {/* KPIs */}
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
+          <Stat label="Total" value={stats.total} color="bg-gray-100 text-gray-900" />
+          <Stat label="Pendientes" value={stats.pendientes} color="bg-amber-100 text-amber-900" />
+          <Stat label="En curso" value={stats.en_curso} color="bg-blue-100 text-blue-900" />
+          <Stat label="Vencidas" value={stats.overdue} color="bg-red-100 text-red-900" />
+          <Stat label="Compartidas" value={stats.shared} color="bg-violet-100 text-violet-900" />
+        </div>
+
+        {/* Filtros */}
+        <div className="bg-white rounded-xl border border-gray-200 p-4 mb-4 flex flex-wrap gap-3 items-center">
+          <Filter className="w-5 h-5 text-gray-500" />
+          <div className="flex gap-1">
+            {[
+              { v: 'all', l: 'Todas' },
+              { v: 'pendiente', l: 'Pendientes' },
+              { v: 'en_curso', l: 'En curso' },
+              { v: 'overdue', l: 'Vencidas' },
+            ].map(o => (
+              <button key={o.v}
+                onClick={() => setStatusFilter(o.v as any)}
+                className={`text-sm px-3 py-1.5 rounded-lg font-medium ${
+                  statusFilter === o.v ? 'bg-[#BF1E2E] text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}>
+                {o.l}
+              </button>
+            ))}
+          </div>
+          <div className="w-px h-6 bg-gray-300" />
+          <span className="text-sm text-gray-600">Origen:</span>
+          <select
+            value={sourceFilter}
+            onChange={e => setSourceFilter(e.target.value)}
+            className="text-sm border border-gray-300 rounded-lg px-2 py-1.5 bg-white">
+            <option value="all">Todos</option>
+            {sourcesPresent.map(s => (
+              <option key={s} value={s}>{SOURCE_LABEL[s]?.label || s}</option>
+            ))}
+          </select>
+          <span className="ml-auto text-sm text-gray-500">{filtered.length} resultados</span>
+        </div>
+
+        {/* Lista */}
+        {loading ? (
+          <div className="text-center py-12"><Loader2 className="w-10 h-10 animate-spin text-[#BF1E2E] mx-auto" /></div>
+        ) : filtered.length === 0 ? (
+          <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
+            <CheckCircle2 className="w-16 h-16 text-emerald-500 mx-auto mb-3" />
+            <h3 className="font-bold text-xl text-gray-900">¡Estás al día!</h3>
+            <p className="text-gray-600 mt-1">No hay tareas pendientes con esos filtros.</p>
+          </div>
         ) : (
-          <p className="text-gray-600 text-sm">
-            Aún no hay análisis de la IA para vos. Hacé click en "Generar nuevo" o esperá la auditoría automática del lunes.
-          </p>
+          <div className="space-y-3">
+            {filtered.map(t => {
+              const src = SOURCE_LABEL[t.source_module] || SOURCE_LABEL.general;
+              const SrcIcon = src.icon;
+              const others = t.assignees.filter(a => a.id !== user.id);
+              return (
+                <div key={t.id}
+                  onClick={() => setSelected(t)}
+                  className={`bg-white rounded-xl border-2 p-4 cursor-pointer hover:shadow-md transition ${
+                    t.overdue ? 'border-red-300' : 'border-gray-200 hover:border-[#BF1E2E]'
+                  }`}>
+                  <div className="flex items-start gap-3">
+                    {/* Task number */}
+                    <div className="bg-gray-900 text-white text-xs font-bold rounded px-2 py-1 font-mono shrink-0">
+                      {t.task_number || '—'}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1 flex-wrap">
+                        <span className={`inline-flex items-center gap-1 ${src.color} rounded-full px-2.5 py-0.5 text-xs font-semibold`}>
+                          <SrcIcon className="w-3 h-3" />
+                          {src.label}
+                        </span>
+                        <span className={`text-xs px-2 py-0.5 rounded-full border ${PRIORITY_COLOR[t.priority]}`}>
+                          {t.priority}
+                        </span>
+                        {t.status === 'en_curso' && (
+                          <span className="bg-blue-100 text-blue-800 text-xs px-2 py-0.5 rounded-full font-semibold">En curso</span>
+                        )}
+                        {t.overdue && (
+                          <span className="bg-red-100 text-red-700 text-xs px-2 py-0.5 rounded-full font-semibold flex items-center gap-1">
+                            <AlertCircle className="w-3 h-3" /> Vencida
+                          </span>
+                        )}
+                      </div>
+                      <h3 className="font-semibold text-gray-900 leading-snug">{t.title}</h3>
+                      <div className="flex items-center gap-4 mt-2 text-xs text-gray-600 flex-wrap">
+                        {t.due_date && (
+                          <span className="flex items-center gap-1">
+                            <Calendar className="w-3 h-3" />
+                            Vence: {new Date(t.due_date).toLocaleDateString('es-AR')}
+                          </span>
+                        )}
+                        {t.committee_meeting_date && (
+                          <span className="flex items-center gap-1">
+                            <Building2 className="w-3 h-3" />
+                            Desde reunión {new Date(t.committee_meeting_date).toLocaleDateString('es-AR')}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    {/* Assignees avatars */}
+                    <div className="flex -space-x-2 shrink-0">
+                      {t.assignees.slice(0, 4).map((a, i) => (
+                        <div key={a.id}
+                          title={`${a.name} (${a.role})`}
+                          className="w-8 h-8 rounded-full text-white text-xs font-bold flex items-center justify-center border-2 border-white"
+                          style={{ backgroundColor: colorForUser(a.name), zIndex: 10 - i }}>
+                          {getInitials(a.name)}
+                        </div>
+                      ))}
+                      {t.assignees.length > 4 && (
+                        <div className="w-8 h-8 rounded-full bg-gray-300 text-gray-700 text-xs font-bold flex items-center justify-center border-2 border-white">
+                          +{t.assignees.length - 4}
+                        </div>
+                      )}
+                    </div>
+                    <ChevronRight className="w-5 h-5 text-gray-400 shrink-0" />
+                  </div>
+                  {others.length > 0 && (
+                    <div className="mt-3 pt-3 border-t border-gray-100 flex items-center gap-2 text-xs text-gray-600">
+                      <Users className="w-3.5 h-3.5" />
+                      <span>Compartida con: <strong>{others.map(o => o.name).join(', ')}</strong></span>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
         )}
       </div>
 
-      {/* Filtros */}
-      <div className="flex gap-2 mb-4">
-        <Filter className="w-4 h-4 text-gray-400 mt-2" />
-        {[
-          { v: 'all', l: `Todas (${tasks.length})` },
-          { v: 'overdue', l: 'Vencidas' },
-          { v: 'this_week', l: 'Esta semana' },
-          { v: 'high', l: 'Alta prioridad' },
-        ].map(opt => (
-          <button key={opt.v} onClick={() => setFilter(opt.v as any)}
-            className={`px-3 py-1 text-xs font-bold uppercase tracking-wide ${
-              filter === opt.v ? 'bg-dassa-red text-white' : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
-            }`}>{opt.l}</button>
-        ))}
-      </div>
-
-      {/* Tabla de tasks */}
-      {loading ? (
-        <div className="flex justify-center py-12"><Loader2 className="w-10 h-10 animate-spin text-dassa-red" /></div>
-      ) : filteredTasks.length === 0 ? (
-        <div className="bg-dassa-celeste-tint border border-dassa-celeste p-8 text-center">
-          <CheckSquare className="w-12 h-12 text-dassa-celeste-deep mx-auto mb-3" />
-          <p className="font-bold">¡Sin pendientes en este filtro!</p>
-        </div>
-      ) : (
-        <div className="bg-white border border-gray-200">
-          {filteredTasks.map(t => {
-            const overdue = t.due_date && new Date(t.due_date) < new Date();
-            return (
-              <div key={t.id} className={`p-4 border-b last:border-b-0 hover:bg-gray-50 ${overdue ? 'border-l-4 border-l-dassa-red' : ''}`}>
-                <div className="flex justify-between items-start gap-4">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      {overdue && <AlertTriangle className="w-4 h-4 text-dassa-red" />}
-                      <h4 className="font-bold">{t.title}</h4>
-                      {t.iso_norm && <span className="text-xs px-2 py-0.5 bg-dassa-celeste-tint text-dassa-celeste-deep">{t.iso_norm}</span>}
-                      {t.priority === 'alta' && <span className="text-xs px-2 py-0.5 bg-dassa-red-tint text-dassa-red-deep font-bold">ALTA</span>}
-                    </div>
-                    {t.description && <p className="text-sm text-gray-600 mb-2">{t.description}</p>}
-                    <div className="flex items-center gap-4 text-xs text-gray-500">
-                      {t.due_date && (
-                        <span className={overdue ? 'text-dassa-red font-bold' : ''}>
-                          <Clock className="w-3 h-3 inline mr-1" />
-                          {new Date(t.due_date).toLocaleDateString('es-AR')}
-                          {overdue && ' (VENCIDA)'}
-                        </span>
-                      )}
-                      {t.category && <span>📌 {t.category}</span>}
-                      {t.source_module && t.source_module !== 'general' && <span>🔗 {t.source_module}</span>}
-                    </div>
+      {/* Modal detalle */}
+      {selected && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white border-b border-gray-200 p-5 flex items-center justify-between">
+              <div>
+                <span className="bg-gray-900 text-white text-xs font-bold rounded px-2 py-1 font-mono">{selected.task_number}</span>
+                <h2 className="text-xl font-bold text-gray-900 mt-2">{selected.title}</h2>
+              </div>
+              <button onClick={() => setSelected(null)} className="text-gray-500 hover:text-gray-700">
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+              {selected.description && (
+                <div>
+                  <h4 className="font-bold text-sm text-gray-700 mb-1">Descripción</h4>
+                  <p className="text-sm text-gray-600">{selected.description}</p>
+                </div>
+              )}
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <h4 className="font-bold text-gray-700 mb-1">Estado</h4>
+                  <p className="text-gray-600">{selected.status}</p>
+                </div>
+                <div>
+                  <h4 className="font-bold text-gray-700 mb-1">Prioridad</h4>
+                  <p className="text-gray-600">{selected.priority}</p>
+                </div>
+                {selected.due_date && (
+                  <div>
+                    <h4 className="font-bold text-gray-700 mb-1">Vence</h4>
+                    <p className="text-gray-600">{new Date(selected.due_date).toLocaleDateString('es-AR')}</p>
                   </div>
-                  <button onClick={() => markDone(t.id)}
-                    className="bg-dassa-celeste-deep text-white px-3 py-2 text-xs font-bold hover:bg-dassa-celeste flex items-center gap-1 whitespace-nowrap">
-                    <CheckSquare className="w-3 h-3" /> Marcar hecho
-                  </button>
+                )}
+                <div>
+                  <h4 className="font-bold text-gray-700 mb-1">Origen</h4>
+                  <p className="text-gray-600">{SOURCE_LABEL[selected.source_module]?.label || selected.source_module}</p>
                 </div>
               </div>
-            );
-          })}
+              <div>
+                <h4 className="font-bold text-sm text-gray-700 mb-2">Responsables ({selected.assignees.length})</h4>
+                <div className="space-y-2">
+                  {selected.assignees.map(a => (
+                    <div key={a.id} className="flex items-center gap-3 bg-gray-50 rounded-lg p-2">
+                      <div className="w-9 h-9 rounded-full text-white text-xs font-bold flex items-center justify-center"
+                        style={{ backgroundColor: colorForUser(a.name) }}>
+                        {getInitials(a.name)}
+                      </div>
+                      <div className="flex-1">
+                        <div className="font-medium text-gray-900 text-sm">{a.name}</div>
+                        <div className="text-xs text-gray-500">{a.email}</div>
+                      </div>
+                      <span className={`text-xs px-2 py-1 rounded-full ${a.role === 'principal' ? 'bg-[#BF1E2E] text-white' : 'bg-gray-200 text-gray-700'}`}>
+                        {a.role}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <button
+                onClick={() => markDone(selected.id)}
+                disabled={completing === selected.id}
+                className="w-full bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-300 text-white font-bold py-3 rounded-lg flex items-center justify-center gap-2">
+                {completing === selected.id ? <Loader2 className="w-5 h-5 animate-spin" /> : <CheckCircle2 className="w-5 h-5" />}
+                Marcar como completada
+              </button>
+              {selected.committee_id && (
+                <button
+                  onClick={() => { navigate(`/committee/${selected.committee_id}`); setSelected(null); }}
+                  className="w-full bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 font-medium py-2.5 rounded-lg flex items-center justify-center gap-2">
+                  <Building2 className="w-4 h-4" /> Ver reunión de origen
+                </button>
+              )}
+            </div>
+          </div>
         </div>
       )}
+    </div>
+  );
+}
+
+function Stat({ label, value, color }: { label: string; value: number; color: string }) {
+  return (
+    <div className={`${color} rounded-xl p-4`}>
+      <div className="text-xs font-bold uppercase tracking-wider opacity-80">{label}</div>
+      <div className="text-3xl font-black mt-1">{value}</div>
     </div>
   );
 }

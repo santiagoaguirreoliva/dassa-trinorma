@@ -1,29 +1,74 @@
 {
   "schema_version": "1.0",
   "name": "dassa-sgi",
-  "version": "2.0.0-trinorma",
+  "version": "2.1.0",
   "owner": "santiago@dassa.com.ar",
   "criticality": "high",
-  "stack": ["node","typescript","react","supabase"],
+  "stack": [
+    "node",
+    "typescript",
+    "react",
+    "supabase"
+  ],
   "repo": "github.com/santiagoaguirreoliva/dassa-trinorma",
   "vps_path": "/home/dassa/dassa-sgi",
   "processes": [
-    { "pm2_name": "dassa-sgi", "port": 3500, "health": "pm2:online" }
+    {
+      "pm2_name": "dassa-sgi",
+      "port": 4001,
+      "health": "http://127.0.0.1:4001/api/health",
+      "criticality": "high"
+    }
   ],
   "public_urls": [
     "https://trinorma.dassa.com.ar",
     "https://trinorma.dassa.com.ar/design-system/dassa-3.0/manifest.json"
   ],
   "databases": [
-    { "type": "supabase", "project_ref": "dassa_sgi", "role": "service_role", "note": "DB Trinorma SGI" }
+    {
+      "type": "supabase",
+      "project_ref": "dassa_sgi",
+      "role": "service_role",
+      "note": "DB Trinorma SGI"
+    }
   ],
-  "credentials_vault_keys": ["sgi/admin_password","sgi/supabase_service_key"],
-  "client": { "name": "DASSA SA · Calidad / SGI Trinorma", "contact": "manuel@dassa.com.ar" },
-  "costs": { "monthly_estimate_usd": 25, "providers": [{ "name":"Supabase", "estimate_usd": 25, "tier":"pro" }] },
+  "credentials_vault_keys": [
+    "sgi/admin_password",
+    "sgi/supabase_service_key"
+  ],
+  "client": {
+    "name": "DASSA SA · Calidad / SGI Trinorma",
+    "contact": "manuel@dassa.com.ar"
+  },
+  "costs": {
+    "monthly_estimate_usd": 25,
+    "providers": [
+      {
+        "name": "Supabase",
+        "estimate_usd": 25,
+        "tier": "pro"
+      }
+    ]
+  },
   "whitelist_actions": [
-    { "name": "restart_sgi", "command": "pm2 restart dassa-sgi", "max_per_hour": 3 },
-    { "name": "tail_logs", "command": "pm2 logs dassa-sgi --lines 50 --nostream", "max_per_hour": 20 }
+    {
+      "name": "restart_sgi",
+      "command": "pm2 restart dassa-sgi",
+      "max_per_hour": 3
+    },
+    {
+      "name": "tail_logs",
+      "command": "pm2 logs dassa-sgi --lines 50 --nostream",
+      "max_per_hour": 20
+    }
   ],
-  "telegram_alert_channels": ["santiago-priv"],
-  "runbook_url": "docs/runbooks/sgi-down.md"
+  "telegram_alert_channels": [
+    "santiago-priv"
+  ],
+  "runbook_url": "docs/runbooks/sgi-down.md",
+  "metrics_endpoint": "http://127.0.0.1:4001/api/bienvenida/health-deep",
+  "dependencies": [
+    "smart-dassa-hub",
+    "postgres-local"
+  ]
 }

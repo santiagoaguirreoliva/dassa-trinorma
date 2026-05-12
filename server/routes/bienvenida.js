@@ -84,4 +84,112 @@ router.get('/news', async (req, res) => {
   }
 });
 
+// GET pacto-status (admin/auditor) - lista todos con su estado
+router.get('/pacto-status', async (req, res) => {
+  if (!['master_admin','auditor_externo'].includes(req.user.role)) {
+    return res.status(403).json({ error: 'Solo master_admin o auditor_externo' });
+  }
+  try {
+    const { rows } = await query(`SELECT u.id, u.email, u.full_name, u.role, uo.accepted_at, uo.landing_seen_count, uo.last_seen_at FROM users u LEFT JOIN user_onboarding uo ON uo.user_id = u.id WHERE u.is_active = true ORDER BY u.role, u.full_name`);
+    res.json(rows);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// POST send-welcome-email (master_admin) - envia email a 1 o todos
+router.post('/send-welcome-email', async (req, res) => {
+  if (req.user.role !== 'master_admin') return res.status(403).json({ error: 'Solo master_admin' });
+  const { target_email, send_to_all } = req.body || {};
+  try {
+    const fs = await import('fs');
+    const { join } = await import('path');
+    const tplPath = join(process.cwd(), 'server', 'email-templates', 'bienvenida.html');
+    const tpl = fs.readFileSync(tplPath, 'utf8');
+    let rows;
+    if (send_to_all) {
+      const r = await query("SELECT email, full_name FROM users WHERE is_active=true AND email != $1", [req.user.email]);
+      rows = r.rows;
+    } else {
+      if (!target_email) return res.status(400).json({ error: 'target_email requerido' });
+      const r = await query("SELECT email, full_name FROM users WHERE email = $1", [target_email]);
+      rows = r.rows;
+    }
+    if (rows.length === 0) return res.status(404).json({ error: 'Sin destinatarios' });
+    const { createRequire } = await import('module');
+    const reqCjs = createRequire(import.meta.url);
+    const mailer = reqCjs('../services/mailer.cjs');
+    const results = [];
+    for (const u of rows) {
+      const html = tpl.replaceAll('{{NOMBRE}}', u.full_name || u.email).replaceAll('{{EMAIL}}', u.email);
+      try {
+        await mailer.sendMail({ to: u.email, subject: 'Bienvenida a TRINORMA - DASSA SGI', html });
+        results.push({ email: u.email, ok: true });
+      } catch (err) {
+        results.push({ email: u.email, ok: false, error: String(err.message || err) });
+      }
+    }
+    res.json({ sent: results.filter(r => r.ok).length, failed: results.filter(r => !r.ok).length, results });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// GET health-deep
+router.get('/health-deep', async (req, res) => {
+  const checks = {};
+  try { const r = await query('SELECT 1 AS ok'); checks.db = r.rows[0]?.ok === 1 ? 'ok' : 'fail'; } catch (e) { checks.db = 'fail'; }
+  try {
+    const fs = await import('fs'); const { join } = await import('path');
+    checks.dist = fs.existsSync(join(process.cwd(),'dist','index.html')) ? 'ok' : 'missing';
+    checks.ai_quality_module = fs.existsSync(join(process.cwd(),'server','services','ai-quality.cjs')) ? 'ok' : 'missing';
+    checks.email_template = fs.existsSync(join(process.cwd(),'server','email-templates','bienvenida.html')) ? 'ok' : 'missing';
+  } catch (e) { checks.files = 'fail'; }
+  try { const r = await query("SELECT COUNT(*)::int AS n FROM users WHERE is_active=true"); checks.active_users = r.rows[0].n; } catch (e) { checks.users = 'fail'; }
+  const allOk = Object.values(checks).every(v => v === 'ok' || typeof v === 'number');
+  res.status(allOk ? 200 : 503).json({ status: allOk ? 'ok' : 'degraded', checks, timestamp: new Date().toISOString() });
+});
+
+// GET admin/news-all (master_admin) - lista TODOS sin filtrar audiencia
+router.get('/admin/news-all', async (req, res) => {
+  if (req.user.role !== 'master_admin') return res.status(403).json({ error: 'Solo master_admin' });
+  try {
+    const { rows } = await query("SELECT * FROM system_announcements ORDER BY pinned DESC, published_at DESC");
+    res.json(rows);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// POST admin/news - crear
+router.post('/admin/news', async (req, res) => {
+  if (req.user.role !== 'master_admin') return res.status(403).json({ error: 'Solo master_admin' });
+  const { title, body_md, category, audience, pinned, expires_at } = req.body || {};
+  if (!title || !body_md) return res.status(400).json({ error: 'title y body_md requeridos' });
+  try {
+    const { rows } = await query(
+      "INSERT INTO system_announcements (title, body_md, category, audience, pinned, expires_at, created_by) VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *",
+      [title, body_md, category || 'novedad', audience || 'all', !!pinned, expires_at || null, req.user.id]
+    );
+    res.json(rows[0]);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// PATCH admin/news/:id - editar
+router.patch('/admin/news/:id', async (req, res) => {
+  if (req.user.role !== 'master_admin') return res.status(403).json({ error: 'Solo master_admin' });
+  const { title, body_md, category, audience, pinned, expires_at } = req.body || {};
+  try {
+    const { rows } = await query(
+      "UPDATE system_announcements SET title=COALESCE($1,title), body_md=COALESCE($2,body_md), category=COALESCE($3,category), audience=COALESCE($4,audience), pinned=COALESCE($5,pinned), expires_at=$6 WHERE id=$7 RETURNING *",
+      [title, body_md, category, audience, pinned, expires_at, req.params.id]
+    );
+    if (rows.length === 0) return res.status(404).json({ error: 'No existe' });
+    res.json(rows[0]);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// DELETE admin/news/:id
+router.delete('/admin/news/:id', async (req, res) => {
+  if (req.user.role !== 'master_admin') return res.status(403).json({ error: 'Solo master_admin' });
+  try {
+    await query("DELETE FROM system_announcements WHERE id=$1", [req.params.id]);
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 export default router;

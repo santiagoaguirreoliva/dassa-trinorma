@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<style>
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background:#f5f5f5; margin:0; padding:0; color:#1a1a1a; }
+  .wrap { max-width:600px; margin:0 auto; background:#fff; }
+  .hero { background:linear-gradient(135deg,#BF1E2E 0%,#8b1521 100%); color:#fff; padding:40px 32px; }
+  .hero h1 { margin:0 0 8px; font-size:28px; font-weight:900; }
+  .hero p { margin:0; opacity:.92; font-size:16px; }
+  .body { padding:32px; line-height:1.7; }
+  .body h2 { font-size:18px; margin:24px 0 8px; color:#BF1E2E; }
+  .creds { background:#fef3c7; border-left:4px solid #d97706; padding:16px; border-radius:4px; margin:16px 0; }
+  .creds code { background:#fff; padding:2px 8px; border-radius:4px; font-weight:700; }
+  .cta { display:inline-block; background:#BF1E2E; color:#fff; padding:14px 32px; border-radius:8px; text-decoration:none; font-weight:700; margin:16px 0; }
+  .feat { background:#f9fafb; border-radius:8px; padding:16px; margin:12px 0; border:1px solid #e5e7eb; }
+  .feat strong { color:#BF1E2E; }
+  ul { padding-left:20px; margin:8px 0; }
+  li { margin:6px 0; }
+  .foot { background:#f5f5f5; padding:20px 32px; font-size:13px; color:#6b7280; text-align:center; border-top:1px solid #e5e7eb; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="hero">
+    <h1>Bienvenida/o a TRINORMA</h1>
+    <p>El Sistema de Gestión Integrado de DASSA</p>
+  </div>
+
+  <div class="body">
+    <p>Hola <strong>{{NOMBRE}}</strong>,</p>
+
+    <p>A partir de hoy DASSA tiene un sistema único para gestionar las tres normas ISO (Calidad 9001, Ambiente 14001, Seguridad y Salud 45001). Se llama <strong>TRINORMA</strong> y reemplaza planillas, mails y carpetas.</p>
+
+    <h2>Cómo entrar</h2>
+    <div class="creds">
+      <div><strong>URL:</strong> <code>https://trinorma.dassa.com.ar</code></div>
+      <div style="margin-top:8px"><strong>Usuario:</strong> <code>{{EMAIL}}</code></div>
+      <div style="margin-top:8px"><strong>Contraseña inicial:</strong> <code>Dassa2026!</code></div>
+    </div>
+
+    <p><strong>Importante:</strong> apenas entres, andá a <strong>Perfil → Cambiar contraseña</strong> y pone una contraseña personal. Si te olvidás, usá "¿Olvidaste tu contraseña?" en el login y te llega un link al email.</p>
+
+    <p style="text-align:center; margin:24px 0;">
+      <a href="https://trinorma.dassa.com.ar" class="cta">Ingresar a TRINORMA</a>
+    </p>
+
+    <h2>Lo primero que vas a ver</h2>
+    <p>Al ingresar te aparece tu <strong>Bienvenida personalizada</strong> según tu rol: explica qué pantallas vas a usar, qué esperamos de vos y un plan para tu primera semana. Después de leer y aceptar el pacto, vas directo a tus tareas pendientes.</p>
+
+    <h2>Lo más importante del sistema</h2>
+    <div class="feat">
+      <strong>Mis Pendientes</strong> — Todas tus tareas asignadas en un solo lugar (comité, NCs, capacitaciones, proyectos). Si solo abrís una pantalla por día, que sea esta.
+    </div>
+    <div class="feat">
+      <strong>NC y Desvíos</strong> — Reportar y dar seguimiento. Es el corazón de la norma.
+    </div>
+    <div class="feat">
+      <strong>Capacitaciones</strong> — Lo que no está registrado acá, en auditoría no existe.
+    </div>
+    <div class="feat">
+      <strong>Compras</strong> — Pedidos con flujo de aprobación y trazabilidad.
+    </div>
+    <div class="feat">
+      <strong>Revisiones y actas</strong> — Documentación formal asociada a tu perfil.
+    </div>
+
+    <h2>Sobre TRINY y NIXA</h2>
+    <p>Dos cosas distintas que conviene aclarar desde el inicio:</p>
+    <ul>
+      <li><strong>NIXA</strong> es la consultora externa que nos acompaña con la norma y la recertificación. Es una persona real, usuaria del sistema.</li>
+      <li><strong>TRINY</strong> es el agente de IA del sistema — te va a mandar recordatorios, sugerencias y avisos cuando algo necesite tu atención.</li>
+    </ul>
+
+    <h2>Si algo no funciona</h2>
+    <p>Escribime directo: <a href="mailto:santiago@dassa.com.ar">santiago@dassa.com.ar</a>. El sistema está en su semana de lanzamiento, así que si algo te resulta confuso o se rompe, mejor avisame para arreglarlo rápido.</p>
+
+    <p style="margin-top:24px;">Gracias por sumarte. El éxito del SGI depende de que cada uno use el sistema en serio.</p>
+
+    <p>Santi</p>
+  </div>
+
+  <div class="foot">
+    DASSA SA · Sistema de Gestión Integrado (TRINORMA)<br>
+    ISO 9001 · ISO 14001 · ISO 45001
+  </div>
+</div>
+</body>
+</html>

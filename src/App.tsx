@@ -4,6 +4,8 @@ import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import AppLayout from '@/components/layout/AppLayout';
 import Login from '@/pages/Login';
 import Bienvenida from '@/pages/Bienvenida';
+import PactosAdmin from '@/pages/PactosAdmin';
+import NovedadesAdmin from '@/pages/NovedadesAdmin';
 import AgentSettings  from '@/pages/AgentSettings';
 import Ciclo2026      from '@/pages/Ciclo2026';
 import Organigrama    from '@/pages/Organigrama';
@@ -92,6 +94,8 @@ export default function App() {
             <Route path="/home"       element={<Navigate to="/bienvenida" replace />} />
             <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
               <Route path="/bienvenida"     element={<Bienvenida />} />
+              <Route path="/admin/pactos"   element={<PactosAdmin />} />
+              <Route path="/admin/novedades" element={<NovedadesAdmin />} />
               <Route path="/dashboard"      element={<Dashboard />} />
               <Route path="/findings/*"     element={<Findings />} />
               <Route path="/risks"          element={<Risks />} />

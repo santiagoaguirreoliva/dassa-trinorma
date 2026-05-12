@@ -104,6 +104,16 @@ function buildNav(openFindings: number, legalAlerts: number, role?: string): Nav
         { path: '/agent-settings',  label: 'Configurar IA', icon: <Bot size={15} /> },
       ],
     }] : []),
+
+    ...(isAdmin || isAuditor ? [{
+      group: 'Administracion',
+      emoji: 'A',
+      subtitle: 'Solo master_admin / auditor',
+      items: [
+        ...(isAdmin || isAuditor ? [{ path: '/admin/pactos', label: 'Pactos Trinorma', icon: <Sparkles size={15} /> }] : []),
+        ...(isAdmin ? [{ path: '/admin/novedades', label: 'Novedades', icon: <Megaphone size={15} /> }] : []),
+      ],
+    }] : []),
   ];
 }
 

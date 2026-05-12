@@ -139,24 +139,24 @@ export default function Bienvenida() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100">
+    <div className="flex-1 overflow-y-auto bg-slate-50">
       {/* ── HERO ────────────────────────────────────────────────────────── */}
-      <header className="relative bg-gradient-to-br from-[#BF1E2E] to-[#8b1521] text-white overflow-hidden">
+      <header className="relative bg-gradient-to-br from-[#BF1E2E] to-[#8b1521] text-white overflow-hidden rounded-2xl mx-4 sm:mx-6 lg:mx-8 mt-6">
         <div className="absolute inset-0 opacity-10">
           <div className="absolute top-10 right-10 w-72 h-72 rounded-full bg-white blur-3xl" />
           <div className="absolute bottom-0 left-20 w-96 h-96 rounded-full bg-white blur-3xl" />
         </div>
-        <div className="relative max-w-6xl mx-auto px-6 sm:px-8 py-12 sm:py-16">
+        <div className="relative max-w-6xl mx-auto px-6 sm:px-8 py-10">
           <div className="flex items-center gap-2 mb-4">
             <Sparkles className="w-5 h-5 text-yellow-300" />
             <span className="uppercase tracking-widest text-xs font-bold text-yellow-300">
               Bienvenida personalizada
             </span>
           </div>
-          <h1 className="text-4xl sm:text-5xl font-black mb-3 leading-tight">
+          <h1 className="text-3xl sm:text-4xl font-black mb-3 leading-tight">
             Hola {profile.greeting} 👋
           </h1>
-          <p className="text-xl sm:text-2xl text-white/90 mb-6 max-w-2xl">
+          <p className="text-lg sm:text-xl text-white/90 mb-5 max-w-2xl">
             Te doy la bienvenida a <strong>TRINORMA</strong>, el Sistema de Gestión Integrado de DASSA.
           </p>
           <div className="inline-flex items-center gap-2 bg-white/15 backdrop-blur-sm rounded-full px-4 py-2 border border-white/20">
@@ -166,7 +166,7 @@ export default function Bienvenida() {
         </div>
       </header>
 
-      <main className="max-w-6xl mx-auto px-6 sm:px-8 py-12 space-y-16">
+      <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-10 pb-16">
 
         {/* ── NOVEDADES ─────────────────────────────────────────────────── */}
         {news.length > 0 && (
@@ -227,7 +227,7 @@ export default function Bienvenida() {
         {/* ── LO MÁS IMPORTANTE (UNIVERSAL) ──────────────────────────── */}
         <section>
           <div className="mb-6">
-            <h2 className="text-3xl font-bold text-gray-900 mb-2">
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">
               Lo más importante del sistema (para todos)
             </h2>
             <p className="text-gray-600">
@@ -307,7 +307,7 @@ export default function Bienvenida() {
         {/* ── TU ROL ESPECÍFICO ────────────────────────────────────────── */}
         <section>
           <div className="mb-6">
-            <h2 className="text-3xl font-bold text-gray-900 mb-2">
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">
               Tu tablero · {profile.roleLabel}
             </h2>
             <p className="text-gray-600">
@@ -393,7 +393,7 @@ export default function Bienvenida() {
         {/* ── PRIMERA SEMANA ────────────────────────────────────────────── */}
         <section>
           <div className="mb-6">
-            <h2 className="text-3xl font-bold text-gray-900 mb-2">Tu primera semana en TRINORMA</h2>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Tu primera semana en TRINORMA</h2>
             <p className="text-gray-600">Un mini plan para que no te sientas perdida.</p>
           </div>
           <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">

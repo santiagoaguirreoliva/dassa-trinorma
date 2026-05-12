@@ -63,4 +63,22 @@ router.post('/seen', async (req, res) => {
   }
 });
 
+// GET /api/bienvenida/news · novedades visibles para el user
+router.get('/news', async (req, res) => {
+  try {
+    const { rows } = await query(
+      `SELECT id, title, body_md, category, pinned, published_at
+         FROM system_announcements
+        WHERE (expires_at IS NULL OR expires_at > NOW())
+          AND (audience = 'all' OR audience = $1 OR audience LIKE '%' || $2 || '%')
+        ORDER BY pinned DESC, published_at DESC
+        LIMIT 10`,
+      [req.user.role, req.user.email]
+    );
+    res.json(rows);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 export default router;

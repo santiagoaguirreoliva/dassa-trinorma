@@ -9,7 +9,7 @@ import {
   ClipboardList, AlertTriangle, GraduationCap, ShoppingCart, CheckSquare,
   Bot, Users as UsersIcon, Calendar as CalendarIcon, FileText, Briefcase,
   ChevronRight, CheckCircle2, Loader2, Sparkles, Shield, Target,
-  TrendingUp, MessageCircle, Building2,
+  TrendingUp, MessageCircle, Building2, Megaphone, Pin, Info, AlertCircle as AlertCircleIcon, Zap,
 } from 'lucide-react';
 
 // ── Config por rol ──────────────────────────────────────────────────────────
@@ -114,13 +114,13 @@ export default function Bienvenida() {
   const [pactChecked, setPactChecked] = useState(false);
   const [accepting, setAccepting] = useState(false);
   const [alreadyAccepted, setAlreadyAccepted] = useState(false);
+  const [news, setNews] = useState<any[]>([]);
 
   useEffect(() => {
     // Marcar como visto + chequear status previo
     api.post('/bienvenida/seen', {}).catch(() => {});
-    api.get<{ accepted: boolean }>('/bienvenida/status')
-      .then(r => setAlreadyAccepted(r.accepted))
-      .catch(() => {});
+    api.get<{ accepted: boolean }>('/bienvenida/status').then(r => setAlreadyAccepted(r.accepted)).catch(() => {});
+    api.get<any[]>('/bienvenida/news').then(setNews).catch(() => {});
   }, []);
 
   if (!user) return null;
@@ -167,6 +167,47 @@ export default function Bienvenida() {
       </header>
 
       <main className="max-w-6xl mx-auto px-6 sm:px-8 py-12 space-y-16">
+
+        {/* ── NOVEDADES ─────────────────────────────────────────────────── */}
+        {news.length > 0 && (
+          <section>
+            <div className="mb-6 flex items-center gap-3">
+              <div className="bg-amber-100 rounded-lg p-2"><Megaphone className="w-6 h-6 text-amber-700" /></div>
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900">Novedades del sistema</h2>
+                <p className="text-gray-600 text-sm">Lo que cambió o se sumó recientemente</p>
+              </div>
+            </div>
+            <div className="space-y-3">
+              {news.map((n: any) => {
+                const cfg: any = {
+                  urgente:  { bg: 'bg-red-50 border-red-300',     icon: AlertCircleIcon, color: 'text-red-700' },
+                  aviso:    { bg: 'bg-amber-50 border-amber-300', icon: Info,            color: 'text-amber-700' },
+                  update:   { bg: 'bg-blue-50 border-blue-300',   icon: Zap,             color: 'text-blue-700' },
+                  novedad:  { bg: 'bg-emerald-50 border-emerald-300', icon: Sparkles,    color: 'text-emerald-700' },
+                };
+                const c = cfg[n.category] || cfg.novedad;
+                const Icon = c.icon;
+                return (
+                  <div key={n.id} className={`${c.bg} border-l-4 rounded-r-xl p-4 flex gap-3 items-start`}>
+                    <Icon className={`w-5 h-5 ${c.color} shrink-0 mt-0.5`} />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        {n.pinned && <Pin className="w-3.5 h-3.5 text-gray-400" />}
+                        <h3 className="font-bold text-gray-900">{n.title}</h3>
+                        <span className="text-xs text-gray-500 ml-auto">{new Date(n.published_at).toLocaleDateString('es-AR')}</span>
+                      </div>
+                      <div className="text-sm text-gray-700 leading-relaxed whitespace-pre-line">
+                        {n.body_md.replace(/\*\*(.+?)\*\*/g, '$1')}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+        )}
+
         {/* ── PITCH DE ROL ────────────────────────────────────────────── */}
         <section>
           <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8">

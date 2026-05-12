@@ -89,6 +89,7 @@ export default function App() {
             <Route path="/reporte-nc" element={<PublicNC />} />
             <Route path="/c/:token"   element={<PublicComm />} />
             <Route path="/"           element={<Navigate to="/login" replace />} />
+            <Route path="/home"       element={<Navigate to="/bienvenida" replace />} />
             <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
               <Route path="/bienvenida"     element={<Bienvenida />} />
               <Route path="/dashboard"      element={<Dashboard />} />

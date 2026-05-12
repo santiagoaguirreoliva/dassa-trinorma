@@ -5,7 +5,7 @@ import {
   BookOpen, Leaf, AlertTriangle, BarChart3, Building2, Truck,
   CalendarDays, ChevronDown, ChevronRight, Star, Settings, X,
   Briefcase, Workflow, Target, GitMerge, BookOpen as BookOpen2,
-  Megaphone, Inbox, Bot, AlertCircle, ListChecks, FolderTree,
+  Megaphone, Inbox, Bot, AlertCircle, ListChecks, FolderTree, Sparkles,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -21,6 +21,7 @@ function buildNav(openFindings: number, legalAlerts: number, role?: string): Nav
       group: 'Inicio',
       emoji: '🏠',
       items: [
+        { path: '/bienvenida',    label: 'Bienvenida',      icon: <Sparkles size={15} /> },
         { path: '/dashboard',     label: 'Dashboard',       icon: <LayoutDashboard size={15} /> },
         { path: '/mi-puesto',     label: 'Mi Puesto',       icon: <Briefcase size={15} /> },
         { path: '/mis-pendientes', label: 'Mis Pendientes', icon: <ListChecks size={15} /> },

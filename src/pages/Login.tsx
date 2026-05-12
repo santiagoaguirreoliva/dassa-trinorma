@@ -14,7 +14,7 @@ export default function Login() {
 
   // auto-redirect-si-sesion: si ya hay token valido, saltar al dashboard
   useEffect(() => {
-    if (!isLoading && user) navigate('/dashboard', { replace: true });
+    if (!isLoading && user) navigate('/bienvenida', { replace: true });
   }, [isLoading, user, navigate]);
 
 
@@ -24,7 +24,7 @@ export default function Login() {
     setError('');
     try {
       await signIn(email, password);
-      navigate('/dashboard');
+      navigate('/bienvenida');
     } catch (err: any) {
       setError(err.message || 'Error al iniciar sesión');
     } finally {

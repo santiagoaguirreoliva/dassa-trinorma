@@ -106,7 +106,7 @@ function NewPurchaseModal({ onClose }: { onClose: () => void }) {
         ? { url: trimmed.split(/\s/)[0], text: trimmed.includes(' ') ? trimmed : '' }
         : { text: trimmed };
       const r = await api.post('/purchases/parse-product-info', payload);
-      return r.data.data;
+      return (r as any).data;
     },
     onSuccess: (data: any) => {
       setForm(p => ({

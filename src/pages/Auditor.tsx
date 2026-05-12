@@ -248,7 +248,7 @@ function AuditorChatDialog({ onClose }: { onClose: () => void }) {
     setSending(true);
     try {
       const r = await api.post('/auditor/chat', { messages: newMessages });
-      setMessages([...newMessages, { role: 'assistant', content: r.data.content }]);
+      setMessages([...newMessages, { role: 'assistant', content: (r as any).content }]);
     } catch (e: any) {
       setMessages([...newMessages, { role: 'assistant', content: '⚠ Error: ' + (e.response?.data?.error || e.message) }]);
     } finally {

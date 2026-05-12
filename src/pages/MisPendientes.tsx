@@ -60,9 +60,9 @@ export default function MisPendientes() {
   async function generateMyReport() {
     setGenerating(true);
     try {
-      const userId = (await api.get('/auth/me')).data.id;
+      const userId = ((await api.get('/auth/me')) as any).id;
       const r = await api.post(`/auditor/run-for-user/${userId}`);
-      setReport({ ...r.data.report, ...r.data.context_metrics, created_at: new Date().toISOString() });
+      setReport({ ...(r as any).report, ...(r as any).context_metrics, created_at: new Date().toISOString() });
     } catch (e: any) {
       alert('Error: ' + (e.response?.data?.error || e.message));
     } finally {

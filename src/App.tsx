@@ -38,6 +38,7 @@ import Suppliers from '@/pages/Suppliers';
 import Context from '@/pages/Context';
 import Calendar from '@/pages/Calendar';
 import PublicNC from '@/pages/PublicNC';
+import SignupEmpresa from '@/pages/SignupEmpresa';
 import { Spinner } from '@/components/ui';
 import { lazy, Suspense } from 'react';
 import ForgotPassword from '@/pages/ForgotPassword';

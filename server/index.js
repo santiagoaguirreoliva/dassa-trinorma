@@ -36,7 +36,7 @@ cron.schedule('0 */6 * * *', async () => {
   try {
     const { createRequire: cr } = await import('module');
     const reqCjs = cr(import.meta.url);
-    const { generateWakeUpAlerts } = reqCjs('./server/services/ai-quality.cjs');
+    const { generateWakeUpAlerts } = reqCjs('./services/ai-quality.cjs');
     const stats = await generateWakeUpAlerts();
     console.log('[wake-up]', stats);
   } catch (e) { console.error('[wake-up] err:', e.message); }

@@ -7,6 +7,7 @@ import { api } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { Header } from '@/components/layout/Header';
 import { Badge, FINDING_STATUS, FINDING_TYPE, Avatar, Spinner, PageContent } from '@/components/ui';
+import { SimpleBar, SimplePie } from '@/components/charts';
 import FindingDetail from '@/components/findings/FindingDetail';
 
 // ─── Tipos ──────────────────────────────────────────────────

@@ -1,16 +1,22 @@
-import { useState, FormEvent } from 'react';
+import { useState, useEffect, FormEvent } from 'react';
 import { useNavigate , Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Eye, EyeOff, Loader2 } from 'lucide-react';
 
 export default function Login() {
-  const { signIn } = useAuth();
+  const { signIn, user, isLoading } = useAuth();
   const navigate   = useNavigate();
   const [email, setEmail]       = useState('');
   const [password, setPassword] = useState('');
   const [showPass, setShowPass] = useState(false);
   const [error, setError]       = useState('');
   const [loading, setLoading]   = useState(false);
+
+  // auto-redirect-si-sesion: si ya hay token valido, saltar al dashboard
+  useEffect(() => {
+    if (!isLoading && user) navigate('/dashboard', { replace: true });
+  }, [isLoading, user, navigate]);
+
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();

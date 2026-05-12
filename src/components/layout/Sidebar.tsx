@@ -26,6 +26,7 @@ function buildNav(openFindings: number, legalAlerts: number, role?: string): Nav
         { path: '/mi-puesto',     label: 'Mi Puesto',       icon: <Briefcase size={15} /> },
         { path: '/mis-pendientes', label: 'Mis Pendientes', icon: <ListChecks size={15} /> },
         { path: '/calendar',      label: 'Calendario',      icon: <CalendarDays size={15} /> },
+        { path: '/triny',         label: 'TRINY · Agente IA', icon: <Bot size={15} /> },
       ],
     },
     {

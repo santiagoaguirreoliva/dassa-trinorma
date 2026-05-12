@@ -1,7 +1,8 @@
 // =============================================================================
 // /bienvenida · Landing personalizada por rol
+// TRINY = agente IA del sistema · NIXA = auditora externa persona real (rol)
 // =============================================================================
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth, type AppRole } from '@/contexts/AuthContext';
 import { api } from '@/lib/api';
@@ -9,33 +10,71 @@ import {
   ClipboardList, AlertTriangle, GraduationCap, ShoppingCart, CheckSquare,
   Bot, Users as UsersIcon, Calendar as CalendarIcon, FileText, Briefcase,
   ChevronRight, CheckCircle2, Loader2, Sparkles, Shield, Target,
-  TrendingUp, MessageCircle, Building2, Megaphone, Pin, Info, AlertCircle as AlertCircleIcon, Zap,
+  TrendingUp, MessageCircle, Building2, Megaphone, Pin, Info,
+  AlertCircle as AlertCircleIcon, Zap, Eye, Search, Lock, Truck,
+  BookOpen, Scale, LineChart, FolderTree, Star,
 } from 'lucide-react';
 
-// ── Config por rol ──────────────────────────────────────────────────────────
+// ── Type defs ───────────────────────────────────────────────────────────────
+interface PantallaCfg { icon: any; label: string; href: string; descripcion: string }
 interface RoleProfile {
   greeting: string;
   roleLabel: string;
   rolePitch: string;
-  pantallas: { icon: any; label: string; href: string; descripcion: string }[];
+  heroEmoji: string;
+  pantallas: PantallaCfg[];
   responsabilidades: string[];
   primerSemana: { dia: string; tarea: string; href?: string }[];
   expectativas: string[];
   consultaA: { tema: string; persona: string }[];
 }
 
+// ── Bloque universal "Lo más importante" — IGUAL para todos ────────────────
+const IMPORTANT_FOR_EVERYONE = [
+  {
+    icon: CheckSquare, color: 'bg-[#BF1E2E]', href: '/mis-pendientes',
+    title: 'Mis Pendientes',
+    desc: 'El lugar #1. Todas tus tareas asignadas (de comité, NCs, proyectos, capacitaciones, auditorías) se nuclean acá. Si solo vas a abrir una pantalla por día, que sea esta.',
+  },
+  {
+    icon: AlertTriangle, color: 'bg-orange-500', href: '/findings',
+    title: 'NC y Desvíos',
+    desc: 'El corazón de la norma. Cada no conformidad que detectes se reporta acá, con plan de acción, responsable y fecha. Sin NCs gestionadas, no hay certificación.',
+  },
+  {
+    icon: GraduationCap, color: 'bg-blue-600', href: '/trainings',
+    title: 'Capacitaciones',
+    desc: 'Registrar evidencia de cada capacitación: asistencia, material, evaluación. Lo que no está acá, en auditoría no existe.',
+  },
+  {
+    icon: ShoppingCart, color: 'bg-emerald-600', href: '/purchases',
+    title: 'Compras',
+    desc: 'Pedidos de compra con flujo de aprobación. Toda compra relevante al SGI pasa por acá para dejar trazabilidad.',
+  },
+  {
+    icon: ClipboardList, color: 'bg-purple-600', href: '/mis-pendientes',
+    title: 'Revisiones obligatorias',
+    desc: 'Cada rol tiene revisiones periódicas (mensuales, trimestrales, anuales). Te aparecen en Mis Pendientes en su fecha.',
+  },
+  {
+    icon: FileText, color: 'bg-slate-700', href: '/comunicaciones',
+    title: 'Actas, recorridos y auditorías',
+    desc: 'Documentación formal: actas de comité, recorridos de inspección, auditorías internas. Asociadas a tu perfil cuando te toca firmar o participar.',
+  },
+];
+
+// ── PROFILES por rol ────────────────────────────────────────────────────────
+
 const RRHH_PROFILE: RoleProfile = {
-  greeting: 'María',
-  roleLabel: 'Recursos Humanos',
-  rolePitch:
-    'Sos la responsable de que cada persona en DASSA esté formada, registrada y al día con la norma. Tu rol es central: sin RRHH funcionando bien, ningún SGI pasa una auditoría.',
+  greeting: 'María', heroEmoji: '👋', roleLabel: 'Recursos Humanos',
+  rolePitch: 'Sos la responsable de que cada persona en DASSA esté formada, registrada y al día con la norma. Tu rol es central: sin RRHH funcionando bien, ningún SGI pasa una auditoría.',
   pantallas: [
     { icon: UsersIcon, label: 'Empleados', href: '/employees', descripcion: 'Legajos, altas, bajas, cambios de puesto.' },
     { icon: GraduationCap, label: 'Capacitaciones', href: '/trainings', descripcion: 'Programar, registrar evidencias, asistencias.' },
-    { icon: AlertTriangle, label: 'NCs de RRHH', href: '/findings', descripcion: 'No conformidades de tu área y de procesos de personas.' },
+    { icon: AlertTriangle, label: 'NCs de RRHH', href: '/findings', descripcion: 'No conformidades de tu área y procesos de personas.' },
     { icon: FileText, label: 'Documentos', href: '/documents', descripcion: 'Manual del empleado, políticas, procedimientos RRHH.' },
     { icon: Briefcase, label: 'Mi Puesto', href: '/mi-puesto', descripcion: 'Tu ficha: responsabilidades, objetivos, KPIs.' },
-    { icon: CalendarIcon, label: 'Calendario NIXA', href: '/calendario-nixa', descripcion: 'Eventos del SGI, comité, capacitaciones.' },
+    { icon: CalendarIcon, label: 'Calendario', href: '/calendar', descripcion: 'Eventos SGI, comité mixto, capacitaciones.' },
   ],
   responsabilidades: [
     'Mantener legajos del 100% de los empleados activos al día.',
@@ -50,7 +89,7 @@ const RRHH_PROFILE: RoleProfile = {
     { dia: 'Día 3', tarea: 'Cargá la última capacitación realizada con evidencia.', href: '/trainings' },
     { dia: 'Día 4', tarea: 'Revisá Empleados: ¿algún legajo sin foto / contrato?', href: '/employees' },
     { dia: 'Día 5', tarea: 'Subí el Manual del Empleado vigente a Documentos.', href: '/documents' },
-    { dia: 'Día 6', tarea: 'Andá al Calendario NIXA y agendá el próximo comité.', href: '/calendario-nixa' },
+    { dia: 'Día 6', tarea: 'Andá al Calendario y agendá el próximo comité.', href: '/calendar' },
     { dia: 'Día 7', tarea: 'Revisión semanal: ¿NCs sin responsable? ¿Capacitaciones vencidas?', href: '/findings' },
   ],
   expectativas: [
@@ -61,470 +100,304 @@ const RRHH_PROFILE: RoleProfile = {
     'Acta de comité subida el mismo día de la reunión.',
   ],
   consultaA: [
-    { tema: 'Liderazgo SGI / norma ISO', persona: 'Manuel (sgi_leader)' },
+    { tema: 'Liderazgo SGI / norma ISO', persona: 'Manuel (SGI Leader)' },
     { tema: 'Operaciones / planta', persona: 'Christian' },
     { tema: 'Seguridad e Higiene', persona: 'Fernando Ponzi' },
+    { tema: 'Auditora externa / norma', persona: 'NIXA' },
     { tema: 'Algo grave / técnico', persona: 'Santi' },
   ],
 };
 
-const GENERIC_PROFILE: RoleProfile = {
-  greeting: '',
-  roleLabel: 'Equipo Trinorma',
-  rolePitch:
-    'Bienvenido al sistema integrado de gestión de DASSA. Tu rol es parte del engranaje que hace funcionar las tres normas ISO.',
+const SGI_LEADER_PROFILE: RoleProfile = {
+  greeting: 'Manuel', heroEmoji: '🎯', roleLabel: 'SGI Leader · Líder del Sistema',
+  rolePitch: 'Sos el responsable operativo del SGI. Tu trabajo es que las tres normas funcionen como una sola: ver el sistema completo, identificar dónde se traba y empujar para que avance. Sos el puente entre la planta, RRHH, seguridad y la dirección.',
   pantallas: [
-    { icon: ClipboardList, label: 'Mis Pendientes', href: '/mis-pendientes', descripcion: 'Todo lo asignado a vos en un solo lugar.' },
-    { icon: AlertTriangle, label: 'NCs y Desvíos', href: '/findings', descripcion: 'Reportar y dar seguimiento a no conformidades.' },
-    { icon: GraduationCap, label: 'Capacitaciones', href: '/trainings', descripcion: 'Tus capacitaciones obligatorias.' },
-    { icon: Briefcase, label: 'Mi Puesto', href: '/mi-puesto', descripcion: 'Tu ficha de puesto.' },
+    { icon: AlertTriangle, label: 'Hallazgos / NCs', href: '/findings', descripcion: 'Todas las NCs del SGI · vista global.' },
+    { icon: ClipboardList, label: 'Sistema de Gestión', href: '/sistema-gestion', descripcion: 'Vista integral del SGC, SGA, SGSST.' },
+    { icon: Target, label: 'Objetivos', href: '/objetivos', descripcion: 'Objetivos anuales por área y su progreso.' },
+    { icon: LineChart, label: 'Ciclo 2026 · DAG', href: '/ciclo/2026', descripcion: 'Revisiones encadenadas del ciclo anual.' },
+    { icon: Building2, label: 'Comité Mixto', href: '/committee', descripcion: 'Reuniones, actas, tareas asignadas.' },
+    { icon: BookOpen, label: 'Procedimientos', href: '/procedimientos', descripcion: 'Procedimientos vigentes y vencidos.' },
+    { icon: Shield, label: 'Matriz AMFE', href: '/riesgos-amfe', descripcion: 'Riesgos cruzados de las tres normas.' },
+    { icon: FileText, label: 'Documentos', href: '/documents', descripcion: 'Árbol documental del SGI.' },
   ],
   responsabilidades: [
-    'Atender tus tareas pendientes en plazo.',
-    'Reportar NCs y desvíos cuando los detectes.',
-    'Completar las capacitaciones asignadas.',
+    'Liderar las reuniones mensuales de revisión del SGI.',
+    'Aprobar planes de acción de NCs mayores (>15 días sin cerrar).',
+    'Coordinar con NIXA las auditorías internas y de recertificación.',
+    'Asegurar que objetivos anuales tengan medición trimestral.',
+    'Validar procedimientos antes de que vayan a aprobación final.',
+    'Mantener el árbol documental controlado y vigente.',
   ],
   primerSemana: [
-    { dia: 'Día 1', tarea: 'Login y exploración de Mi Puesto.', href: '/mi-puesto' },
-    { dia: 'Día 2', tarea: 'Revisar Mis Pendientes.', href: '/mis-pendientes' },
-    { dia: 'Día 3', tarea: 'Conocer el módulo de NCs.', href: '/findings' },
+    { dia: 'Día 1', tarea: 'Revisá Mis Pendientes y armá tu plan de la semana.', href: '/mis-pendientes' },
+    { dia: 'Día 2', tarea: 'Auditá Hallazgos: ¿hay NCs sin responsable o atrasadas?', href: '/findings' },
+    { dia: 'Día 3', tarea: 'Revisión completa del Ciclo 2026 DAG.', href: '/ciclo/2026' },
+    { dia: 'Día 4', tarea: 'Procedimientos: chequeá vencimientos próximos.', href: '/procedimientos' },
+    { dia: 'Día 5', tarea: 'Reunión semanal con Santi para visión general.', href: '/comunicaciones' },
+    { dia: 'Día 6', tarea: 'Revisá Comité Mixto: próxima fecha y agenda.', href: '/committee' },
+    { dia: 'Día 7', tarea: 'Informe semanal al directorio (resumen ejecutivo).', href: '/sistema-gestion' },
   ],
   expectativas: [
-    'Loguearte regularmente.',
-    'Cumplir con tareas asignadas.',
-    'Reportar problemas detectados.',
+    'Login diario en horario laboral.',
+    'Cero NCs mayores sin responsable a 48h.',
+    'Procedimientos críticos siempre vigentes.',
+    'Reunión mensual del comité documentada en sistema el mismo día.',
+    'Informe ejecutivo al directorio cada semana.',
+  ],
+  consultaA: [
+    { tema: 'Decisión estratégica / norma', persona: 'Santiago + NIXA' },
+    { tema: 'RRHH / personas', persona: 'María' },
+    { tema: 'Operaciones planta', persona: 'Christian' },
+    { tema: 'Seguridad e Higiene', persona: 'Fernando Ponzi' },
+    { tema: 'Técnico del sistema', persona: 'Santi' },
+  ],
+};
+
+const OPERACIONES_PROFILE: RoleProfile = {
+  greeting: 'Christian', heroEmoji: '⚙️', roleLabel: 'Operaciones · Planta',
+  rolePitch: 'Sos los ojos del SGI en el día a día. Si algo se desvía en planta — un proceso, un equipo, una práctica — vos sos el primero en detectarlo. Tu trabajo de cargar lo que ves convierte el sistema en algo vivo y no en un papel.',
+  pantallas: [
+    { icon: AlertTriangle, label: 'Hallazgos / NCs', href: '/findings', descripcion: 'Reportar desvíos que detectás en planta.' },
+    { icon: ClipboardList, label: 'Mis Pendientes', href: '/mis-pendientes', descripcion: 'Tareas asignadas a vos.' },
+    { icon: AlertCircleIcon, label: 'Incidentes', href: '/incidents', descripcion: 'Eventos no deseados ocurridos.' },
+    { icon: Truck, label: 'Proveedores', href: '/suppliers', descripcion: 'Evaluación de proveedores.' },
+    { icon: ShoppingCart, label: 'Compras', href: '/purchases', descripcion: 'Pedidos de compra de operaciones.' },
+    { icon: BookOpen, label: 'Procedimientos', href: '/procedimientos', descripcion: 'Procedimientos operativos vigentes.' },
+  ],
+  responsabilidades: [
+    'Reportar toda NC o desvío detectado en planta en menos de 24h.',
+    'Actualizar el estado de las tareas operativas asignadas.',
+    'Participar de los recorridos de inspección programados.',
+    'Asistir al Comité Mixto y aportar visión de planta.',
+    'Cargar incidentes el mismo día que ocurren.',
+  ],
+  primerSemana: [
+    { dia: 'Día 1', tarea: 'Login + Mi Puesto para ver tus responsabilidades.', href: '/mi-puesto' },
+    { dia: 'Día 2', tarea: 'Revisá Mis Pendientes y empezá por la más urgente.', href: '/mis-pendientes' },
+    { dia: 'Día 3', tarea: 'Practica cargar una NC de prueba.', href: '/findings' },
+    { dia: 'Día 4', tarea: 'Mirá los Procedimientos de tu área para refrescar.', href: '/procedimientos' },
+    { dia: 'Día 5', tarea: 'Revisá Capacitaciones tuyas pendientes.', href: '/trainings' },
+    { dia: 'Día 6', tarea: 'Conocé el módulo de Incidentes (esperemos no usarlo).', href: '/incidents' },
+    { dia: 'Día 7', tarea: 'Repaso de tus tareas semanales. ¿Algo atrasado?', href: '/mis-pendientes' },
+  ],
+  expectativas: [
+    'Login al menos 3 veces por semana.',
+    'NCs reportadas dentro de las 24h de detectadas.',
+    'Tareas asignadas no se atrasan más de 5 días.',
+    'Capacitaciones realizadas → confirmás asistencia en el sistema.',
+    'Incidentes cargados el mismo día.',
+  ],
+  consultaA: [
+    { tema: 'Sistema SGI / norma', persona: 'Manuel' },
+    { tema: 'Seguridad e Higiene en planta', persona: 'Fernando Ponzi' },
+    { tema: 'RRHH / personal', persona: 'María' },
+    { tema: 'Compras y proveedores', persona: 'Manuel / Santi' },
+    { tema: 'Algo grave / técnico', persona: 'Santi' },
+  ],
+};
+
+const SH_PROFILE: RoleProfile = {
+  greeting: 'Fernando', heroEmoji: '⛑️', roleLabel: 'Seguridad e Higiene',
+  rolePitch: 'Sos la persona que se asegura de que nadie se lastime y que el ambiente de trabajo sea seguro. ISO 45001 vive en tus decisiones diarias. Vos cargás los riesgos, los incidentes, las capacitaciones y los recorridos — sin eso, el sistema 45001 no existe.',
+  pantallas: [
+    { icon: Shield, label: 'Matriz AMFE', href: '/riesgos-amfe', descripcion: 'Identificación y evaluación de riesgos.' },
+    { icon: AlertCircleIcon, label: 'Incidentes', href: '/incidents', descripcion: 'Accidentes, casi-accidentes, condiciones inseguras.' },
+    { icon: AlertTriangle, label: 'Hallazgos / NCs', href: '/findings', descripcion: 'NCs de SySO.' },
+    { icon: GraduationCap, label: 'Capacitaciones', href: '/trainings', descripcion: 'Capacitaciones obligatorias de SySO.' },
+    { icon: Scale, label: 'Req. Legales', href: '/legal', descripcion: 'Cumplimiento normativo SySO.' },
+    { icon: Leaf_or_Briefcase(), label: 'Mi Puesto', href: '/mi-puesto', descripcion: 'Tu ficha y responsabilidades.' },
+    { icon: ClipboardList, label: 'Mis Pendientes', href: '/mis-pendientes', descripcion: 'Tareas asignadas a vos.' },
+  ],
+  responsabilidades: [
+    'Mantener la matriz AMFE actualizada (revisión trimestral mínima).',
+    'Cargar incidentes el mismo día con investigación 5W2H.',
+    'Programar capacitaciones obligatorias por puesto.',
+    'Hacer recorridos mensuales de inspección y subir el acta.',
+    'Monitorear vencimientos de habilitaciones SySO (ART, póliza, etc.).',
+  ],
+  primerSemana: [
+    { dia: 'Día 1', tarea: 'Login + revisión de Matriz AMFE actual.', href: '/riesgos-amfe' },
+    { dia: 'Día 2', tarea: 'Mis Pendientes: planificá la semana.', href: '/mis-pendientes' },
+    { dia: 'Día 3', tarea: 'Revisá Incidentes históricos del último mes.', href: '/incidents' },
+    { dia: 'Día 4', tarea: 'Capacitaciones vencidas o próximas: programación.', href: '/trainings' },
+    { dia: 'Día 5', tarea: 'Req. Legales: vencimientos próximos.', href: '/legal' },
+    { dia: 'Día 6', tarea: 'Recorrido semanal de inspección.', href: '/incidents' },
+    { dia: 'Día 7', tarea: 'Informe SySO al SGI Leader (Manuel).', href: '/comunicaciones' },
+  ],
+  expectativas: [
+    'Login mínimo 4 veces por semana.',
+    'Incidentes cargados el mismo día — sin excepciones.',
+    'Matriz AMFE revisada al menos cada 3 meses.',
+    'Capacitaciones obligatorias sin vencimientos > 30 días.',
+    'Recorrido mensual de inspección con acta firmada.',
   ],
   consultaA: [
     { tema: 'Sistema SGI', persona: 'Manuel' },
+    { tema: 'Operaciones planta', persona: 'Christian' },
+    { tema: 'RRHH / capacitación', persona: 'María' },
+    { tema: 'Auditora externa', persona: 'NIXA' },
     { tema: 'Algo grave', persona: 'Santi' },
   ],
 };
 
-function getProfileForRole(role: AppRole | undefined, fullName: string): RoleProfile {
-  if (role === 'rrhh') {
-    return { ...RRHH_PROFILE, greeting: fullName.split(' ')[0] || 'María' };
-  }
-  return { ...GENERIC_PROFILE, greeting: fullName.split(' ')[0] || 'Equipo' };
-}
+const MASTER_ADMIN_PROFILE: RoleProfile = {
+  greeting: 'Santi', heroEmoji: '🚀', roleLabel: 'Master Admin · Dueño',
+  rolePitch: 'Sos el dueño del sistema y de DASSA. Tu vista no es operativa día a día sino estratégica: ¿el SGI avanza? ¿hay áreas trabadas? ¿alguien está sobrecargado? Tenés acceso a todo + el modo Espejo para ver lo que ve cada usuario.',
+  pantallas: [
+    { icon: LineChart, label: 'Dashboard ejecutivo', href: '/dashboard', descripcion: 'KPIs globales del sistema.' },
+    { icon: UsersIcon, label: 'Usuarios', href: '/users', descripcion: 'Alta/baja/cambio de roles.' },
+    { icon: Settings_(), label: 'Tenants Admin', href: '/tenants', descripcion: 'Configuración multi-tenant.' },
+    { icon: Eye, label: 'Modo Espejo', href: '/bienvenida?espejo=1', descripcion: 'Ver la bienvenida de cualquier usuario.' },
+    { icon: Bot, label: 'Agente TRINY', href: '/agent-settings', descripcion: 'Configurar el agente IA del sistema.' },
+    { icon: ClipboardList, label: 'Mis Pendientes', href: '/mis-pendientes', descripcion: 'Tus tareas y supervisiones.' },
+    { icon: FolderTree, label: 'Organigrama', href: '/organigrama', descripcion: 'Estructura DASSA.' },
+    { icon: Megaphone, label: 'Comunicaciones', href: '/comunicaciones', descripcion: 'Comunicados oficiales emitidos.' },
+  ],
+  responsabilidades: [
+    'Visión estratégica del SGI y dirección general.',
+    'Aprobar cambios de roles y altas de usuarios.',
+    'Supervisar a través del Modo Espejo lo que ve cada usuario.',
+    'Tomar decisiones cuando algo escala a través de TRINY.',
+    'Reunión semanal con Manuel para revisar avance del SGI.',
+    'Garantizar presupuesto y recursos para la certificación.',
+  ],
+  primerSemana: [
+    { dia: 'Lunes', tarea: 'Revisión semanal: Dashboard + Modo Espejo de 2 usuarios al azar.', href: '/dashboard' },
+    { dia: 'Martes', tarea: 'Reunión 1:1 con Manuel (SGI Leader).', href: '/comunicaciones' },
+    { dia: 'Miércoles', tarea: 'Auditá Hallazgos: ¿hay NCs estancadas?', href: '/findings' },
+    { dia: 'Jueves', tarea: 'Comunicaciones: revisá qué se emitió esta semana.', href: '/comunicaciones' },
+    { dia: 'Viernes', tarea: 'Cierre semana + agenda próximo Comité Mixto.', href: '/committee' },
+  ],
+  expectativas: [
+    'Login diario (es tu fuente de verdad).',
+    'Modo Espejo: pasá por cada usuario al menos 1 vez por semana.',
+    'Aprobaciones críticas en menos de 24h.',
+    'Reunión con Manuel semanal sin falta.',
+    'Cero días sin novedades publicadas si hay cambios.',
+  ],
+  consultaA: [
+    { tema: 'Liderazgo del SGI', persona: 'Manuel' },
+    { tema: 'Auditora externa', persona: 'NIXA' },
+    { tema: 'RRHH', persona: 'María' },
+    { tema: 'Operaciones', persona: 'Christian' },
+    { tema: 'Seguridad', persona: 'Fernando' },
+  ],
+};
 
-// ── Componente principal ────────────────────────────────────────────────────
-export default function Bienvenida() {
-  const { user } = useAuth();
-  const navigate = useNavigate();
-  const [pactChecked, setPactChecked] = useState(false);
-  const [accepting, setAccepting] = useState(false);
-  const [alreadyAccepted, setAlreadyAccepted] = useState(false);
-  const [news, setNews] = useState<any[]>([]);
+const AUDITOR_EXTERNO_PROFILE: RoleProfile = {
+  greeting: 'NIXA', heroEmoji: '🔍', roleLabel: 'Auditora Externa · Consultora',
+  rolePitch: 'Sos quien acompaña a DASSA en la implementación, mantenimiento y recertificación del SGI. Tu vista es independiente: revisás que las cosas estén bien hechas, que la trazabilidad cierre, que los procedimientos se cumplan. Tenés acceso a todo el árbol documental + el Modo Espejo para ver cómo cada usuario opera el sistema.',
+  pantallas: [
+    { icon: Search, label: 'Inbox NIXA', href: '/inbox-nixa', descripcion: 'Tu bandeja de revisiones pendientes.' },
+    { icon: Eye, label: 'Modo Espejo', href: '/bienvenida?espejo=1', descripcion: 'Ver la bienvenida de cualquier usuario.' },
+    { icon: CalendarIcon, label: 'Calendario NIXA', href: '/calendario-nixa', descripcion: 'Tu agenda de auditorías y revisiones.' },
+    { icon: ClipboardList, label: 'Auditor IA', href: '/auditor', descripcion: 'Herramienta para auditar el SGI con IA.' },
+    { icon: FileText, label: 'Documentos', href: '/documents', descripcion: 'Árbol documental completo del SGI.' },
+    { icon: BookOpen, label: 'Procedimientos', href: '/procedimientos', descripcion: 'Procedimientos vigentes y vencidos.' },
+    { icon: AlertTriangle, label: 'Hallazgos / NCs', href: '/findings', descripcion: 'NCs detectadas en auditorías.' },
+    { icon: LineChart, label: 'Ciclo 2026 DAG', href: '/ciclo/2026', descripcion: 'Estado del ciclo anual de revisiones.' },
+  ],
+  responsabilidades: [
+    'Revisar el árbol documental completo y mantenerlo vigente con DASSA.',
+    'Validar las NCs cargadas: ¿formato correcto?, ¿plan de acción suficiente?',
+    'Programar y ejecutar auditorías internas según el Ciclo Anual.',
+    'Acompañar la recertificación anual y las visitas externas.',
+    'Capacitar al equipo en interpretación de la norma cuando haga falta.',
+    'Firmar validaciones desde el sistema (firmas digitales auditables).',
+  ],
+  primerSemana: [
+    { dia: 'Día 1', tarea: 'Revisar tu Inbox NIXA: cosas pendientes de validar.', href: '/inbox-nixa' },
+    { dia: 'Día 2', tarea: 'Auditá un Modo Espejo aleatorio (vé cómo lo usa Christian).', href: '/bienvenida?espejo=1' },
+    { dia: 'Día 3', tarea: 'Procedimientos: vencimientos próximos.', href: '/procedimientos' },
+    { dia: 'Día 4', tarea: 'Documentos: árbol completo, control de versiones.', href: '/documents' },
+    { dia: 'Día 5', tarea: 'Reunión semanal con Manuel + Santi.', href: '/comunicaciones' },
+    { dia: 'Día 6', tarea: 'Ciclo 2026: estado de revisiones encadenadas.', href: '/ciclo/2026' },
+    { dia: 'Día 7', tarea: 'Informe semanal: ¿cómo va el SGI vs. recertificación?', href: '/auditor' },
+  ],
+  expectativas: [
+    'Login regular en semanas con auditoría programada.',
+    'Validaciones firmadas en menos de 5 días.',
+    'Informe trimestral del estado del SGI.',
+    'Modo Espejo: usalo para verificar adopción real del sistema.',
+    'Documentos revisados sin atrasos > 30 días post-cambio.',
+  ],
+  consultaA: [
+    { tema: 'Liderazgo operativo SGI', persona: 'Manuel' },
+    { tema: 'Estratégico / dirección', persona: 'Santiago' },
+    { tema: 'RRHH', persona: 'María' },
+    { tema: 'Seguridad', persona: 'Fernando' },
+    { tema: 'Operaciones planta', persona: 'Christian' },
+  ],
+};
 
-  useEffect(() => {
-    // Marcar como visto + chequear status previo
-    api.post('/bienvenida/seen', {}).catch(() => {});
-    api.get<{ accepted: boolean }>('/bienvenida/status').then(r => setAlreadyAccepted(r.accepted)).catch(() => {});
-    api.get<any[]>('/bienvenida/news').then(setNews).catch(() => {});
-  }, []);
+const COMPRAS_PROFILE: RoleProfile = {
+  greeting: 'Compras', heroEmoji: '🛒', roleLabel: 'Aprobador de Compras',
+  rolePitch: 'Sos quien valida que cada compra del SGI sea trazable, esté justificada y no sea redundante. El sistema te muestra todos los pedidos esperando aprobación con su contexto.',
+  pantallas: [
+    { icon: ShoppingCart, label: 'Compras', href: '/purchases', descripcion: 'Cola de aprobaciones pendientes.' },
+    { icon: Truck, label: 'Proveedores', href: '/suppliers', descripcion: 'Proveedores aprobados y evaluación.' },
+    { icon: ClipboardList, label: 'Mis Pendientes', href: '/mis-pendientes', descripcion: 'Aprobaciones esperándote.' },
+    { icon: FileText, label: 'Documentos', href: '/documents', descripcion: 'Procedimiento de compras.' },
+  ],
+  responsabilidades: [
+    'Aprobar/rechazar pedidos de compra en menos de 48h.',
+    'Mantener vigente la lista de proveedores aprobados.',
+    'Evaluar proveedores anualmente.',
+    'Trazabilidad: que cada compra tenga justificación SGI.',
+  ],
+  primerSemana: [
+    { dia: 'Día 1', tarea: 'Cola de aprobaciones pendientes.', href: '/purchases' },
+    { dia: 'Día 2', tarea: 'Revisión de Proveedores.', href: '/suppliers' },
+    { dia: 'Día 3', tarea: 'Procedimientos de compras vigentes.', href: '/procedimientos' },
+  ],
+  expectativas: [
+    'Aprobaciones en menos de 48h.',
+    'Login mínimo 2 veces por semana.',
+    'Evaluación anual de proveedores completada.',
+  ],
+  consultaA: [
+    { tema: 'Operaciones', persona: 'Christian' },
+    { tema: 'SGI', persona: 'Manuel' },
+    { tema: 'Algo grave', persona: 'Santi' },
+  ],
+};
 
-  if (!user) return null;
-  const profile = getProfileForRole(user.role, user.full_name);
+const DIRECTOR_PROFILE: RoleProfile = {
+  greeting: 'Dirección', heroEmoji: '📊', roleLabel: 'Director / Gerencia',
+  rolePitch: 'Tu vista es ejecutiva. Necesitás saber rápido cómo va el SGI sin entrar al detalle operativo. Dashboard, métricas, hallazgos críticos. Si algo escala, te llega a través de TRINY.',
+  pantallas: [
+    { icon: LineChart, label: 'Dashboard', href: '/dashboard', descripcion: 'KPIs ejecutivos del SGI.' },
+    { icon: ClipboardList, label: 'Sistema de Gestión', href: '/sistema-gestion', descripcion: 'Vista global del SGI.' },
+    { icon: AlertTriangle, label: 'Hallazgos / NCs críticas', href: '/findings', descripcion: 'NCs que requieren tu atención.' },
+    { icon: Target, label: 'Objetivos', href: '/objetivos', descripcion: 'Objetivos anuales por área.' },
+    { icon: Building2, label: 'Comité Mixto', href: '/committee', descripcion: 'Reuniones de dirección.' },
+  ],
+  responsabilidades: [
+    'Aprobar objetivos anuales del SGI.',
+    'Participar del Comité Mixto bimestral.',
+    'Revisar el Dashboard semanalmente.',
+    'Tomar decisiones cuando algo crítico escala.',
+  ],
+  primerSemana: [
+    { dia: 'Lunes', tarea: 'Dashboard ejecutivo.', href: '/dashboard' },
+    { dia: 'Miércoles', tarea: 'Hallazgos críticos.', href: '/findings' },
+    { dia: 'Viernes', tarea: 'Resumen semanal.', href: '/sistema-gestion' },
+  ],
+  expectativas: [
+    'Login mínimo 2 veces por semana.',
+    'Participación en Comité Mixto bimestral.',
+    'Decisión sobre escalados en menos de 48h.',
+  ],
+  consultaA: [
+    { tema: 'SGI operativo', persona: 'Manuel' },
+    { tema: 'Estratégico', persona: 'Santiago' },
+    { tema: 'Auditora externa', persona: 'NIXA' },
+  ],
+};
 
-  async function acceptPact() {
-    setAccepting(true);
-    try {
-      await api.post('/bienvenida/accept-pact', {});
-      navigate('/mis-pendientes');
-    } catch (e: any) {
-      alert('Error al aceptar: ' + (e.message || 'desconocido'));
-    } finally {
-      setAccepting(false);
-    }
-  }
-
-  return (
-    <div className="flex-1 overflow-y-auto bg-slate-50">
-      {/* ── HERO ────────────────────────────────────────────────────────── */}
-      <header className="relative bg-gradient-to-br from-[#BF1E2E] to-[#8b1521] text-white overflow-hidden rounded-2xl mx-4 sm:mx-6 lg:mx-8 mt-6">
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute top-10 right-10 w-72 h-72 rounded-full bg-white blur-3xl" />
-          <div className="absolute bottom-0 left-20 w-96 h-96 rounded-full bg-white blur-3xl" />
-        </div>
-        <div className="relative max-w-6xl mx-auto px-6 sm:px-8 py-10">
-          <div className="flex items-center gap-2 mb-4">
-            <Sparkles className="w-5 h-5 text-yellow-300" />
-            <span className="uppercase tracking-widest text-xs font-bold text-yellow-300">
-              Bienvenida personalizada
-            </span>
-          </div>
-          <h1 className="text-3xl sm:text-4xl font-black mb-3 leading-tight">
-            Hola {profile.greeting} 👋
-          </h1>
-          <p className="text-lg sm:text-xl text-white/90 mb-5 max-w-2xl">
-            Te doy la bienvenida a <strong>TRINORMA</strong>, el Sistema de Gestión Integrado de DASSA.
-          </p>
-          <div className="inline-flex items-center gap-2 bg-white/15 backdrop-blur-sm rounded-full px-4 py-2 border border-white/20">
-            <Shield className="w-4 h-4" />
-            <span className="font-medium">Tu rol: {profile.roleLabel}</span>
-          </div>
-        </div>
-      </header>
-
-      <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-10 pb-16">
-
-        {/* ── NOVEDADES ─────────────────────────────────────────────────── */}
-        {news.length > 0 && (
-          <section>
-            <div className="mb-6 flex items-center gap-3">
-              <div className="bg-amber-100 rounded-lg p-2"><Megaphone className="w-6 h-6 text-amber-700" /></div>
-              <div>
-                <h2 className="text-2xl font-bold text-gray-900">Novedades del sistema</h2>
-                <p className="text-gray-600 text-sm">Lo que cambió o se sumó recientemente</p>
-              </div>
-            </div>
-            <div className="space-y-3">
-              {news.map((n: any) => {
-                const cfg: any = {
-                  urgente:  { bg: 'bg-red-50 border-red-300',     icon: AlertCircleIcon, color: 'text-red-700' },
-                  aviso:    { bg: 'bg-amber-50 border-amber-300', icon: Info,            color: 'text-amber-700' },
-                  update:   { bg: 'bg-blue-50 border-blue-300',   icon: Zap,             color: 'text-blue-700' },
-                  novedad:  { bg: 'bg-emerald-50 border-emerald-300', icon: Sparkles,    color: 'text-emerald-700' },
-                };
-                const c = cfg[n.category] || cfg.novedad;
-                const Icon = c.icon;
-                return (
-                  <div key={n.id} className={`${c.bg} border-l-4 rounded-r-xl p-4 flex gap-3 items-start`}>
-                    <Icon className={`w-5 h-5 ${c.color} shrink-0 mt-0.5`} />
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        {n.pinned && <Pin className="w-3.5 h-3.5 text-gray-400" />}
-                        <h3 className="font-bold text-gray-900">{n.title}</h3>
-                        <span className="text-xs text-gray-500 ml-auto">{new Date(n.published_at).toLocaleDateString('es-AR')}</span>
-                      </div>
-                      <div className="text-sm text-gray-700 leading-relaxed whitespace-pre-line">
-                        {n.body_md.replace(/\*\*(.+?)\*\*/g, '$1')}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </section>
-        )}
-
-        {/* ── PITCH DE ROL ────────────────────────────────────────────── */}
-        <section>
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
-            <h2 className="text-2xl font-bold text-gray-900 mb-3">¿Por qué TRINORMA y por qué vos?</h2>
-            <p className="text-lg text-gray-700 leading-relaxed mb-4">
-              TRINORMA reemplaza planillas, mails y carpetas. Centraliza la gestión de las
-              tres normas ISO de DASSA: <strong>9001 (Calidad)</strong>, <strong>14001 (Ambiente)</strong> y{' '}
-              <strong>45001 (Seguridad y Salud)</strong>. Acá vive todo lo que vamos a mostrar
-              en auditoría externa.
-            </p>
-            <p className="text-lg text-gray-700 leading-relaxed">
-              {profile.rolePitch}
-            </p>
-          </div>
-        </section>
-
-        {/* ── LO MÁS IMPORTANTE (UNIVERSAL) ──────────────────────────── */}
-        <section>
-          <div className="mb-6">
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">
-              Lo más importante del sistema (para todos)
-            </h2>
-            <p className="text-gray-600">
-              Sea cual sea tu rol, estas cinco cosas son la columna vertebral de TRINORMA.
-            </p>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {[
-              {
-                icon: CheckSquare,
-                title: 'Mis Pendientes',
-                color: 'bg-[#BF1E2E]',
-                desc: 'El lugar #1. Todas tus tareas asignadas (de comité, NCs, proyectos, capacitaciones, auditorías) se nuclean acá. Si solo vas a abrir una pantalla por día, que sea esta.',
-                href: '/mis-pendientes',
-              },
-              {
-                icon: AlertTriangle,
-                title: 'NC y Desvíos',
-                color: 'bg-orange-500',
-                desc: 'El corazón de la norma. Cada no conformidad que detectes se reporta acá, con plan de acción, responsable y fecha. Sin NCs gestionadas, no hay certificación.',
-                href: '/findings',
-              },
-              {
-                icon: GraduationCap,
-                title: 'Capacitaciones',
-                color: 'bg-blue-600',
-                desc: 'Registrar evidencia de cada capacitación: lista de asistencia, material, evaluación. Lo que no está acá, en auditoría no existe.',
-                href: '/trainings',
-              },
-              {
-                icon: ShoppingCart,
-                title: 'Compras',
-                color: 'bg-emerald-600',
-                desc: 'Pedidos de compra con flujo de aprobación. Toda compra relevante al SGI pasa por acá para dejar trazabilidad.',
-                href: '/purchases',
-              },
-              {
-                icon: ClipboardList,
-                title: 'Revisiones obligatorias',
-                color: 'bg-purple-600',
-                desc: 'Cada rol tiene revisiones periódicas (mensuales, trimestrales, anuales). Te van a aparecer en Mis Pendientes en su fecha.',
-                href: '/mis-pendientes',
-              },
-              {
-                icon: FileText,
-                title: 'Actas, recorridos y auditorías',
-                color: 'bg-slate-700',
-                desc: 'Documentación formal: actas de comité, recorridos de inspección, auditorías internas. Asociadas a tu perfil cuando te toca firmar/participar.',
-                href: '/comunicaciones',
-              },
-            ].map((it, i) => {
-              const Icon = it.icon;
-              return (
-                <div
-                  key={i}
-                  onClick={() => navigate(it.href)}
-                  className="group bg-white rounded-xl border border-gray-200 p-5 hover:border-[#BF1E2E] hover:shadow-md transition cursor-pointer"
-                >
-                  <div className="flex items-start gap-4">
-                    <div className={`${it.color} rounded-lg p-3 shrink-0`}>
-                      <Icon className="w-6 h-6 text-white" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <h3 className="font-bold text-lg text-gray-900">{it.title}</h3>
-                        <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-[#BF1E2E] transition" />
-                      </div>
-                      <p className="text-sm text-gray-600 leading-relaxed">{it.desc}</p>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </section>
-
-        {/* ── TU ROL ESPECÍFICO ────────────────────────────────────────── */}
-        <section>
-          <div className="mb-6">
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">
-              Tu tablero · {profile.roleLabel}
-            </h2>
-            <p className="text-gray-600">
-              Estas son las pantallas que vas a usar día a día en tu rol.
-            </p>
-          </div>
-
-          {/* Mapa visual de pantallas */}
-          <div className="bg-gradient-to-br from-gray-900 to-slate-800 rounded-2xl p-6 sm:p-8 mb-6">
-            <div className="text-center mb-6">
-              <Target className="w-8 h-8 text-yellow-300 mx-auto mb-2" />
-              <h3 className="text-white font-bold text-xl">Mapa de tus pantallas</h3>
-              <p className="text-white/60 text-sm">Tocá cualquiera para ir directo.</p>
-            </div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-              {profile.pantallas.map((p, i) => {
-                const Icon = p.icon;
-                return (
-                  <div
-                    key={i}
-                    onClick={() => navigate(p.href)}
-                    className="bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl p-4 cursor-pointer transition group"
-                  >
-                    <Icon className="w-6 h-6 text-yellow-300 mb-2" />
-                    <div className="font-bold text-white text-sm mb-1">{p.label}</div>
-                    <div className="text-white/70 text-xs leading-snug">{p.descripcion}</div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Responsabilidades */}
-          <div className="bg-white rounded-xl border border-gray-200 p-6">
-            <h3 className="font-bold text-lg text-gray-900 mb-4 flex items-center gap-2">
-              <Briefcase className="w-5 h-5 text-[#BF1E2E]" /> Tus responsabilidades concretas
-            </h3>
-            <ul className="space-y-2">
-              {profile.responsabilidades.map((r, i) => (
-                <li key={i} className="flex items-start gap-3 text-gray-700">
-                  <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
-                  <span>{r}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </section>
-
-        {/* ── AGENTE IA ────────────────────────────────────────────────── */}
-        <section>
-          <div className="bg-gradient-to-br from-violet-600 to-indigo-700 rounded-2xl p-8 text-white">
-            <div className="flex items-center gap-3 mb-4">
-              <Bot className="w-8 h-8 text-yellow-300" />
-              <h2 className="text-2xl font-bold">El agente NIXA</h2>
-            </div>
-            <p className="text-white/90 text-lg mb-4 leading-relaxed">
-              TRINORMA tiene un asistente de IA llamado <strong>NIXA</strong> que trabaja en
-              segundo plano:
-            </p>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
-              <div className="bg-white/10 rounded-lg p-4">
-                <Sparkles className="w-5 h-5 text-yellow-300 mb-2" />
-                <div className="font-bold mb-1">Te avisa pendientes</div>
-                <div className="text-sm text-white/80">Te llegan notificaciones de tareas próximas a vencer y NCs sin atender.</div>
-              </div>
-              <div className="bg-white/10 rounded-lg p-4">
-                <MessageCircle className="w-5 h-5 text-yellow-300 mb-2" />
-                <div className="font-bold mb-1">Te ayuda a cargar bien</div>
-                <div className="text-sm text-white/80">Al crear una NC o capacitación, NIXA valida que esté completa según ISO.</div>
-              </div>
-              <div className="bg-white/10 rounded-lg p-4">
-                <Shield className="w-5 h-5 text-yellow-300 mb-2" />
-                <div className="font-bold mb-1">Audita en tiempo real</div>
-                <div className="text-sm text-white/80">Revisa el sistema para que cuando venga la auditoría externa, todo esté como tiene que estar.</div>
-              </div>
-            </div>
-            <p className="text-white/80 text-sm mt-4">
-              Lo accedés desde <strong>Inbox NIXA</strong> en el menú lateral.
-            </p>
-          </div>
-        </section>
-
-        {/* ── PRIMERA SEMANA ────────────────────────────────────────────── */}
-        <section>
-          <div className="mb-6">
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Tu primera semana en TRINORMA</h2>
-            <p className="text-gray-600">Un mini plan para que no te sientas perdida.</p>
-          </div>
-          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-            {profile.primerSemana.map((d, i) => (
-              <div
-                key={i}
-                onClick={() => d.href && navigate(d.href)}
-                className={`flex items-center gap-4 p-4 ${d.href ? 'cursor-pointer hover:bg-gray-50' : ''} ${
-                  i < profile.primerSemana.length - 1 ? 'border-b border-gray-100' : ''
-                }`}
-              >
-                <div className="bg-[#BF1E2E] text-white rounded-lg w-16 text-center py-2 font-bold text-sm shrink-0">
-                  {d.dia}
-                </div>
-                <div className="flex-1 text-gray-700">{d.tarea}</div>
-                {d.href && <ChevronRight className="w-5 h-5 text-gray-400" />}
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* ── EXPECTATIVAS + DIRECTORIO ──────────────────────────────── */}
-        <section className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="bg-white rounded-xl border border-gray-200 p-6">
-            <h3 className="font-bold text-lg text-gray-900 mb-4 flex items-center gap-2">
-              <TrendingUp className="w-5 h-5 text-[#BF1E2E]" /> Qué esperamos de vos
-            </h3>
-            <ul className="space-y-2">
-              {profile.expectativas.map((e, i) => (
-                <li key={i} className="flex items-start gap-3 text-gray-700 text-sm">
-                  <Target className="w-4 h-4 text-emerald-600 shrink-0 mt-1" />
-                  <span>{e}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-          <div className="bg-white rounded-xl border border-gray-200 p-6">
-            <h3 className="font-bold text-lg text-gray-900 mb-4 flex items-center gap-2">
-              <Building2 className="w-5 h-5 text-[#BF1E2E]" /> Si necesitás ayuda
-            </h3>
-            <ul className="space-y-3">
-              {profile.consultaA.map((c, i) => (
-                <li key={i} className="flex items-start gap-3">
-                  <div className="bg-[#BF1E2E]/10 text-[#BF1E2E] rounded-lg p-2 shrink-0">
-                    <MessageCircle className="w-4 h-4" />
-                  </div>
-                  <div className="text-sm">
-                    <div className="font-semibold text-gray-900">{c.tema}</div>
-                    <div className="text-gray-600">→ {c.persona}</div>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </section>
-
-        {/* ── PACTO ────────────────────────────────────────────────────── */}
-        <section>
-          <div className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-300 rounded-2xl p-8">
-            <div className="flex items-center gap-3 mb-4">
-              <Shield className="w-8 h-8 text-amber-700" />
-              <h2 className="text-2xl font-bold text-amber-900">Pacto Trinorma</h2>
-            </div>
-            <p className="text-amber-900/80 mb-6 leading-relaxed">
-              Para que TRINORMA funcione y la gestión sea un éxito, te pido que aceptes estos
-              compromisos. Tu aceptación queda registrada con fecha y hora — vamos a usarlo
-              como evidencia en auditorías ISO.
-            </p>
-            <div className="bg-white rounded-xl p-5 mb-6 space-y-2.5">
-              <h4 className="font-bold text-gray-900 mb-3">Me comprometo a:</h4>
-              {[
-                'Usar TRINORMA como única fuente de verdad. No paralelizar planillas Excel ni grupos de WhatsApp.',
-                'Cargar mis tareas y evidencias en tiempo y forma.',
-                'Atender mis pendientes con regularidad y no acumular atrasos.',
-                'Reportar NCs y desvíos apenas los detecte, sin filtrar nada.',
-                'Tratar la información del sistema con la confidencialidad que corresponde.',
-                'Avisar a Santiago si encuentro un error o algo que no funciona.',
-              ].map((p, i) => (
-                <div key={i} className="flex items-start gap-2 text-gray-700 text-sm">
-                  <CheckCircle2 className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-                  <span>{p}</span>
-                </div>
-              ))}
-            </div>
-
-            {alreadyAccepted ? (
-              <div className="bg-emerald-50 border border-emerald-300 rounded-lg p-4 text-center">
-                <CheckCircle2 className="w-8 h-8 text-emerald-600 mx-auto mb-2" />
-                <div className="font-bold text-emerald-900">Ya aceptaste el pacto. Gracias.</div>
-                <div className="text-sm text-emerald-700">Podés cerrar esta pantalla y volver al sistema.</div>
-              </div>
-            ) : (
-              <>
-                <label className="flex items-start gap-3 mb-4 cursor-pointer select-none">
-                  <input
-                    type="checkbox"
-                    checked={pactChecked}
-                    onChange={e => setPactChecked(e.target.checked)}
-                    className="w-5 h-5 accent-amber-600 mt-0.5"
-                  />
-                  <span className="text-amber-900 font-medium">
-                    Leí y entiendo. Me comprometo a cumplir el pacto.
-                  </span>
-                </label>
-                <button
-                  disabled={!pactChecked || accepting}
-                  onClick={acceptPact}
-                  className="w-full bg-[#BF1E2E] hover:bg-[#a01825] disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-bold py-4 rounded-xl shadow-lg transition flex items-center justify-center gap-2 text-lg"
-                >
-                  {accepting ? (
-                    <>
-                      <Loader2 className="w-5 h-5 animate-spin" />
-                      Aceptando...
-                    </>
-                  ) : (
-                    <>
-                      Empezar por Mis Pendientes
-                      <ChevronRight className="w-5 h-5" />
-                    </>
-                  )}
-                </button>
-              </>
-            )}
-          </div>
-        </section>
-
-        {/* Footer mini */}
-        <div className="text-center text-sm text-gray-500 py-8">
-          DASSA TRINORMA · v2.1 · Si encontrás algo raro, escribime: santiago@dassa.com.ar
-        </div>
-      </main>
-    </div>
-  );
-}
+const GENERIC_PROFILE: RoleProfile = {
+  greeting: '', heroEmoji: '👋', roleLabel: 'Equipo Trinorma',
+  rolePitch: 'Bienvenido al sistema integrado de gestión de DASSA. Tu rol es parte del engranaje que hace funcionar las tres normas ISO.',
+  pantallas: [
+    { icon: ClipboardList, label: 'Mis Pendientes', href: '/mis-

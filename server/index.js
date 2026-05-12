@@ -39,7 +39,7 @@ import cron from 'node-cron';
   try {
     const { createRequire: cr } = await import('module');
     const reqCjs = cr(import.meta.url);
-    const trinyMailer = reqCjs('./server/services/triny-mailer.cjs');
+    const trinyMailer = reqCjs('./services/triny-mailer.cjs');
 
     cron.schedule('0 8 * * 1', async () => {
       try { const r = await trinyMailer.jobRecordatoriosLunes(); console.log('[triny] recordatorios lunes:', r.users_processed); } catch (e) { console.error('[triny lunes]', e.message); }

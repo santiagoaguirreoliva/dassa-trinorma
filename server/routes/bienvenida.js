@@ -16,6 +16,9 @@ router.get('/status', async (req, res) => {
     if (rows.length === 0) {
       return res.json({ accepted: false, seen_count: 0 });
     }
+    if (rows[0].accepted_at === null) {
+      return res.json({ accepted: false, seen_count: rows[0].landing_seen_count });
+    }
     res.json({
       accepted: true,
       pact_version: rows[0].pact_version,

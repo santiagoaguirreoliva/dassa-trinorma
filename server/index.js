@@ -33,6 +33,34 @@ import tasksRouter from './routes/tasks.js';
 import { checkOverdueTasks, sendBimonthlyDigest } from './services/email.js';
 import { query as dbQuery } from './db/db.js';
 import cron from 'node-cron';
+
+// CRON · TRINY mailer jobs (recordatorios lunes, resumen viernes, informe mensual, intimacion diaria)
+(async () => {
+  try {
+    const { createRequire: cr } = await import('module');
+    const reqCjs = cr(import.meta.url);
+    const trinyMailer = reqCjs('./server/services/triny-mailer.cjs');
+
+    cron.schedule('0 8 * * 1', async () => {
+      try { const r = await trinyMailer.jobRecordatoriosLunes(); console.log('[triny] recordatorios lunes:', r.users_processed); } catch (e) { console.error('[triny lunes]', e.message); }
+    }, { timezone: 'America/Argentina/Buenos_Aires' });
+
+    cron.schedule('0 16 * * 5', async () => {
+      try { const r = await trinyMailer.jobResumenViernes(); console.log('[triny] resumen viernes:', r.recipients); } catch (e) { console.error('[triny viernes]', e.message); }
+    }, { timezone: 'America/Argentina/Buenos_Aires' });
+
+    cron.schedule('0 9 1 * *', async () => {
+      try { const r = await trinyMailer.jobInformeMensual(); console.log('[triny] informe mensual:', r.recipients); } catch (e) { console.error('[triny mensual]', e.message); }
+    }, { timezone: 'America/Argentina/Buenos_Aires' });
+
+    cron.schedule('0 10 * * *', async () => {
+      try { const r = await trinyMailer.jobIntimacionVencidas(); console.log('[triny] intimacion:', r.users_with_overdue); } catch (e) { console.error('[triny intim]', e.message); }
+    }, { timezone: 'America/Argentina/Buenos_Aires' });
+
+    console.log('[triny] 4 cron jobs registrados (recordatorios L 8h · resumen V 16h · informe 1d 9h · intim diario 10h)');
+  } catch (e) { console.error('[triny cron setup]', e.message); }
+})();
+
 // Cron OLA 5 · Wake-up notifications cada 6 horas
 cron.schedule('0 */6 * * *', async () => {
   try {

@@ -5,8 +5,8 @@ import { api } from '@/lib/api';
 import {
   Bot, Shield, Inbox, ShoppingCart, CheckCircle2, BellRing, MessageCircle,
   Sparkles, Loader2, ToggleLeft, ToggleRight, Activity, DollarSign,
-  Settings, Zap, AlertTriangle, Mail, Clock, Play, AlertCircle, BookOpen,
-  ChevronDown, ChevronRight, Eye, Send,
+  Settings, Zap, AlertTriangle, Mail, Clock, AlertCircle, BookOpen,
+  Eye, Send,
 } from 'lucide-react';
 
 interface Capability { key: string; label: string; description: string; icon: string; enabled: boolean; model: string; service_module: string; }
@@ -173,4 +173,99 @@ export default function Triny() {
 
           {/* TAB jobs */}
           {tab === 'jobs' && (
-            <div className="space-y
+            <div className="space-y-3">
+              {feedback && <div className="bg-blue-50 border border-blue-300 rounded-lg p-3 text-sm text-blue-900">{feedback}</div>}
+              {jobs.map(j => (
+                <div key={j.key} className="bg-white border-2 border-gray-200 rounded-xl p-4">
+                  <div className="flex items-start gap-3 flex-wrap">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap mb-1">
+                        <h3 className="font-bold text-gray-900">{j.label}</h3>
+                        <code className="text-xs bg-gray-100 px-2 py-0.5 rounded font-mono">{j.cron_expr}</code>
+                        <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${TONE_COLOR[j.tone] || 'bg-gray-100'}`}>{j.tone}</span>
+                        {j.dry_run && <span className="text-xs bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full font-semibold">DRY_RUN</span>}
+                      </div>
+                      <p className="text-sm text-gray-600">{j.description}</p>
+                      <div className="text-xs text-gray-500 mt-2">
+                        Último envío: {j.last_run_at ? new Date(j.last_run_at).toLocaleString('es-AR') : 'nunca'} · Éxitos: {j.success_count} · Errores: {j.error_count}
+                      </div>
+                    </div>
+                    {canEdit && (
+                      <div className="flex flex-col gap-1.5 shrink-0">
+                        <button onClick={() => toggleJob(j, 'enabled')} className="text-xs px-2 py-1 rounded flex items-center gap-1 bg-gray-100 hover:bg-gray-200">
+                          {j.enabled ? <ToggleRight className="w-4 h-4 text-emerald-600" /> : <ToggleLeft className="w-4 h-4 text-gray-400" />}
+                          {j.enabled ? 'activo' : 'inactivo'}
+                        </button>
+                        <button onClick={() => toggleJob(j, 'dry_run')} className="text-xs px-2 py-1 rounded flex items-center gap-1 bg-gray-100 hover:bg-gray-200">
+                          {j.dry_run ? <ToggleRight className="w-4 h-4 text-amber-600" /> : <ToggleLeft className="w-4 h-4 text-gray-400" />}
+                          {j.dry_run ? 'dry_run on' : 'live'}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                  {canEdit && (
+                    <div className="flex gap-2 mt-3 pt-3 border-t border-gray-100">
+                      <button onClick={() => runJob(j.key, false)} disabled={running === j.key}
+                        className="text-xs bg-blue-100 text-blue-900 hover:bg-blue-200 disabled:bg-gray-200 px-3 py-1.5 rounded font-medium flex items-center gap-1">
+                        {running === j.key ? <Loader2 className="w-3 h-3 animate-spin" /> : <Eye className="w-3 h-3" />} Preview (dry-run)
+                      </button>
+                      <button onClick={() => runJob(j.key, true)} disabled={running === j.key || j.dry_run}
+                        title={j.dry_run ? 'Desactivá DRY_RUN primero' : 'Enviar ahora con mails reales'}
+                        className="text-xs bg-red-100 text-red-900 hover:bg-red-200 disabled:bg-gray-200 px-3 py-1.5 rounded font-medium flex items-center gap-1">
+                        <Send className="w-3 h-3" /> Enviar real ahora
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ))}
+              <div className="bg-violet-50 border border-violet-200 rounded-lg p-3 text-sm text-violet-900">
+                <strong>Modo seguro activo:</strong> los 4 jobs arrancan en <code>DRY_RUN</code>. Eso significa que TRINY genera los mails y los registra en el log, pero NO los manda. Para activarlos en vivo, apagá <code>dry_run</code> en cada job. Te recomiendo probar con "Preview" primero, revisar el Log, y recién después activar live.
+              </div>
+            </div>
+          )}
+
+          {/* TAB log */}
+          {tab === 'log' && (
+            <div className="space-y-2">
+              {log.length === 0 ? <p className="text-gray-500 text-center py-8">Aún no hay registros.</p> : (
+                <table className="w-full text-sm">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="text-left p-2 font-semibold">Cuándo</th>
+                      <th className="text-left p-2 font-semibold">Job</th>
+                      <th className="text-left p-2 font-semibold">Tono</th>
+                      <th className="text-left p-2 font-semibold">Destinatario</th>
+                      <th className="text-left p-2 font-semibold">Asunto</th>
+                      <th className="text-left p-2 font-semibold">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {log.map(l => (
+                      <tr key={l.id} className="border-t border-gray-100 hover:bg-gray-50">
+                        <td className="p-2 text-xs text-gray-600 whitespace-nowrap">{new Date(l.sent_at).toLocaleString('es-AR')}</td>
+                        <td className="p-2 text-xs"><code className="bg-gray-100 px-1.5 py-0.5 rounded">{l.job_type}</code></td>
+                        <td className="p-2"><span className={`text-xs px-2 py-0.5 rounded ${TONE_COLOR[l.tone]||'bg-gray-100'}`}>{l.tone}</span></td>
+                        <td className="p-2 text-xs">{l.recipient_name || '—'}<br/><span className="text-gray-500">{l.recipient_email}</span></td>
+                        <td className="p-2 text-xs">{l.subject}</td>
+                        <td className="p-2 text-xs">{l.success ? <CheckCircle2 className="w-4 h-4 text-emerald-600" /> : <AlertCircle className="w-4 h-4 text-red-600" />}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          )}
+
+          {/* TAB policies */}
+          {tab === 'policies' && (
+            <div className="prose prose-sm max-w-none">
+              <pre className="bg-gray-50 rounded-lg p-4 text-xs overflow-x-auto whitespace-pre-wrap font-mono text-gray-800 leading-relaxed">
+                {policiesDoc || 'Documento de políticas no disponible'}
+              </pre>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}

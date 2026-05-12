@@ -18,6 +18,7 @@ import { dirname, join } from 'path';
 import { mkdirSync } from 'fs';
 import 'dotenv/config';
 
+import bienvenidaRouter from './routes/bienvenida.js';
 import authRouter           from './routes/auth.js';
 import dashboardRouter      from './routes/dashboard.js';
 import findingsRouter       from './routes/findings.js';
@@ -168,6 +169,7 @@ app.use((req, res, next) => {
 // ─────────────────────────────────────────────────────────────
 
 app.use('/api/auth',            authRouter);
+app.use('/api/bienvenida',     bienvenidaRouter);
 app.use('/api/dashboard',       dashboardRouter);
 app.use('/api/findings',        findingsRouter);
 app.use('/api/public',          findingsRouter);

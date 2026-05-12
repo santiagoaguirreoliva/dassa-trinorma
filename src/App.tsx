@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import AppLayout from '@/components/layout/AppLayout';
 import Login from '@/pages/Login';
+import Bienvenida from '@/pages/Bienvenida';
 import AgentSettings  from '@/pages/AgentSettings';
 import Ciclo2026      from '@/pages/Ciclo2026';
 import Organigrama    from '@/pages/Organigrama';
@@ -89,6 +90,7 @@ export default function App() {
             <Route path="/c/:token"   element={<PublicComm />} />
             <Route path="/"           element={<Navigate to="/login" replace />} />
             <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
+              <Route path="/bienvenida"     element={<Bienvenida />} />
               <Route path="/dashboard"      element={<Dashboard />} />
               <Route path="/findings/*"     element={<Findings />} />
               <Route path="/risks"          element={<Risks />} />

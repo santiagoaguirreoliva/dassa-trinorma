@@ -55,7 +55,7 @@ function layout({ title, body, ctaUrl, ctaLabel, footerNote }) {
 </body></html>`;
 }
 
-async function sendMail({ to, subject, html, text, replyTo }) {
+async function sendMail({ to, subject, html, text, replyTo, from }) {
   const t = getTransport();
   if (!t) {
     console.warn(`[mailer] SKIP "${subject}" → ${to}`);
@@ -63,7 +63,7 @@ async function sendMail({ to, subject, html, text, replyTo }) {
   }
   try {
     const info = await t.sendMail({
-      from: SMTP_FROM,
+      from: from || SMTP_FROM,
       to,
       subject,
       html,

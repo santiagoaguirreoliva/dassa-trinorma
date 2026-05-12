@@ -7,6 +7,9 @@ const mailer = require('./mailer.cjs');
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
+// Alias del remitente para todos los mails de TRINY
+const TRINY_FROM = 'TRINY DASSA 🤖 <auto@dassa.com.ar>';
+
 // ─── Helpers ────────────────────────────────────────────────────────────────
 async function getPolicies() {
   const r = await pool.query('SELECT * FROM triny_policies ORDER BY updated_at DESC LIMIT 1');
@@ -47,7 +50,7 @@ async function sendWithSignature({ to, name, subject, bodyHtml, bodyText, jobTyp
   }
 
   try {
-    await mailer.sendMail({ to, subject, html: fullHtml });
+    await mailer.sendMail({ to, subject, html: fullHtml, from: TRINY_FROM, replyTo: 'santiago@dassa.com.ar' });
     await logComm({ job_type: jobType, tone, recipient_email: to, recipient_name: name, subject, body_html: fullHtml, body_text: fullText, success: true, error_message: null, meta });
     return { sent: true };
   } catch (err) {

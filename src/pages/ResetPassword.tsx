@@ -27,10 +27,10 @@ export default function ResetPassword() {
       return;
     }
     api.post('/auth/validate-reset-token', { token })
-      .then(r => {
-        setTokenValid(r.data.valid);
-        setMaskedEmail(r.data.email || '');
-        setReason(r.data.reason || '');
+      .then((r: any) => {
+        setTokenValid(r.valid);
+        setMaskedEmail(r.email || '');
+        setReason(r.reason || '');
       })
       .catch(() => setTokenValid(false))
       .finally(() => setValidating(false));

@@ -190,6 +190,7 @@ app.post('/api/tasks/send-digest', async (req, res) => {
   }
 });
 
+app.use('/api/tasks',           tasksMineRouter);  // primero, para /mine antes que /:id
 app.use('/api/tasks',           tasksRouter);
 app.use('/api/purchases',       purchasesRouter);
 app.use('/api/committee',       committeeRouter);

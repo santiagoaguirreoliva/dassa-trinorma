@@ -31,17 +31,13 @@ export default function TopNav({ onMenuClick }: Props) {
         {/* Brand wordmark */}
         <button
           onClick={() => navigate('/dashboard')}
-          className="flex items-center gap-2.5 hover:opacity-90 active:opacity-70 transition-opacity touch-manipulation"
-          aria-label="DASSA SGI"
+          className="flex items-center gap-2 hover:opacity-90 active:opacity-70 transition-opacity touch-manipulation"
         >
-          <img
-            src="/brand/dassa-logo-white.svg"
-            alt="DASSA"
-            className="h-6 md:h-7 w-auto select-none"
-            draggable={false}
-          />
-          <span className="hidden sm:inline text-white/40 text-base font-light leading-none">·</span>
-          <span className="hidden sm:inline text-white/80 text-[11px] font-semibold tracking-[0.14em] uppercase">
+          <span className="font-['Montserrat_Alternates',Montserrat,sans-serif] font-black text-[20px] md:text-[22px] text-white tracking-tight leading-none">
+            DASSA
+          </span>
+          <span className="text-white/50 text-lg font-light">·</span>
+          <span className="text-white/70 text-[11px] font-semibold tracking-[0.12em] uppercase">
             SGI
           </span>
         </button>

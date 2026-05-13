@@ -44,7 +44,7 @@ const ROLE_LABEL: Record<string, string> = {
 
 function getInitials(name: string) { return name.split(' ').slice(0,2).map(p=>p[0]||'').join('').toUpperCase(); }
 function colorForUser(name: string) {
-  const colors = ['#BF1E2E','#0EA5E9','#10B981','#F59E0B','#8B5CF6','#EC4899','#6366F1','#84CC16'];
+  const colors = ['#BE1E2D','#0EA5E9','#10B981','#F59E0B','#8B5CF6','#EC4899','#6366F1','#84CC16'];
   return colors[(name.charCodeAt(0) + name.length) % colors.length];
 }
 
@@ -71,23 +71,23 @@ export default function Committee() {
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
           <div>
-            <p className="text-xs font-bold text-[#BF1E2E] uppercase tracking-widest">SGI · ISO 45001</p>
+            <p className="text-xs font-bold text-[#BE1E2D] uppercase tracking-widest">SGI · ISO 45001</p>
             <h1 className="text-3xl font-black text-gray-900 flex items-center gap-3">
-              <Building2 className="w-8 h-8 text-[#BF1E2E]" />
+              <Building2 className="w-8 h-8 text-[#BE1E2D]" />
               Comité Mixto
             </h1>
             <p className="text-gray-600 mt-1">Reuniones bimestrales · participación y consulta</p>
           </div>
           {isAdmin && (
             <button onClick={() => setWizardOpen(true)}
-              className="bg-[#BF1E2E] hover:bg-[#a01825] text-white font-bold px-5 py-2.5 rounded-lg flex items-center gap-2">
+              className="bg-[#BE1E2D] hover:bg-[#9A1825] text-white font-bold px-5 py-2.5 rounded-lg flex items-center gap-2">
               <Plus className="w-5 h-5" /> Nueva reunión
             </button>
           )}
         </div>
 
         {loading ? (
-          <div className="text-center py-12"><Loader2 className="w-10 h-10 animate-spin text-[#BF1E2E] mx-auto" /></div>
+          <div className="text-center py-12"><Loader2 className="w-10 h-10 animate-spin text-[#BE1E2D] mx-auto" /></div>
         ) : (
           <div className="space-y-3">
             {meetings.sort((a,b) => b.meeting_date.localeCompare(a.meeting_date)).map(m => (
@@ -111,9 +111,9 @@ function MeetingCard({ meeting }: { meeting: Meeting }) {
 
   return (
     <div onClick={() => navigate(`/committee/${meeting.id}`)}
-      className="bg-white rounded-xl border border-gray-200 p-5 cursor-pointer hover:border-[#BF1E2E] hover:shadow-md transition">
+      className="bg-white rounded-xl border border-gray-200 p-5 cursor-pointer hover:border-[#BE1E2D] hover:shadow-md transition">
       <div className="flex items-start gap-4 flex-wrap">
-        <div className="bg-[#BF1E2E] text-white rounded-lg w-20 text-center py-3 shrink-0">
+        <div className="bg-[#BE1E2D] text-white rounded-lg w-20 text-center py-3 shrink-0">
           <div className="text-xs uppercase">{new Date(meeting.meeting_date).toLocaleString('es-AR',{month:'short'})}</div>
           <div className="text-2xl font-black">{new Date(meeting.meeting_date).getDate()}</div>
           <div className="text-xs">{meeting.year}</div>
@@ -223,7 +223,7 @@ function Wizard({ onClose }: { onClose: () => void }) {
             La reunión fue creada con {newTasks.length} tareas nuevas.
             Los responsables ya las tienen en Mis Pendientes.
           </p>
-          <button onClick={onClose} className="w-full bg-[#BF1E2E] text-white py-3 rounded-lg font-bold">Listo</button>
+          <button onClick={onClose} className="w-full bg-[#BE1E2D] text-white py-3 rounded-lg font-bold">Listo</button>
         </div>
       </div>
     );
@@ -233,7 +233,7 @@ function Wizard({ onClose }: { onClose: () => void }) {
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[92vh] overflow-hidden flex flex-col">
         {/* Header */}
-        <div className="bg-[#BF1E2E] text-white p-5 flex items-center justify-between">
+        <div className="bg-[#BE1E2D] text-white p-5 flex items-center justify-between">
           <div>
             <h2 className="text-xl font-bold">Nueva reunión de Comité Mixto</h2>
             <p className="text-white/80 text-sm">Paso {step} de 3</p>
@@ -243,7 +243,7 @@ function Wizard({ onClose }: { onClose: () => void }) {
 
         {/* Progress bar */}
         <div className="bg-gray-100 h-1">
-          <div className="bg-[#BF1E2E] h-1 transition-all" style={{ width: `${(step/3)*100}%` }} />
+          <div className="bg-[#BE1E2D] h-1 transition-all" style={{ width: `${(step/3)*100}%` }} />
         </div>
 
         {/* Body */}
@@ -373,7 +373,7 @@ function Wizard({ onClose }: { onClose: () => void }) {
                     {users.map(u => (
                       <button key={u.id} onClick={()=>toggleDraftAssignee(u.id)}
                         className={`text-xs px-3 py-1.5 rounded-full font-medium flex items-center gap-1 ${
-                          draft.assignees.includes(u.id) ? 'bg-[#BF1E2E] text-white' : 'bg-white border border-gray-300 hover:bg-gray-50'
+                          draft.assignees.includes(u.id) ? 'bg-[#BE1E2D] text-white' : 'bg-white border border-gray-300 hover:bg-gray-50'
                         }`}>
                         <UserPlus className="w-3 h-3" /> {u.full_name.split(' ')[0]}
                       </button>
@@ -404,7 +404,7 @@ function Wizard({ onClose }: { onClose: () => void }) {
           {step < 3 ? (
             <button onClick={() => setStep(step+1)}
               disabled={step === 1 && attendees.length === 0}
-              className="bg-[#BF1E2E] disabled:bg-gray-300 text-white px-5 py-2 rounded-lg flex items-center gap-2 font-bold">
+              className="bg-[#BE1E2D] disabled:bg-gray-300 text-white px-5 py-2 rounded-lg flex items-center gap-2 font-bold">
               Siguiente <ChevronRight className="w-4 h-4" />
             </button>
           ) : (

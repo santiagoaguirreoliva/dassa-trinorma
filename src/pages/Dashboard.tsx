@@ -133,7 +133,7 @@ export default function Dashboard() {
                     <XAxis dataKey="mes" tick={{ fontSize: 10, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
                     <YAxis tick={{ fontSize: 10, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
                     <Tooltip contentStyle={{ borderRadius: 8, border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,.1)', fontSize: 12 }} />
-                    <Bar dataKey="abiertas" fill="#BF1E2E" radius={[4,4,0,0]} name="Abiertas" />
+                    <Bar dataKey="abiertas" fill="#BE1E2D" radius={[4,4,0,0]} name="Abiertas" />
                     <Bar dataKey="cerradas"  fill="#10b981" radius={[4,4,0,0]} name="Cerradas" />
                   </BarChart>
                 </ResponsiveContainer>

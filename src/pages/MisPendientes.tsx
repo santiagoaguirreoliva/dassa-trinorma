@@ -49,7 +49,7 @@ function getInitials(name: string) {
 }
 
 function colorForUser(name: string) {
-  const colors = ['#BF1E2E', '#0EA5E9', '#10B981', '#F59E0B', '#8B5CF6', '#EC4899', '#6366F1', '#84CC16'];
+  const colors = ['#BE1E2D', '#0EA5E9', '#10B981', '#F59E0B', '#8B5CF6', '#EC4899', '#6366F1', '#84CC16'];
   const idx = (name.charCodeAt(0) + name.length) % colors.length;
   return colors[idx];
 }
@@ -122,9 +122,9 @@ export default function MisPendientes() {
         {/* Header */}
         <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
           <div>
-            <p className="text-xs font-bold text-[#BF1E2E] uppercase tracking-widest">Mis tareas</p>
+            <p className="text-xs font-bold text-[#BE1E2D] uppercase tracking-widest">Mis tareas</p>
             <h1 className="text-3xl font-black text-gray-900 flex items-center gap-3">
-              <CheckSquare className="w-8 h-8 text-[#BF1E2E]" />
+              <CheckSquare className="w-8 h-8 text-[#BE1E2D]" />
               Mis Pendientes
             </h1>
             <p className="text-gray-600 mt-1">Todas tus tareas asignadas — comité, NCs, capacitaciones, todo.</p>
@@ -156,7 +156,7 @@ export default function MisPendientes() {
               <button key={o.v}
                 onClick={() => setStatusFilter(o.v as any)}
                 className={`text-sm px-3 py-1.5 rounded-lg font-medium ${
-                  statusFilter === o.v ? 'bg-[#BF1E2E] text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  statusFilter === o.v ? 'bg-[#BE1E2D] text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                 }`}>
                 {o.l}
               </button>
@@ -178,7 +178,7 @@ export default function MisPendientes() {
 
         {/* Lista */}
         {loading ? (
-          <div className="text-center py-12"><Loader2 className="w-10 h-10 animate-spin text-[#BF1E2E] mx-auto" /></div>
+          <div className="text-center py-12"><Loader2 className="w-10 h-10 animate-spin text-[#BE1E2D] mx-auto" /></div>
         ) : filtered.length === 0 ? (
           <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
             <CheckCircle2 className="w-16 h-16 text-emerald-500 mx-auto mb-3" />
@@ -195,7 +195,7 @@ export default function MisPendientes() {
                 <div key={t.id}
                   onClick={() => setSelected(t)}
                   className={`bg-white rounded-xl border-2 p-4 cursor-pointer hover:shadow-md transition ${
-                    t.overdue ? 'border-red-300' : 'border-gray-200 hover:border-[#BF1E2E]'
+                    t.overdue ? 'border-red-300' : 'border-gray-200 hover:border-[#BE1E2D]'
                   }`}>
                   <div className="flex items-start gap-3">
                     {/* Task number */}
@@ -320,7 +320,7 @@ export default function MisPendientes() {
                         <div className="font-medium text-gray-900 text-sm">{a.name}</div>
                         <div className="text-xs text-gray-500">{a.email}</div>
                       </div>
-                      <span className={`text-xs px-2 py-1 rounded-full ${a.role === 'principal' ? 'bg-[#BF1E2E] text-white' : 'bg-gray-200 text-gray-700'}`}>
+                      <span className={`text-xs px-2 py-1 rounded-full ${a.role === 'principal' ? 'bg-[#BE1E2D] text-white' : 'bg-gray-200 text-gray-700'}`}>
                         {a.role}
                       </span>
                     </div>

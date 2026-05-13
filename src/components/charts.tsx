@@ -7,7 +7,7 @@ import {
   RadialBarChart, RadialBar
 } from 'recharts';
 
-const COLORS = ['#BF1E2E', '#5BBDC9', '#0F1A4A', '#F59E0B', '#7C3AED', '#10B981', '#6366F1', '#EC4899'];
+const COLORS = ['#BE1E2D', '#5BBFCC', '#0F1A4A', '#F59E0B', '#7C3AED', '#10B981', '#6366F1', '#EC4899'];
 const COLOR_NPR = { significativo: '#EF4444', no_significativo: '#10B981', sin_evaluar: '#94A3B8' };
 
 interface ChartCardProps {
@@ -60,8 +60,8 @@ export function SimpleBar({ data, title, subtitle, height = 240, dataKey = 'valu
         <YAxis tick={{ fontSize: 10 }} />
         <Tooltip />
         {dataKey2 && <Legend wrapperStyle={{ fontSize: 11 }} />}
-        <Bar dataKey={dataKey} fill="#BF1E2E" name={label} />
-        {dataKey2 && <Bar dataKey={dataKey2} fill="#5BBDC9" name={label2 || dataKey2} />}
+        <Bar dataKey={dataKey} fill="#BE1E2D" name={label} />
+        {dataKey2 && <Bar dataKey={dataKey2} fill="#5BBFCC" name={label2 || dataKey2} />}
       </BarChart>
     </ChartCard>
   );
@@ -75,7 +75,7 @@ export function SimpleLine({ data, title, subtitle, height = 240, dataKey = 'val
         <XAxis dataKey="name" tick={{ fontSize: 10 }} />
         <YAxis tick={{ fontSize: 10 }} />
         <Tooltip />
-        <Line type="monotone" dataKey={dataKey} stroke="#BF1E2E" strokeWidth={2} dot={{ r: 3 }} />
+        <Line type="monotone" dataKey={dataKey} stroke="#BE1E2D" strokeWidth={2} dot={{ r: 3 }} />
       </LineChart>
     </ChartCard>
   );

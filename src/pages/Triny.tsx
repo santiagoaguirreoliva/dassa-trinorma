@@ -84,7 +84,7 @@ export default function Triny() {
     finally { setRunning(null); }
   }
 
-  if (loading) return <div className="flex-1 flex items-center justify-center"><Loader2 className="w-10 h-10 animate-spin text-[#BF1E2E]" /></div>;
+  if (loading) return <div className="flex-1 flex items-center justify-center"><Loader2 className="w-10 h-10 animate-spin text-[#BE1E2D]" /></div>;
   if (!info) return null;
 
   return (
@@ -134,7 +134,7 @@ export default function Triny() {
             return (
               <button key={t.v} onClick={() => setTab(t.v as any)}
                 className={`flex items-center gap-2 px-5 py-3 font-medium border-b-2 transition ${
-                  tab === t.v ? 'border-[#BF1E2E] text-[#BF1E2E] bg-[#BF1E2E]/5' : 'border-transparent text-gray-600 hover:bg-gray-50'
+                  tab === t.v ? 'border-[#BE1E2D] text-[#BE1E2D] bg-[#BE1E2D]/5' : 'border-transparent text-gray-600 hover:bg-gray-50'
                 }`}>
                 <Ti className="w-4 h-4" /> {t.l}
               </button>

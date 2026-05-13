@@ -143,18 +143,14 @@ export default function Sidebar({ openFindings = 0, legalAlerts = 0, mobile = fa
       bg-dassa-navy text-white flex-shrink-0
     `}>
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3.5 border-b border-white/10 bg-white/[0.02]">
-        <div className="flex items-center gap-2.5">
-          <img
-            src="/brand/dassa-isotipo.svg"
-            alt=""
-            aria-hidden="true"
-            className="w-8 h-8 select-none"
-            draggable={false}
-          />
-          <div className="leading-tight">
-            <div className="text-[13px] font-extrabold tracking-tight font-wordmark">DASSA SGI</div>
-            <div className="text-[9px] text-dassa-celeste uppercase tracking-[0.18em] font-semibold mt-0.5">TRINORMA</div>
+      <div className="flex items-center justify-between px-4 py-4 border-b border-white/10">
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 bg-dassa-red rounded-lg flex items-center justify-center">
+            <Shield size={16} className="text-white" />
+          </div>
+          <div>
+            <div className="text-sm font-extrabold tracking-tight">DASSA SGI</div>
+            <div className="text-[9px] opacity-60 uppercase tracking-wider">TRINORMA</div>
           </div>
         </div>
         {mobile && onClose && (

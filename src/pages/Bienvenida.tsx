@@ -460,7 +460,7 @@ export default function Bienvenida() {
         </div>
       )}
 
-      <header className="relative bg-gradient-to-br from-[#BF1E2E] to-[#8b1521] text-white overflow-hidden rounded-2xl mx-4 sm:mx-6 lg:mx-8 mt-6">
+      <header className="relative bg-gradient-to-br from-[#BF1E2E] to-[#8b1521] text-white overflow-hidden rounded-2xl mx-4 sm:mx-6 lg:mx-8 mt-3">
         <div className="absolute inset-0 opacity-10">
           <div className="absolute top-10 right-10 w-72 h-72 rounded-full bg-white blur-3xl" />
           <div className="absolute bottom-0 left-20 w-96 h-96 rounded-full bg-white blur-3xl" />

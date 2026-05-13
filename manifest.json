@@ -1,5 +1,5 @@
 {
-  "schema_version": "1.0",
+  "schema_version": "2.0",
   "name": "dassa-sgi",
   "version": "2.1.0",
   "owner": "santiago@dassa.com.ar",
@@ -21,8 +21,7 @@
     }
   ],
   "public_urls": [
-    "https://trinorma.dassa.com.ar",
-    "https://trinorma.dassa.com.ar/design-system/dassa-3.0/manifest.json"
+    "https://trinorma.dassa.com.ar"
   ],
   "databases": [
     {
@@ -70,5 +69,129 @@
   "dependencies": [
     "smart-dassa-hub",
     "postgres-local"
-  ]
+  ],
+  "app_key": "trinorma",
+  "type": "child_app",
+  "parent_app": "smart-dassa-apps",
+  "description": "Sistema de Gestion Integrada · Trinorma · ISO 9001+14001+45001",
+  "auth": {
+    "provider": "smart-dassa-apps",
+    "required": true,
+    "mode": "sso_ticket",
+    "fallback_local_login": false,
+    "sso_endpoint": "/api/sso/consume"
+  },
+  "roles": [
+    {
+      "key": "director",
+      "name": "Director"
+    },
+    {
+      "key": "sgi_leader",
+      "name": "Lider SGI"
+    },
+    {
+      "key": "seguridad_higiene",
+      "name": "Seguridad e Higiene"
+    },
+    {
+      "key": "rrhh",
+      "name": "RRHH"
+    },
+    {
+      "key": "operaciones",
+      "name": "Operaciones"
+    },
+    {
+      "key": "auditor_externo",
+      "name": "Auditor externo"
+    },
+    {
+      "key": "admin",
+      "name": "Administrador"
+    },
+    {
+      "key": "viewer",
+      "name": "Viewer"
+    }
+  ],
+  "permissions": [
+    {
+      "key": "trinorma.view"
+    },
+    {
+      "key": "trinorma.tareas.manage"
+    },
+    {
+      "key": "trinorma.no_conformidades.manage"
+    },
+    {
+      "key": "trinorma.documentos.manage"
+    },
+    {
+      "key": "trinorma.auditorias.manage"
+    },
+    {
+      "key": "trinorma.indicadores.view"
+    },
+    {
+      "key": "trinorma.users.manage"
+    },
+    {
+      "key": "trinorma.admin"
+    }
+  ],
+  "role_permissions": {
+    "director": [
+      "trinorma.view",
+      "trinorma.tareas.manage",
+      "trinorma.no_conformidades.manage",
+      "trinorma.documentos.manage",
+      "trinorma.auditorias.manage",
+      "trinorma.indicadores.view",
+      "trinorma.users.manage",
+      "trinorma.admin"
+    ],
+    "admin": [
+      "trinorma.view",
+      "trinorma.tareas.manage",
+      "trinorma.no_conformidades.manage",
+      "trinorma.documentos.manage",
+      "trinorma.auditorias.manage",
+      "trinorma.indicadores.view",
+      "trinorma.users.manage",
+      "trinorma.admin"
+    ],
+    "sgi_leader": [
+      "trinorma.view",
+      "trinorma.tareas.manage",
+      "trinorma.no_conformidades.manage",
+      "trinorma.documentos.manage",
+      "trinorma.indicadores.view"
+    ],
+    "seguridad_higiene": [
+      "trinorma.view",
+      "trinorma.no_conformidades.manage",
+      "trinorma.indicadores.view"
+    ],
+    "rrhh": [
+      "trinorma.view",
+      "trinorma.documentos.manage",
+      "trinorma.indicadores.view"
+    ],
+    "operaciones": [
+      "trinorma.view",
+      "trinorma.tareas.manage"
+    ],
+    "auditor_externo": [
+      "trinorma.view",
+      "trinorma.indicadores.view"
+    ],
+    "viewer": [
+      "trinorma.view"
+    ]
+  },
+  "metadata": {
+    "migrated_at": "2026-05-13"
+  }
 }

@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { query } from '../db/db.js';
-import { authenticate, requireRole, ADMIN_ROLES } from '../middleware/auth.js';
+import { authenticate } from '../middleware/auth.js';
 
 const router = Router();
 router.use(authenticate);
@@ -127,9 +127,9 @@ router.get('/charts', async (req, res) => {
     const { query: q } = await import('../db/db.js');
     const r = await Promise.all([
       q(`SELECT COALESCE(npr_level::text, 'sin_evaluar') AS name, COUNT(*) AS value FROM risks WHERE is_active = TRUE GROUP BY npr_level`),
-      q(`SELECT COALESCE(status, 'sin estado') AS name, COUNT(*) AS value FROM findings GROUP BY status`),
+      q(`SELECT COALESCE(status::text, 'sin estado') AS name, COUNT(*) AS value FROM findings GROUP BY status`),
       q(`SELECT COALESCE(sector, 'sin sector') AS name, COUNT(*) AS value FROM employees WHERE is_active = TRUE GROUP BY sector`),
-      q(`SELECT COALESCE(status, 'borrador') AS name, COUNT(*) AS value FROM purchases GROUP BY status`),
+      q(`SELECT COALESCE(status::text, 'borrador') AS name, COUNT(*) AS value FROM purchases GROUP BY status`),
       q(`SELECT COALESCE(severity::text, 'sin sev') AS name, COUNT(*) AS value FROM incidents WHERE date >= NOW() - INTERVAL '1 year' GROUP BY severity`),
       q(`SELECT COALESCE(status::text, 'pendiente') AS name, COUNT(*) AS value FROM trainings GROUP BY status`),
     ]);

@@ -6,6 +6,7 @@ interface HeaderProps {
   subtitle?: string;
   alerts?: number;
   actions?: React.ReactNode;
+  icon?: React.ReactNode;
 }
 
 export function Header({ title, subtitle, alerts = 0, actions }: HeaderProps) {

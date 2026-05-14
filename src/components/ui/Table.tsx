@@ -1,16 +1,11 @@
 import React from 'react';
 
-interface TableProps extends React.TableHTMLAttributes<HTMLTableElement> {}
-
-interface TableHeadProps extends React.HTMLAttributes<HTMLTableSectionElement> {}
-
-interface TableBodyProps extends React.HTMLAttributes<HTMLTableSectionElement> {}
-
-interface TableRowProps extends React.HTMLAttributes<HTMLTableRowElement> {}
-
-interface TableCellProps extends React.TdHTMLAttributes<HTMLTableCellElement> {}
-
-interface TableHeaderCellProps extends React.ThHTMLAttributes<HTMLTableCellElement> {}
+type TableProps = React.TableHTMLAttributes<HTMLTableElement>;
+type TableHeadProps = React.HTMLAttributes<HTMLTableSectionElement>;
+type TableBodyProps = React.HTMLAttributes<HTMLTableSectionElement>;
+type TableRowProps = React.HTMLAttributes<HTMLTableRowElement>;
+type TableCellProps = React.TdHTMLAttributes<HTMLTableCellElement>;
+type TableHeaderCellProps = React.ThHTMLAttributes<HTMLTableCellElement>;
 
 export function Table({ className = '', ...props }: TableProps) {
   return <table className={`w-full border-collapse ${className}`} {...props} />;

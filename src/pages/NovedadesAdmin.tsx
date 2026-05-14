@@ -100,12 +100,12 @@ export default function NovedadesAdmin() {
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-3xl font-black text-gray-900 flex items-center gap-2">
-              <Megaphone className="w-8 h-8 text-[#BE1E2D]" />
+              <Megaphone className="w-8 h-8 text-dassa-red" />
               Novedades del sistema
             </h1>
             <p className="text-gray-600 mt-1">Anuncios que ven todos los users en su Bienvenida.</p>
           </div>
-          <button onClick={newItem} className="flex items-center gap-2 bg-[#BE1E2D] hover:bg-[#9A1825] text-white font-bold rounded-lg px-4 py-2.5">
+          <button onClick={newItem} className="flex items-center gap-2 bg-dassa-red hover:bg-dassa-red-deep text-white font-bold rounded-lg px-4 py-2.5">
             <Plus className="w-5 h-5" />Nueva
           </button>
         </div>
@@ -113,7 +113,7 @@ export default function NovedadesAdmin() {
         {error && <div className="bg-red-50 border border-red-300 text-red-900 rounded-lg p-3 mb-4 text-sm">{error}</div>}
 
         {editing && (
-          <div className="bg-white rounded-xl border-2 border-[#BE1E2D] p-6 mb-6">
+          <div className="bg-white rounded-xl border-2 border-dassa-red p-6 mb-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-bold text-lg">{editing.id ? 'Editar' : 'Nueva'} novedad</h3>
               <button onClick={() => setEditing(null)} className="text-gray-500 hover:text-gray-700"><X className="w-5 h-5" /></button>
@@ -121,7 +121,7 @@ export default function NovedadesAdmin() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
               <div>
                 <label className="block text-sm font-semibold mb-1">Título</label>
-                <input type="text" value={editing.title || ''} onChange={e => setEditing({ ...editing, title: e.target.value })} className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:border-[#BE1E2D] focus:ring-1 focus:ring-[#BE1E2D] outline-none" placeholder="🚀 Nueva función disponible" />
+                <input type="text" value={editing.title || ''} onChange={e => setEditing({ ...editing, title: e.target.value })} className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:border-dassa-red focus:ring-1 focus:ring-[#BE1E2D] outline-none" placeholder="🚀 Nueva función disponible" />
               </div>
               <div>
                 <label className="block text-sm font-semibold mb-1">Categoría</label>
@@ -159,7 +159,7 @@ export default function NovedadesAdmin() {
               </div>
             </div>
             <div className="flex gap-2">
-              <button onClick={save} disabled={saving} className="flex-1 bg-[#BE1E2D] hover:bg-[#9A1825] disabled:bg-gray-300 text-white font-bold py-2.5 rounded-lg flex items-center justify-center gap-2">
+              <button onClick={save} disabled={saving} className="flex-1 bg-dassa-red hover:bg-dassa-red-deep disabled:bg-gray-300 text-white font-bold py-2.5 rounded-lg flex items-center justify-center gap-2">
                 {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                 Guardar
               </button>
@@ -169,7 +169,7 @@ export default function NovedadesAdmin() {
         )}
 
         {loading ? (
-          <div className="text-center py-12"><Loader2 className="w-10 h-10 animate-spin text-[#BE1E2D] mx-auto" /></div>
+          <div className="text-center py-12"><Loader2 className="w-10 h-10 animate-spin text-dassa-red mx-auto" /></div>
         ) : rows.length === 0 ? (
           <div className="text-center text-gray-500 py-12 bg-white rounded-xl border border-gray-200">Aún no hay novedades. Creá la primera.</div>
         ) : (

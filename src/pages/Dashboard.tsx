@@ -124,7 +124,7 @@ export default function Dashboard() {
 
             {/* Charts */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 md:gap-4">
-              <div className="lg:col-span-2 bg-white rounded-xl border border-gray-200 p-4 md:p-5">
+              <div className="lg:col-span-2 bg-white rounded-xl border border-slate-200/60 shadow-dassa-card p-4 md:p-5">
                 <p className="text-[13px] font-bold text-gray-800 mb-0.5">Evolución de No Conformidades</p>
                 <p className="text-[11px] text-gray-400 mb-4">Últimos 6 meses — abiertas vs cerradas</p>
                 <ResponsiveContainer width="100%" height={160}>
@@ -138,7 +138,7 @@ export default function Dashboard() {
                   </BarChart>
                 </ResponsiveContainer>
               </div>
-              <div className="bg-white rounded-xl border border-gray-200 p-4 md:p-5">
+              <div className="bg-white rounded-xl border border-slate-200/60 shadow-dassa-card p-4 md:p-5">
                 <p className="text-[13px] font-bold text-gray-800 mb-0.5">Distribución Riesgos</p>
                 <p className="text-[11px] text-gray-400 mb-3">Por nivel de IR (P×S)</p>
                 <ResponsiveContainer width="100%" height={110}>
@@ -166,7 +166,7 @@ export default function Dashboard() {
             {/* Bottom row */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 md:gap-4">
               {/* My tasks */}
-              <div className="bg-white rounded-xl border border-gray-200 p-4 md:p-5">
+              <div className="bg-white rounded-xl border border-slate-200/60 shadow-dassa-card p-4 md:p-5">
                 <div className="flex items-center justify-between mb-3">
                   <p className="text-[13px] font-bold text-gray-800">Mis Tareas</p>
                   <button onClick={() => navigate('/tasks')}
@@ -216,7 +216,7 @@ export default function Dashboard() {
 
               {/* Findings + Legal */}
               <div className="space-y-3 md:space-y-4">
-                <div className="bg-white rounded-xl border border-gray-200 p-4 md:p-5">
+                <div className="bg-white rounded-xl border border-slate-200/60 shadow-dassa-card p-4 md:p-5">
                   <div className="flex items-center justify-between mb-3">
                     <p className="text-[13px] font-bold text-gray-800">Hallazgos Activos</p>
                     <button onClick={() => navigate('/findings')}
@@ -252,7 +252,7 @@ export default function Dashboard() {
                 </div>
 
                 {legal.length > 0 && (
-                  <div className="bg-white rounded-xl border border-gray-200 p-4 md:p-5">
+                  <div className="bg-white rounded-xl border border-slate-200/60 shadow-dassa-card p-4 md:p-5">
                     <div className="flex items-center justify-between mb-3">
                       <p className="text-[13px] font-bold text-gray-800">⚠ Vencimientos Legales</p>
                       <button onClick={() => navigate('/legal')}

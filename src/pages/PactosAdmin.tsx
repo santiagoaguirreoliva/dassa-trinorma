@@ -94,7 +94,7 @@ export default function PactosAdmin() {
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-3xl font-black text-gray-900 flex items-center gap-2">
-              <UsersIcon className="w-8 h-8 text-[#BE1E2D]" />
+              <UsersIcon className="w-8 h-8 text-dassa-red" />
               Pactos Trinorma
             </h1>
             <p className="text-gray-600 mt-1">Estado del onboarding de cada usuario.</p>
@@ -138,7 +138,7 @@ export default function PactosAdmin() {
         )}
 
         {loading ? (
-          <div className="text-center py-12"><Loader2 className="w-10 h-10 animate-spin text-[#BE1E2D] mx-auto" /></div>
+          <div className="text-center py-12"><Loader2 className="w-10 h-10 animate-spin text-dassa-red mx-auto" /></div>
         ) : (
           <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
             <table className="w-full text-sm">
@@ -179,7 +179,7 @@ export default function PactosAdmin() {
                     <td className="px-4 py-3">
                       <div className="flex gap-2">
                         {canSendEmails && (
-                          <button onClick={() => sendEmail(r.email)} disabled={sending === r.email} className="text-xs bg-[#BE1E2D] hover:bg-[#9A1825] disabled:bg-gray-300 text-white px-3 py-1.5 rounded font-medium inline-flex items-center gap-1">
+                          <button onClick={() => sendEmail(r.email)} disabled={sending === r.email} className="text-xs bg-dassa-red hover:bg-dassa-red-deep disabled:bg-gray-300 text-white px-3 py-1.5 rounded font-medium inline-flex items-center gap-1">
                             {sending === r.email ? <Loader2 className="w-3 h-3 animate-spin" /> : <Mail className="w-3 h-3" />}
                             Email
                           </button>

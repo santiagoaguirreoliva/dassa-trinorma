@@ -26,7 +26,7 @@ interface RoleProfile {
 }
 
 const IMPORTANT_FOR_EVERYONE = [
-  { icon: CheckSquare, color: 'bg-[#BE1E2D]', href: '/mis-pendientes', title: 'Mis Pendientes', desc: 'El lugar #1. Todas tus tareas asignadas (de comité, NCs, proyectos, capacitaciones, auditorías) se nuclean acá. Si solo vas a abrir una pantalla por día, que sea esta.' },
+  { icon: CheckSquare, color: 'bg-dassa-red', href: '/mis-pendientes', title: 'Mis Pendientes', desc: 'El lugar #1. Todas tus tareas asignadas (de comité, NCs, proyectos, capacitaciones, auditorías) se nuclean acá. Si solo vas a abrir una pantalla por día, que sea esta.' },
   { icon: AlertTriangle, color: 'bg-orange-500', href: '/findings', title: 'NC y Desvíos', desc: 'El corazón de la norma. Cada no conformidad que detectes se reporta acá, con plan de acción, responsable y fecha. Sin NCs gestionadas, no hay certificación.' },
   { icon: GraduationCap, color: 'bg-blue-600', href: '/trainings', title: 'Capacitaciones', desc: 'Registrar evidencia de cada capacitación: asistencia, material, evaluación. Lo que no está acá, en auditoría no existe.' },
   { icon: ShoppingCart, color: 'bg-emerald-600', href: '/purchases', title: 'Compras', desc: 'Pedidos de compra con flujo de aprobación. Toda compra relevante al SGI pasa por acá para dejar trazabilidad.' },
@@ -460,7 +460,7 @@ export default function Bienvenida() {
         </div>
       )}
 
-      <header className="relative bg-gradient-to-br from-[#BE1E2D] to-[#7A1320] text-white overflow-hidden">
+      <header className="relative bg-gradient-to-br from-dassa-red to-[#7A1320] text-white overflow-hidden">
         <div className="absolute inset-0 opacity-10">
           <div className="absolute top-10 right-10 w-72 h-72 rounded-full bg-white blur-3xl" />
           <div className="absolute bottom-0 left-20 w-96 h-96 rounded-full bg-white blur-3xl" />
@@ -531,11 +531,11 @@ export default function Bienvenida() {
             {IMPORTANT_FOR_EVERYONE.map((it, i) => {
               const Icon = it.icon;
               return (
-                <div key={i} onClick={() => navigate(it.href)} className="group bg-white rounded-xl border border-gray-200 p-5 hover:border-[#BE1E2D] hover:shadow-md transition cursor-pointer">
+                <div key={i} onClick={() => navigate(it.href)} className="group bg-white rounded-xl border border-gray-200 p-5 hover:border-dassa-red hover:shadow-md transition cursor-pointer">
                   <div className="flex items-start gap-4">
                     <div className={`${it.color} rounded-lg p-3 shrink-0`}><Icon className="w-6 h-6 text-white" /></div>
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1"><h3 className="font-bold text-lg text-gray-900">{it.title}</h3><ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-[#BE1E2D] transition" /></div>
+                      <div className="flex items-center gap-2 mb-1"><h3 className="font-bold text-lg text-gray-900">{it.title}</h3><ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-dassa-red transition" /></div>
                       <p className="text-sm text-gray-600 leading-relaxed">{it.desc}</p>
                     </div>
                   </div>
@@ -563,7 +563,7 @@ export default function Bienvenida() {
             </div>
           </div>
           <div className="bg-white rounded-xl border border-gray-200 p-6">
-            <h3 className="font-bold text-lg text-gray-900 mb-4 flex items-center gap-2"><Briefcase className="w-5 h-5 text-[#BE1E2D]" />Tus responsabilidades</h3>
+            <h3 className="font-bold text-lg text-gray-900 mb-4 flex items-center gap-2"><Briefcase className="w-5 h-5 text-dassa-red" />Tus responsabilidades</h3>
             <ul className="space-y-2">{profile.responsabilidades.map((r, i) => (<li key={i} className="flex items-start gap-3 text-gray-700"><CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" /><span>{r}</span></li>))}</ul>
           </div>
         </section>
@@ -587,7 +587,7 @@ export default function Bienvenida() {
           <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
             {profile.primerSemana.map((d, i) => (
               <div key={i} onClick={() => d.href && !isMirroring && navigate(d.href)} className={`flex items-center gap-4 p-4 ${d.href && !isMirroring ? 'cursor-pointer hover:bg-gray-50' : ''} ${i < profile.primerSemana.length - 1 ? 'border-b border-gray-100' : ''}`}>
-                <div className="bg-[#BE1E2D] text-white rounded-lg w-20 text-center py-2 font-bold text-sm shrink-0">{d.dia}</div>
+                <div className="bg-dassa-red text-white rounded-lg w-20 text-center py-2 font-bold text-sm shrink-0">{d.dia}</div>
                 <div className="flex-1 text-gray-700">{d.tarea}</div>
                 {d.href && <ChevronRight className="w-5 h-5 text-gray-400" />}
               </div>
@@ -597,12 +597,12 @@ export default function Bienvenida() {
 
         <section className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="bg-white rounded-xl border border-gray-200 p-6">
-            <h3 className="font-bold text-lg text-gray-900 mb-4 flex items-center gap-2"><TrendingUp className="w-5 h-5 text-[#BE1E2D]" />Qué esperamos de vos</h3>
+            <h3 className="font-bold text-lg text-gray-900 mb-4 flex items-center gap-2"><TrendingUp className="w-5 h-5 text-dassa-red" />Qué esperamos de vos</h3>
             <ul className="space-y-2">{profile.expectativas.map((e, i) => (<li key={i} className="flex items-start gap-3 text-gray-700 text-sm"><Target className="w-4 h-4 text-emerald-600 shrink-0 mt-1" /><span>{e}</span></li>))}</ul>
           </div>
           <div className="bg-white rounded-xl border border-gray-200 p-6">
-            <h3 className="font-bold text-lg text-gray-900 mb-4 flex items-center gap-2"><Building2 className="w-5 h-5 text-[#BE1E2D]" />Si necesitás ayuda</h3>
-            <ul className="space-y-3">{profile.consultaA.map((c, i) => (<li key={i} className="flex items-start gap-3"><div className="bg-[#BE1E2D]/10 text-[#BE1E2D] rounded-lg p-2 shrink-0"><MessageCircle className="w-4 h-4" /></div><div className="text-sm"><div className="font-semibold text-gray-900">{c.tema}</div><div className="text-gray-600">→ {c.persona}</div></div></li>))}</ul>
+            <h3 className="font-bold text-lg text-gray-900 mb-4 flex items-center gap-2"><Building2 className="w-5 h-5 text-dassa-red" />Si necesitás ayuda</h3>
+            <ul className="space-y-3">{profile.consultaA.map((c, i) => (<li key={i} className="flex items-start gap-3"><div className="bg-dassa-red/10 text-dassa-red rounded-lg p-2 shrink-0"><MessageCircle className="w-4 h-4" /></div><div className="text-sm"><div className="font-semibold text-gray-900">{c.tema}</div><div className="text-gray-600">→ {c.persona}</div></div></li>))}</ul>
           </div>
         </section>
 
@@ -622,7 +622,7 @@ export default function Bienvenida() {
               ) : (
                 <>
                   <label className="flex items-start gap-3 mb-4 cursor-pointer select-none"><input type="checkbox" checked={pactChecked} onChange={e => setPactChecked(e.target.checked)} className="w-5 h-5 accent-amber-600 mt-0.5" /><span className="text-amber-900 font-medium">Leí y entiendo. Me comprometo a cumplir el pacto.</span></label>
-                  <button disabled={!pactChecked || accepting} onClick={acceptPact} className="w-full bg-[#BE1E2D] hover:bg-[#9A1825] disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-bold py-4 rounded-xl shadow-lg transition flex items-center justify-center gap-2 text-lg">
+                  <button disabled={!pactChecked || accepting} onClick={acceptPact} className="w-full bg-dassa-red hover:bg-dassa-red-deep disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-bold py-4 rounded-xl shadow-lg transition flex items-center justify-center gap-2 text-lg">
                     {accepting ? (<><Loader2 className="w-5 h-5 animate-spin" />Aceptando...</>) : (<>Empezar por Mis Pendientes<ChevronRight className="w-5 h-5" /></>)}
                   </button>
                 </>

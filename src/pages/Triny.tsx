@@ -84,12 +84,12 @@ export default function Triny() {
     finally { setRunning(null); }
   }
 
-  if (loading) return <div className="flex-1 flex items-center justify-center"><Loader2 className="w-10 h-10 animate-spin text-[#BE1E2D]" /></div>;
+  if (loading) return <div className="flex-1 flex items-center justify-center"><Loader2 className="w-10 h-10 animate-spin text-dassa-red" /></div>;
   if (!info) return null;
 
   return (
     <div className="flex-1 overflow-y-auto bg-slate-50">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {/* Hero */}
         <div className="bg-gradient-to-br from-violet-600 to-indigo-700 rounded-2xl p-6 md:p-8 text-white mb-6">
           <div className="flex items-start gap-4 mb-4 flex-wrap">
@@ -134,7 +134,7 @@ export default function Triny() {
             return (
               <button key={t.v} onClick={() => setTab(t.v as any)}
                 className={`flex items-center gap-2 px-5 py-3 font-medium border-b-2 transition ${
-                  tab === t.v ? 'border-[#BE1E2D] text-[#BE1E2D] bg-[#BE1E2D]/5' : 'border-transparent text-gray-600 hover:bg-gray-50'
+                  tab === t.v ? 'border-dassa-red text-dassa-red bg-dassa-red/5' : 'border-transparent text-gray-600 hover:bg-gray-50'
                 }`}>
                 <Ti className="w-4 h-4" /> {t.l}
               </button>

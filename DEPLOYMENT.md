@@ -127,10 +127,26 @@ Para desplegar en producción:
 
 ## Respaldo de Datos
 
-La base de datos SQLite está en `trinorma.db`. Para hacer respaldo:
+La base de datos es PostgreSQL (definida en `DATABASE_URL`). Para respaldo manual:
+
 ```bash
-cp trinorma.db trinorma.db.backup
+# Dump completo
+pg_dump "$DATABASE_URL" > backups/dassa-sgi-$(date +%F).sql
+
+# Restore
+psql "$DATABASE_URL" < backups/dassa-sgi-YYYY-MM-DD.sql
 ```
+
+En Railway, los backups automáticos están incluidos en el plan Pro (snapshots diarios con retención 7 días). Verificar desde el panel del proyecto Postgres.
+
+### Rollback
+
+1. Detener PM2: `pm2 stop dassa-sgi`
+2. Volver al commit anterior: `git checkout <SHA-anterior>`
+3. Reinstalar deps: `npm ci`
+4. Rebuild: `npm run build`
+5. Restaurar dump si hubo cambios de schema: `psql "$DATABASE_URL" < backups/dassa-sgi-<fecha-previa>.sql`
+6. Reiniciar: `pm2 restart dassa-sgi`
 
 ## Usuarios Predeterminados
 

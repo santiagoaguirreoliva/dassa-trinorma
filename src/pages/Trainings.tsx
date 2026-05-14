@@ -1,14 +1,14 @@
 import { useState, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
-  BookOpen, Plus, Calendar, List, ChevronLeft, ChevronRight,
-  X, Save, Loader2, CheckCircle2, Clock, Users, Bell,
-  Paperclip, Trash2, Upload, AlertTriangle, Shield
+  BookOpen, Plus, Calendar, ChevronLeft, ChevronRight,
+  X, Loader2, CheckCircle2, Users, Bell,
+  Paperclip, Trash2, Upload, Shield
 } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { Header } from '@/components/layout/Header';
-import { Badge, Avatar, Spinner, PageContent, KPICard } from '@/components/ui';
+import { Avatar, Spinner, PageContent, KPICard } from '@/components/ui';
 
 // ─── Tipos ──────────────────────────────────────────────────
 interface Training {
@@ -513,7 +513,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 // ─── New Training Modal ───────────────────────────────────────
 function NewTrainingModal({ onClose }: { onClose: () => void }) {
   const qc = useQueryClient();
-  const { user } = useAuth();
+  useAuth();
   const [form, setForm] = useState({
     title: '', description: '', objective: '', legal_framework: '',
     training_type: 'capacitacion', category: 'obligatoria',
@@ -573,7 +573,7 @@ function NewTrainingModal({ onClose }: { onClose: () => void }) {
             </div>
             <div>
               <label className="label-field">Duración (horas)</label>
-              <input type="number" step="0.5" value={form.duration_hours} onChange={e => set('duration_hours', e.target.value)}
+              <input type="number" step="0.5" inputMode="decimal" value={form.duration_hours} onChange={e => set('duration_hours', e.target.value)}
                 placeholder="Ej: 2" className="input-field" />
             </div>
             <div>

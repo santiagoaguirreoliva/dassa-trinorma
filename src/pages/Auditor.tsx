@@ -47,13 +47,13 @@ export default function Auditor() {
     setLoading(true);
     try {
       const [runsR, alertsR, insightsR] = await Promise.all([
-        api.get('/auditor/runs'),
-        api.get('/auditor/alerts?resolved=false'),
-        api.get('/auditor/insights'),
+        api.get<Run[]>('/auditor/runs'),
+        api.get<Alert[]>('/auditor/alerts?resolved=false'),
+        api.get<Insights>('/auditor/insights'),
       ]);
-      setRuns(runsR.data);
-      setAlerts(alertsR.data);
-      setInsights(insightsR.data);
+      setRuns(runsR);
+      setAlerts(alertsR);
+      setInsights(insightsR);
     } catch (e) {
       console.error(e);
     } finally {

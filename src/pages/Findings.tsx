@@ -1,14 +1,12 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Plus, LayoutGrid, List, Search, Filter,
-         ChevronDown, Clock, Loader2, X, AlertTriangle } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { Plus, LayoutGrid, List, Search, Loader2, X, AlertTriangle, Download } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { Header } from '@/components/layout/Header';
 import { Badge, FINDING_STATUS, FINDING_TYPE, Avatar, Spinner, PageContent } from '@/components/ui';
-import { SimpleBar, SimplePie } from '@/components/charts';
 import FindingDetail from '@/components/findings/FindingDetail';
+import { exportToCSV } from '@/lib/exportCsv';
 
 // ─── Tipos ──────────────────────────────────────────────────
 interface Finding {
@@ -82,7 +80,7 @@ function NCCard({ finding, onClick }: { finding: Finding; onClick: () => void })
 // ─── New Finding Modal ────────────────────────────────────────
 function NewFindingModal({ onClose, users }: { onClose: () => void; users: any[] }) {
   const qc = useQueryClient();
-  const { user } = useAuth();
+  useAuth();
   const [form, setForm] = useState({
     title: '', description: '', finding_type: 'nc_real',
     origin: 'desvio_operativo', area: '', due_date: '',
@@ -235,6 +233,22 @@ export default function Findings() {
                 <List size={15} />
               </button>
             </div>
+            <button
+              onClick={() => exportToCSV(filtered as unknown as Record<string, unknown>[], `hallazgos-${new Date().toISOString().slice(0,10)}`, [
+                { key: 'code', header: 'Código' },
+                { key: 'title', header: 'Título' },
+                { key: 'finding_type', header: 'Tipo' },
+                { key: 'status', header: 'Estado' },
+                { key: 'area', header: 'Área' },
+                { key: 'due_date', header: 'Fecha límite' },
+                { key: 'assigned_to_name', header: 'Responsable' },
+                { key: 'created_at', header: 'Creado' },
+              ])}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-200 text-gray-700 rounded-lg text-xs font-bold hover:bg-gray-50 transition-colors"
+              title="Exportar CSV"
+            >
+              <Download size={14} /> CSV
+            </button>
             {isAdmin && (
               <button
                 onClick={() => setShowNew(true)}

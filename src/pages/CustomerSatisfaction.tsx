@@ -1,16 +1,13 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
-  Plus, X, Loader2, Star, TrendingUp, Users, ThumbsUp, ClipboardList, Eye
+  Plus, X, Loader2, Star, TrendingUp, Users, ThumbsUp, ClipboardList
 } from 'lucide-react';
-import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid,
-  Tooltip, ResponsiveContainer, Cell
-} from 'recharts';
+
 import { api } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { Header } from '@/components/layout/Header';
-import { Spinner, KPICard, PageContent, Badge } from '@/components/ui';
+import { Spinner, KPICard, PageContent } from '@/components/ui';
 
 // ─── Types ──────────────────────────────────────────────────
 interface Survey {
@@ -41,12 +38,6 @@ const TYPE_LABELS: Record<string, string> = {
 function fmtDate(d?: string) {
   if (!d) return '—';
   return new Date(d).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: '2-digit' });
-}
-
-function getNPSColor(nps: number) {
-  if (nps >= 50) return '#10b981';
-  if (nps >= 0)  return '#f59e0b';
-  return '#ef4444';
 }
 
 function getNPSLabel(nps: number) {
@@ -105,7 +96,7 @@ function SurveyModal({ onClose }: { onClose: () => void }) {
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-[12px] font-semibold text-gray-500 mb-1">Año</label>
-              <input type="number" value={form.year} onChange={e => set('year', e.target.value)} className="w-full border rounded-lg px-3 py-2 text-[13px]" />
+              <input type="number" inputMode="numeric" value={form.year} onChange={e => set('year', e.target.value)} className="w-full border rounded-lg px-3 py-2 text-[13px]" />
             </div>
             <div>
               <label className="block text-[12px] font-semibold text-gray-500 mb-1">Trimestre</label>

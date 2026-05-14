@@ -75,7 +75,7 @@ function SupplierModal({ supplier, onClose }: { supplier?: Supplier; onClose: ()
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="label-field">CUIT</label>
-              <input value={form.cuit} onChange={e => set('cuit', e.target.value)}
+              <input inputMode="numeric" value={form.cuit} onChange={e => set('cuit', e.target.value)}
                 placeholder="XX-XXXXXXXX-X" className="input-field" />
             </div>
             <div>

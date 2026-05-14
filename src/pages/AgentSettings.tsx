@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
-  Bot, Sparkles, Save, Loader2, ToggleLeft, ToggleRight, DollarSign,
-  Activity, MessageSquare, AlertCircle, CheckCircle2, Settings
+  Bot, Sparkles, Save, Loader2, ToggleLeft, ToggleRight,
+  Activity, AlertCircle, CheckCircle2
 } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
@@ -167,6 +167,7 @@ export default function AgentSettings() {
                 <label className="label-field">Max tokens · respuesta</label>
                 <input
                   type="number"
+                  inputMode="numeric"
                   min={500} max={4000}
                   value={form.assistant_max_tokens}
                   onChange={e => setForm(p => p && ({ ...p, assistant_max_tokens: parseInt(e.target.value) }))}
@@ -178,6 +179,7 @@ export default function AgentSettings() {
                 <label className="label-field">Temperature (0=preciso, 1=creativo)</label>
                 <input
                   type="number"
+                  inputMode="decimal"
                   min={0} max={1} step={0.1}
                   value={form.assistant_temperature}
                   onChange={e => setForm(p => p && ({ ...p, assistant_temperature: parseFloat(e.target.value) }))}

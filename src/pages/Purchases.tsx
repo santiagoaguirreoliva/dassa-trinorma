@@ -3,8 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Plus, X, Loader2, Save, CheckCircle2, XCircle,
   Play, Package, Lock, BarChart3, ShoppingCart,
-  ChevronDown, AlertTriangle, DollarSign,
-  Eye, ExternalLink, FileText, MessageSquare, Image as ImageIcon, Calendar, Sparkles, Wand2
+  Eye, ExternalLink, FileText, MessageSquare, Image as ImageIcon, Sparkles, Wand2, Download
 } from 'lucide-react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid,
@@ -13,7 +12,8 @@ import {
 import { api } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { Header } from '@/components/layout/Header';
-import { Badge, Avatar, Spinner, KPICard, PageContent } from '@/components/ui';
+import { Avatar, Spinner, KPICard, PageContent } from '@/components/ui';
+import { exportToCSV } from '@/lib/exportCsv';
 
 // ─── Tipos ──────────────────────────────────────────────────
 interface Purchase {
@@ -221,7 +221,7 @@ function NewPurchaseModal({ onClose }: { onClose: () => void }) {
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="label-field">Monto estimado ($)</label>
-              <input type="number" value={form.estimated_budget} onChange={e => set('estimated_budget', e.target.value)}
+              <input type="number" inputMode="decimal" value={form.estimated_budget} onChange={e => set('estimated_budget', e.target.value)}
                 placeholder="0" className="input-field" />
             </div>
             <div>
@@ -387,7 +387,7 @@ function ReceiveModal({ purchase, onClose }: { purchase: Purchase; onClose: () =
             </div>
             <div>
               <label className="label-field">Monto real ($)</label>
-              <input type="number" value={form.amount} onChange={e => set('amount', e.target.value)}
+              <input type="number" inputMode="decimal" value={form.amount} onChange={e => set('amount', e.target.value)}
                 placeholder={String(purchase.estimated_budget || '')} className="input-field" />
             </div>
             <div className="col-span-2">
@@ -426,7 +426,7 @@ function ReceiveModal({ purchase, onClose }: { purchase: Purchase; onClose: () =
 function PurchaseDetailModal({ purchaseId, onClose }: { purchaseId: string; onClose: () => void }) {
   const { data: purchase, isLoading } = useQuery<Purchase & { comments?: any[] }>({
     queryKey: ['purchase', purchaseId],
-    queryFn: () => api.get(`/purchases/${purchaseId}`).then(r => r.data),
+    queryFn: () => api.get<Purchase & { comments?: any[] }>(`/purchases/${purchaseId}`),
   });
 
   if (isLoading || !purchase) {
@@ -727,7 +727,7 @@ function ReportsTab({ purchases }: { purchases: Purchase[] }) {
 
 // ─── MAIN PAGE ────────────────────────────────────────────────
 export default function Purchases() {
-  const { user, isAdmin } = useAuth();
+  const { isAdmin } = useAuth();
   const [tab, setTab] = useState<'solicitudes' | 'reportes' | 'permisos'>('solicitudes');
   const [showNew, setShowNew] = useState(false);
   const [authorizing, setAuthorizing] = useState<Purchase | null>(null);
@@ -769,12 +769,33 @@ export default function Purchases() {
         subtitle="Gestión de órdenes de compra con flujo de aprobación"
         alerts={pendingAuth}
         actions={
-          myPerms?.can_request && (
-            <button onClick={() => setShowNew(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-dassa-red-deep text-white rounded-lg text-xs font-bold hover:bg-dassa-red">
-              <Plus size={14} /> Nueva Solicitud
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => exportToCSV(purchases as unknown as Record<string, unknown>[], `compras-${new Date().toISOString().slice(0,10)}`, [
+                { key: 'code', header: 'Código' },
+                { key: 'description', header: 'Descripción' },
+                { key: 'status', header: 'Estado' },
+                { key: 'priority', header: 'Prioridad' },
+                { key: 'category', header: 'Categoría' },
+                { key: 'estimated_budget', header: 'Presupuesto' },
+                { key: 'amount', header: 'Monto real' },
+                { key: 'requested_by_name', header: 'Solicitante' },
+                { key: 'approved_by_name', header: 'Autorizó' },
+                { key: 'supplier_name', header: 'Proveedor' },
+                { key: 'created_at', header: 'Creado' },
+              ])}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-200 text-gray-700 rounded-lg text-xs font-bold hover:bg-gray-50"
+              title="Exportar CSV"
+            >
+              <Download size={14} /> CSV
             </button>
-          )
+            {myPerms?.can_request && (
+              <button onClick={() => setShowNew(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-dassa-red-deep text-white rounded-lg text-xs font-bold hover:bg-dassa-red">
+                <Plus size={14} /> Nueva Solicitud
+              </button>
+            )}
+          </div>
         }
       />
 

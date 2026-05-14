@@ -147,7 +147,7 @@ function LegalModal({ item, users, onClose }: { item?: LegalReq; users: User[]; 
             </div>
             <div>
               <label className="label-field">Días Alerta</label>
-              <input type="number" value={form.alert_days_before} onChange={e => set('alert_days_before', e.target.value)}
+              <input type="number" inputMode="numeric" value={form.alert_days_before} onChange={e => set('alert_days_before', e.target.value)}
                 placeholder="90" className="input-field" />
             </div>
           </div>

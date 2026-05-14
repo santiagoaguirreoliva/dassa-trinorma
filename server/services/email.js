@@ -97,7 +97,7 @@ const templates = {
       try { return new Date(d).toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: 'numeric' }); }
       catch { return d; }
     };
-    const taskRow = (t, borderColor) => `
+    const taskRow = (t, _borderColor) => `
       <tr>
         <td style="padding:8px 10px;border-bottom:1px solid #f1f5f9;font-size:13px;">${t.title}</td>
         <td style="padding:8px 10px;border-bottom:1px solid #f1f5f9;text-align:center;">

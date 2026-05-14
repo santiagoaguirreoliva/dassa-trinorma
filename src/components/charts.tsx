@@ -3,8 +3,7 @@
 // =============================================================================
 import {
   BarChart, Bar, PieChart, Pie, Cell, LineChart, Line,
-  XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
-  RadialBarChart, RadialBar
+  XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
 } from 'recharts';
 
 const COLORS = ['#BE1E2D', '#5BBFCC', '#0F1A4A', '#F59E0B', '#7C3AED', '#10B981', '#6366F1', '#EC4899'];

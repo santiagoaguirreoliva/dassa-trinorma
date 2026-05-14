@@ -2,12 +2,12 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Plus, X, Loader2, Target, TrendingUp, Shield, AlertTriangle,
-  Users, ChevronDown, ChevronUp, Pencil, Trash2
+  Users, Pencil, Trash2
 } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { Header } from '@/components/layout/Header';
-import { Spinner, KPICard, PageContent, Badge } from '@/components/ui';
+import { Spinner, KPICard, PageContent } from '@/components/ui';
 
 // ─── Types ──────────────────────────────────────────────────
 interface FodaItem {
@@ -65,7 +65,7 @@ type TabKey = 'foda' | 'strategies' | 'stakeholders';
 
 // ─── Component ──────────────────────────────────────────────
 export default function Context() {
-  const { user } = useAuth();
+  useAuth();
   const qc = useQueryClient();
   const [tab, setTab] = useState<TabKey>('foda');
   const [modal, setModal] = useState<null | 'foda' | 'strategy' | 'stakeholder'>(null);
@@ -217,7 +217,7 @@ function FodaGrid({ foda, onEdit, onDelete }: { foda: FodaGrouped; onEdit: (i: F
 }
 
 // ─── Strategies Table ───────────────────────────────────────
-function StrategiesTable({ strategies, users, onEdit, onDelete }: { strategies: Strategy[]; users: User[]; onEdit: (s: Strategy) => void; onDelete: (id: string) => void }) {
+function StrategiesTable({ strategies, users: _users, onEdit, onDelete }: { strategies: Strategy[]; users: User[]; onEdit: (s: Strategy) => void; onDelete: (id: string) => void }) {
   const grouped = STRATEGY_TYPES.map((st) => ({
     ...st,
     items: strategies.filter((s) => s.strategy_type === st.value),

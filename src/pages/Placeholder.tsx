@@ -23,7 +23,7 @@ const PAGE_INFO: Record<string, [string, string, string]> = {
 
 export default function Placeholder() {
   const { slug = '' } = useParams();
-  const { user } = useAuth();
+  useAuth();
   const navigate = useNavigate();
   const [title, desc, icon] = PAGE_INFO[slug] ?? ['Módulo', 'Próximamente', '⬡'];
 

@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
-import { Briefcase, Star, ArrowRight } from 'lucide-react';
+import { Briefcase, ArrowRight } from 'lucide-react';
 import { api } from '@/lib/api';
 import { Header } from '@/components/layout/Header';
 import { Spinner, PageContent } from '@/components/ui';

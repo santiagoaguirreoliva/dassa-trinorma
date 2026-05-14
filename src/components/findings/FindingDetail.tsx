@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { X, ChevronDown, ChevronRight, Plus, CheckCircle2,
+import { X, Plus, CheckCircle2,
          Clock, User, MessageSquare, Paperclip, Save, Loader2 } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
@@ -25,7 +25,7 @@ const STATUS_IDX: Record<string, number> = {
 };
 
 export default function FindingDetail({ findingId, onClose }: Props) {
-  const { user, isAdmin } = useAuth();
+  const { isAdmin } = useAuth();
   const qc = useQueryClient();
   const [tab, setTab] = useState<'detalle' | 'causas' | 'acciones' | 'evidencia' | 'comentarios'>('detalle');
   const [newComment, setNewComment] = useState('');

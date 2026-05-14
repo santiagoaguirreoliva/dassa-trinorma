@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { User, Lock, CheckCircle2, Loader2, Save, Eye, EyeOff } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAuth, ROLE_LABELS } from '@/contexts/AuthContext';
@@ -7,7 +7,7 @@ import { Header } from '@/components/layout/Header';
 import { PageContent } from '@/components/ui';
 
 export default function Profile() {
-  const { user, signOut } = useAuth();
+  const { user } = useAuth();
   const qc = useQueryClient();
   const [tab, setTab] = useState<'perfil' | 'seguridad'>('perfil');
 

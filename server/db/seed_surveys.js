@@ -42,7 +42,7 @@ async function main() {
   const empChristian = await addEmp('Christian Medina', 'Operaciones', 'Supervisor Operaciones', christian?.id);
   const empMaria = await addEmp('María Delgado', 'RRHH / SySO', 'Responsable RRHH', maria?.id);
   const empMaira = await addEmp('Maira Herrera', 'Administración', 'Administrativa', maira?.id);
-  const empFernando = await addEmp('Fernando Ponzi', 'Seguridad e Higiene', 'Responsable SySO', fernando?.id);
+  const _empFernando = await addEmp('Fernando Ponzi', 'Seguridad e Higiene', 'Responsable SySO', fernando?.id);
 
   // Operarios evaluados por Marcelo + Christian
   const operarios = [

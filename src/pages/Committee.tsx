@@ -1,11 +1,11 @@
 // /committee · Comité Mixto rediseñado + Wizard de nueva reunión
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 import {
-  Building2, Plus, Calendar, Users, ChevronRight, CheckCircle2, Clock,
-  Loader2, X, ChevronLeft, FileSignature, AlertCircle, Save, Trash2, UserPlus,
+  Building2, Plus, Users, ChevronRight, CheckCircle2,
+  Loader2, X, ChevronLeft, FileSignature, Save, Trash2, UserPlus,
 } from 'lucide-react';
 
 interface Meeting {
@@ -50,7 +50,6 @@ function colorForUser(name: string) {
 
 export default function Committee() {
   const { user } = useAuth();
-  const navigate = useNavigate();
   const [meetings, setMeetings] = useState<Meeting[]>([]);
   const [loading, setLoading] = useState(true);
   const [wizardOpen, setWizardOpen] = useState(false);

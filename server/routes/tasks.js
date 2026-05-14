@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { query } from '../db/db.js';
-import { authenticate, requireRole, ADMIN_ROLES } from '../middleware/auth.js';
+import { authenticate, requireRole } from '../middleware/auth.js';
 import { sendTaskEmail } from '../services/email.js';
 
 const router = Router();

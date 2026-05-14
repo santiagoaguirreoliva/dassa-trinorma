@@ -5,6 +5,22 @@ import { query } from '../db/db.js';
 import { authenticate } from '../middleware/auth.js';
 
 const router = Router();
+// ─────────────────────────────────────────────────────────────────────────
+// MIGRACION SDA (2026-05-13) — endpoints auth local DESHABILITADOS
+// Toda autenticacion paso a Smart DASSA Apps (apps.dassa.com.ar).
+// ─────────────────────────────────────────────────────────────────────────
+const _SDA_GONE_ENDPOINTS = ['/login', '/change-password', '/forgot-password', '/reset-password', '/activate'];
+router.use((req, res, next) => {
+  if (_SDA_GONE_ENDPOINTS.includes(req.path)) {
+    return res.status(410).json({
+      error: 'endpoint_migrated',
+      message: 'Este endpoint fue migrado a Smart DASSA Apps. Ingresa por https://trafico.dassa.com.ar/apps/',
+      migrated_to: 'https://trafico.dassa.com.ar/apps/',
+    });
+  }
+  next();
+});
+
 
 // POST /api/auth/login
 router.post('/login', async (req, res) => {
@@ -32,7 +48,7 @@ router.post('/login', async (req, res) => {
       { expiresIn: '7d' }
     );
 
-    const { password_hash, ...safe } = user;
+    const { password_hash: _ph, ...safe } = user;
     res.json({ token, user: safe });
   } catch (err) {
     console.error('Login error:', err);

@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
-import { CheckCircle2, Clock, Lock, AlertCircle, Loader2, Play, Eye, X } from 'lucide-react';
+import { CheckCircle2, Clock, Lock, Loader2, Play, Eye, X } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { Header } from '@/components/layout/Header';
@@ -129,7 +129,7 @@ export default function Ciclo2026() {
               const cfg = STATUS_CFG[r.status] || STATUS_CFG.programada;
               const Icon = cfg.icon;
               const canStart = r.status==='programada' || (r.status==='bloqueada' && !r.is_blocked);
-              const canValidate = r.status==='en_revision' && r.validator_name?.includes(user?.full_name?.split(' ')[0]||'');
+              const _canValidate = r.status==='en_revision' && r.validator_name?.includes(user?.full_name?.split(' ')[0]||'');
               return (
                 <tr key={r.id} className="border-b border-gray-100 hover:bg-gray-50">
                   <td className="px-4 py-2 text-xs font-bold text-gray-400">{r.sort_order}</td>

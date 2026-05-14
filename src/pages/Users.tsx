@@ -5,7 +5,7 @@ import {
   UserCog, KeyRound, UserPlus, Clock, XCircle
 } from 'lucide-react';
 import { api } from '@/lib/api';
-import { useAuth, ROLE_LABELS, AppRole } from '@/contexts/AuthContext';
+import { useAuth, AppRole } from '@/contexts/AuthContext';
 import { Header } from '@/components/layout/Header';
 import { Avatar, Spinner, PageContent } from '@/components/ui';
 

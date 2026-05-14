@@ -1,5 +1,4 @@
 import { useQuery } from '@tanstack/react-query';
-import { useState } from 'react';
 import { Users, Building2, ChevronRight } from 'lucide-react';
 import { api } from '@/lib/api';
 import { Header } from '@/components/layout/Header';
@@ -16,7 +15,6 @@ export default function Organigrama() {
   });
   if (isLoading || !data) return <PageContent><Spinner/></PageContent>;
 
-  const nodesById = Object.fromEntries(data.nodes.map(n=>[n.id, n]));
   const children: Record<string,Node[]> = {};
   data.nodes.forEach(n=>{ if(n.parent_id){ (children[n.parent_id]=children[n.parent_id]||[]).push(n); }});
   const profilesByNode: Record<string,Profile[]> = {};

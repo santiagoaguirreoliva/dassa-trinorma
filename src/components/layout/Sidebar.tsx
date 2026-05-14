@@ -5,7 +5,7 @@ import {
   BookOpen, Leaf, AlertTriangle, BarChart3, Building2, Truck,
   CalendarDays, ChevronDown, ChevronRight, Star, Settings, X,
   Briefcase, Workflow, Target, GitMerge, BookOpen as BookOpen2,
-  Megaphone, Inbox, Bot, AlertCircle, ListChecks, FolderTree, Sparkles,
+  Megaphone, Inbox, Bot, ListChecks, FolderTree, Sparkles,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 

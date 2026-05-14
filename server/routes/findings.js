@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { query } from '../db/db.js';
-import { authenticate, requireRole } from '../middleware/auth.js';
+import { authenticate } from '../middleware/auth.js';
 import { writeFileSync, mkdirSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
@@ -198,7 +198,7 @@ router.post('/', async (req, res) => {
     title, description, finding_type, origin, area,
     due_date, assigned_to, immediate_action,
     cause_analysis_type, cause_analysis_content,
-    affected_client, client_complaint,
+    affected_client: _ac, client_complaint: _cc,
     photo_base64
   } = req.body;
 

@@ -5,9 +5,9 @@ import { useNavigate } from 'react-router-dom';
 import { api } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 import {
-  CheckSquare, AlertCircle, Clock, Calendar, Users, Filter,
+  CheckSquare, AlertCircle, Calendar, Users, Filter,
   Loader2, CheckCircle2, ChevronRight, Building2, AlertTriangle,
-  GraduationCap, ShoppingCart, FileText, Sparkles, X,
+  GraduationCap, ShoppingCart, FileText, X,
 } from 'lucide-react';
 
 interface Assignee { id: string; name: string; email: string; role: 'principal' | 'colaborador'; }

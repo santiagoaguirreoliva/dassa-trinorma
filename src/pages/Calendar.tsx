@@ -2,11 +2,11 @@ import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
   ChevronLeft, ChevronRight, GraduationCap, Scale,
-  Users as UsersIcon, CheckSquare, Calendar as CalIcon
+  Users as UsersIcon, CheckSquare
 } from 'lucide-react';
 import { api } from '@/lib/api';
 import { Header } from '@/components/layout/Header';
-import { Spinner, KPICard, PageContent, Badge } from '@/components/ui';
+import { Spinner, KPICard, PageContent } from '@/components/ui';
 
 // ─── Types ──────────────────────────────────────────────────
 interface CalTraining { id: string; title: string; scheduled_date: string; training_type: string; is_mandatory: boolean; }
@@ -30,10 +30,6 @@ const EVENT_CONFIG = {
   committee: { color: 'bg-dassa-red-tint text-dassa-red-deep border-blue-200',      dot: 'bg-dassa-red',   icon: UsersIcon, label: 'Comité' },
   task:      { color: 'bg-emerald-100 text-emerald-700 border-emerald-200', dot: 'bg-emerald-500', icon: CheckSquare, label: 'Tarea' },
 } as const;
-
-const PRIORITY_COLORS: Record<string, string> = {
-  urgente: 'text-red-600', alta: 'text-orange-500', media: 'text-amber-500', baja: 'text-gray-400',
-};
 
 const DAYS = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
 const MONTHS = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];

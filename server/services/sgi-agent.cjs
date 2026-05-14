@@ -281,7 +281,7 @@ function filterTools(enabledNames) {
 // ───────────────────────────────────────────────────────────────
 // Handlers
 // ───────────────────────────────────────────────────────────────
-async function h_consultar_tareas({ usuario_email, estado, solo_vencidas, query_texto }, ctx) {
+async function h_consultar_tareas({ usuario_email, estado, solo_vencidas, query_texto }, _ctx) {
   const conds = [];
   const params = [];
   if (usuario_email) { params.push(usuario_email); conds.push(`u.email ILIKE $${params.length}`); }
@@ -299,7 +299,7 @@ async function h_consultar_tareas({ usuario_email, estado, solo_vencidas, query_
   return { found: rows.length, tasks: rows };
 }
 
-async function h_consultar_hallazgos({ estado, severidad, categoria, usuario_email, query_texto }) {
+async function h_consultar_hallazgos({ estado, severidad: _sev, categoria, usuario_email, query_texto }) {
   const conds = []; const params = [];
   if (estado && estado !== 'todas') { params.push(estado); conds.push(`f.status = $${params.length}`); }
   // 'categoria' del prompt mapea a 'finding_type' real (NC/desvio/mejora/oportunidad)
@@ -317,7 +317,7 @@ async function h_consultar_hallazgos({ estado, severidad, categoria, usuario_ema
   return { found: rows.length, findings: rows };
 }
 
-async function h_crear_hallazgo({ titulo, descripcion, categoria, severidad, norma, area }, ctx) {
+async function h_crear_hallazgo({ titulo, descripcion, categoria, severidad: _sev, norma: _norma, area }, ctx) {
   if (!ctx?.userId) return { error: 'Necesito el contexto del usuario para crear el hallazgo' };
   const { rows } = await pool.query(
     `INSERT INTO findings (title, description, finding_type, area, status, reported_by)
@@ -459,7 +459,7 @@ async function h_consultar_estado_ciclo({ year }) {
   };
 }
 
-async function h_iniciar_revision({ review_id }, ctx) {
+async function h_iniciar_revision({ review_id }, _ctx) {
   const { rows: check } = await pool.query('SELECT can_start, blockers FROM can_start_review($1)', [review_id]);
   if (!check[0].can_start) {
     return { error: 'Tiene dependencias sin validar', blockers: check[0].blockers };

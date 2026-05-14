@@ -363,7 +363,7 @@ async function jobIntimacionVencidas(opts = {}) {
 }
 
 // ─── Preview · genera el HTML sin mandar mail ─────────────────────────────
-async function previewJob(jobKey, userIdHint) {
+async function previewJob(jobKey, _userIdHint) {
   // Hacemos un mini fake-send setting dryRun=true
   if (jobKey === 'recordatorios_lunes') return jobRecordatoriosLunes({ force: true });
   if (jobKey === 'resumen_viernes')     return jobResumenViernes({ force: true });

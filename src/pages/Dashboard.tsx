@@ -10,8 +10,7 @@ import { Zap, Shield, Scale, BookOpen, ClipboardList,
 import { useAuth } from '@/contexts/AuthContext';
 import { api } from '@/lib/api';
 import { Header } from '@/components/layout/Header';
-import { KPICard, Badge, FINDING_STATUS, FINDING_TYPE, TASK_STATUS,
-         Avatar, PriorityDot, Spinner, PageContent } from '@/components/ui';
+import { KPICard, Badge, FINDING_STATUS, TASK_STATUS, PriorityDot, Spinner, PageContent } from '@/components/ui';
 
 interface Stats {
   openFindings: number; overdueFindings: number; highRisks: number;

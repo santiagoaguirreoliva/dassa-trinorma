@@ -2,7 +2,7 @@
   "root": true,
   "env": { "browser": true, "node": true, "es2022": true },
   "parser": "@typescript-eslint/parser",
-  "plugins": ["@typescript-eslint"],
+  "plugins": ["@typescript-eslint", "unused-imports"],
   "extends": [
     "eslint:recommended",
     "plugin:@typescript-eslint/recommended"
@@ -11,7 +11,9 @@
   "ignorePatterns": ["dist/", "node_modules/", "**/*.bak*", "**/migrations/*.sql", "uploads/"],
   "rules": {
     "@typescript-eslint/no-explicit-any": "off",
-    "@typescript-eslint/no-unused-vars": ["warn", { "argsIgnorePattern": "^_", "varsIgnorePattern": "^_" }],
+    "@typescript-eslint/no-unused-vars": "off",
+    "unused-imports/no-unused-imports": "error",
+    "unused-imports/no-unused-vars": ["warn", { "vars": "all", "varsIgnorePattern": "^_", "args": "after-used", "argsIgnorePattern": "^_", "caughtErrors": "all", "caughtErrorsIgnorePattern": "^(_|e|err|error|ex)$" }],
     "no-console": "off",
     "no-empty": ["warn", { "allowEmptyCatch": true }]
   },
@@ -19,7 +21,11 @@
     {
       "files": ["server/**/*.{js,cjs}"],
       "env": { "node": true, "browser": false },
-      "rules": { "@typescript-eslint/no-var-requires": "off" }
+      "rules": {
+        "@typescript-eslint/no-var-requires": "off",
+        "@typescript-eslint/no-require-imports": "off",
+        "no-undef": "off"
+      }
     }
   ]
 }

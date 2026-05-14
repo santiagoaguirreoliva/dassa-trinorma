@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
-import { Megaphone, Send, Eye, Link as LinkIcon, Loader2, CheckCircle2, MessageCircle, Copy } from 'lucide-react';
+import { Megaphone, Link as LinkIcon, Loader2, MessageCircle } from 'lucide-react';
 import CommunicationEditor from '@/components/CommunicationEditor';
 import { api } from '@/lib/api';
 import { Header } from '@/components/layout/Header';
@@ -9,7 +9,7 @@ import { Spinner, PageContent, KPICard } from '@/components/ui';
 interface Comm { id:string; code:string; title:string; category:string; status:string; sender_name:string; sent_at:string; public_token:string; num_recipients:number; num_reads:number; num_confirmed:number; }
 
 export default function Comunicaciones() {
-  const qc = useQueryClient();
+  useQueryClient();
   const [showNew, setShowNew] = useState(false);
 
   const { data, isLoading } = useQuery<{ok:boolean;communications:Comm[]}>({

@@ -1,7 +1,7 @@
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { useParams } from 'react-router-dom';
 import { useState, useEffect } from 'react';
-import { CheckCircle2, Megaphone, Loader2, ShieldCheck } from 'lucide-react';
+import { CheckCircle2, Loader2, ShieldCheck } from 'lucide-react';
 import MarkdownRender from '@/components/MarkdownRender';
 
 export default function PublicComm() {

@@ -4,8 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { api } from '@/lib/api';
 import {
   Bot, Shield, Inbox, ShoppingCart, CheckCircle2, BellRing, MessageCircle,
-  Sparkles, Loader2, ToggleLeft, ToggleRight, Activity, DollarSign,
-  Settings, Zap, AlertTriangle, Mail, Clock, AlertCircle, BookOpen,
+  Sparkles, Loader2, ToggleLeft, ToggleRight, Activity, DollarSign, Zap, AlertTriangle, Mail, Clock, AlertCircle, BookOpen,
   Eye, Send,
 } from 'lucide-react';
 

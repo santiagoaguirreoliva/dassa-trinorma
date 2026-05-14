@@ -2,7 +2,7 @@
 // DASSA SGI · /api/reviews · Sistema de revisiones encadenadas (DAG)
 // =============================================================================
 import express from 'express';
-import { authenticate, requireRole } from '../middleware/auth.js';
+import { authenticate } from '../middleware/auth.js';
 import { query } from '../db/db.js';
 
 const router = express.Router();

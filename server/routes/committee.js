@@ -304,7 +304,7 @@ router.get('/:id/pending-from-previous', async (req, res) => {
   try {
     const m = await query('SELECT meeting_date FROM committee_meetings WHERE id=$1', [req.params.id]);
     if (m.rowCount === 0) return res.status(404).json({ error: 'meeting not found' });
-    const meetingDate = m.rows[0].meeting_date;
+    const _meetingDate = m.rows[0].meeting_date;
     const r = await query(`
       SELECT t.id, t.task_number, t.title, t.description, t.status, t.priority, t.due_date,
              t.committee_id, cm.meeting_date AS origin_meeting_date,

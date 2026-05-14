@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { query } from '../db/db.js';
-import { authenticate, requireRole } from '../middleware/auth.js';
+import { authenticate } from '../middleware/auth.js';
 import crypto from 'crypto';
 
 const router = Router();
@@ -319,7 +319,7 @@ router.post('/campaigns', async (req, res) => {
       }
     } else if (target_type === 'individual' && employee_ids?.length) {
       // Performance eval: self + supervisor for each employee
-      const { rows: [survey] } = await query('SELECT type FROM surveys WHERE id = $1', [survey_id]);
+      await query('SELECT type FROM surveys WHERE id = $1', [survey_id]);
       for (const empId of employee_ids) {
         const { rows: [emp] } = await query(
           `SELECT e.full_name, e.email, e.evaluator_id,

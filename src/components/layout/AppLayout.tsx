@@ -6,6 +6,8 @@ import BottomNav from "./BottomNav";
 import { LayoutContext } from "./LayoutContext";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
+import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
+import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 
 interface DashStats {
   openFindings: number;
@@ -16,6 +18,7 @@ interface DashStats {
 export default function AppLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
+  useKeyboardShortcuts();
 
   // Auto-cerrar drawer mobile al navegar
   useEffect(() => { setSidebarOpen(false); }, [location.pathname]);
@@ -60,6 +63,7 @@ export default function AppLayout() {
           className="flex-1 overflow-y-auto overflow-x-hidden md:ml-[220px]"
           style={{ paddingBottom: "calc(3.75rem + env(safe-area-inset-bottom, 0px))" }}
         >
+          <Breadcrumbs />
           <Outlet />
         </main>
 

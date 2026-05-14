@@ -17,6 +17,14 @@ export default {
         'dassa-navy':    { DEFAULT: '#0F1A4A', deep: '#0A1235' },
         /* Sidebar tokens (keep backward compat) */
         sidebar: { DEFAULT: '#0F1A4A', border: '#1a2a5e', hover: '#1a2a5e', active: '#5BBFCC' },
+        /* Severity tokens DASSA — alertas y prioridades semánticas */
+        severity: {
+          critical: '#dc2626',  /* rojo crítico — NPR > 64, NCs urgentes */
+          high:     '#f97316',  /* naranja alto — alertas */
+          medium:   '#f59e0b',  /* ámbar medio — pendientes */
+          low:      '#10b981',  /* verde bajo — todo OK */
+          info:     '#3b82f6',  /* azul info */
+        },
       },
       boxShadow: {
         'dassa-card': '0 4px 12px rgba(20,20,20,.08), 0 1px 3px rgba(20,20,20,.06)',

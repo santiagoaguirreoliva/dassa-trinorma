@@ -7,6 +7,7 @@ import { api } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { Header } from '@/components/layout/Header';
 import { Spinner, KPICard, PageContent } from '@/components/ui';
+import { SEVERITY } from '@/lib/severity';
 
 // ─── Tipos ──────────────────────────────────────────────────
 interface EnvironmentalAspect {
@@ -24,12 +25,6 @@ function getSigLevel(sig: number) {
   return              { label: 'No Significativo',bg: 'bg-emerald-500', text: 'text-white' };
 }
 
-function getSigColor(sig: number) {
-  if (sig > 64) return '#dc2626';
-  if (sig > 36) return '#f97316';
-  if (sig > 18) return '#f59e0b';
-  return '#10b981';
-}
 
 // ─── Significance Badge ──────────────────────────────────────
 function SigBadge({ sig }: { sig: number }) {
@@ -199,7 +194,7 @@ export default function Environmental() {
             {/* KPIs */}
             <div className="grid grid-cols-4 gap-3">
               <KPICard label="Significativos" value={significant} sub="Requieren control" alert={significant > 0} icon={<AlertTriangle size={16} />} />
-              <KPICard label="Críticos" value={critical} sub="Significancia > 64" alert={critical > 0} alertColor="#dc2626" icon={<Leaf size={16} />} />
+              <KPICard label="Críticos" value={critical} sub="Significancia > 64" alert={critical > 0} alertColor={SEVERITY.critical} icon={<Leaf size={16} />} />
               <KPICard label="No Significativos" value={notSignificant} sub="Bajo impacto" icon={<CheckCircle2 size={16} />} />
               <KPICard label="Sig. Promedio" value={avgSig} sub={`${aspects.length} aspectos totales`} icon={<Leaf size={16} />} />
             </div>

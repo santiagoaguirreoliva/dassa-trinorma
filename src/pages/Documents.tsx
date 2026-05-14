@@ -1,13 +1,14 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
-  Plus, X, Loader2, FileText, Search, Filter,
+  Plus, X, Loader2, FileText, Search,
   BookOpen, FileCheck2, FileClock
 } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { Header } from '@/components/layout/Header';
 import { Spinner, KPICard, PageContent } from '@/components/ui';
+import { SEVERITY } from '@/lib/severity';
 
 // ─── Tipos ──────────────────────────────────────────────────
 interface Doc {
@@ -110,7 +111,7 @@ function DocModal({ doc, onClose }: { doc?: Doc; onClose: () => void }) {
             </div>
             <div>
               <label className="label-field">Versión</label>
-              <input type="number" value={form.version} onChange={e => set('version', e.target.value)}
+              <input type="number" inputMode="numeric" value={form.version} onChange={e => set('version', e.target.value)}
                 min="1" className="input-field" />
             </div>
             <div>
@@ -198,7 +199,7 @@ export default function Documents() {
             <div className="grid grid-cols-4 gap-3">
               <KPICard label="Total Documentos" value={docs.length} sub="Registrados en el SGI" icon={<FileText size={16} />} />
               <KPICard label="Aprobados" value={aprobados} sub="Vigentes" icon={<FileCheck2 size={16} />} />
-              <KPICard label="En Revisión" value={enRevision} sub="Pendientes de aprobación" alert={enRevision > 0} alertColor="#f59e0b" icon={<FileClock size={16} />} />
+              <KPICard label="En Revisión" value={enRevision} sub="Pendientes de aprobación" alert={enRevision > 0} alertColor={SEVERITY.medium} icon={<FileClock size={16} />} />
               <KPICard label="Borradores" value={borradores} sub="En desarrollo" icon={<BookOpen size={16} />} />
             </div>
 

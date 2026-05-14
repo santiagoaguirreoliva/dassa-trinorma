@@ -7,6 +7,20 @@ const { Pool } = require('pg');
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 const router = express.Router();
 
+function authenticate(req, res, next) {
+  const h = req.header('Authorization');
+  if (!h) return res.status(401).json({ error: 'Token no proporcionado' });
+  const jwt = require('jsonwebtoken');
+  try {
+    const decoded = jwt.verify(h.replace('Bearer ', ''), process.env.JWT_SECRET);
+    req.user = { id: decoded.userId, role: decoded.role };
+    next();
+  } catch (e) {
+    res.status(401).json({ error: 'Token inválido' });
+  }
+}
+router.use(authenticate);
+
 function requireAdmin(req, res, next) {
   if (!req.user || !['master_admin', 'sgi_leader'].includes(req.user.role)) {
     return res.status(403).json({ error: 'Solo admin o sgi_leader' });

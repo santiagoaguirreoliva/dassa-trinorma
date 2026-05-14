@@ -21,6 +21,7 @@ import 'dotenv/config';
 import bienvenidaRouter from './routes/bienvenida.js';
 import trinyRouter from './routes/triny.js';
 import authRouter           from './routes/auth.js';
+import ssoRouter            from './routes/sso.js';  // SSO Smart DASSA Apps
 import dashboardRouter      from './routes/dashboard.js';
 import findingsRouter       from './routes/findings.js';
 import purchasesRouter      from './routes/purchases.js';
@@ -102,7 +103,21 @@ app.set('trust proxy', 1); // detras de Nginx
 const PORT = process.env.PORT || 4000;
 
 // ─── Security ────────────────────────────────────────────────
-app.use(helmet({ contentSecurityPolicy: false, crossOriginEmbedderPolicy: false }));
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+      styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
+      fontSrc: ["'self'", 'data:', 'https://fonts.gstatic.com'],
+      imgSrc: ["'self'", 'data:', 'blob:', 'https:'],
+      connectSrc: ["'self'", 'https://trinorma.dassa.com.ar', 'https://api.anthropic.com', 'https://generativelanguage.googleapis.com'],
+      objectSrc: ["'none'"],
+      frameAncestors: ["'self'"],
+    },
+  },
+  crossOriginEmbedderPolicy: false,
+}));
 
 const ALLOWED_ORIGINS = (process.env.CORS_ORIGIN || 'http://localhost:3000')
   .split(',').map(o => o.trim());
@@ -197,6 +212,7 @@ app.use((req, res, next) => {
 // ─────────────────────────────────────────────────────────────
 
 app.use('/api/auth',            authRouter);
+app.use('/api/sso',             ssoRouter);  // SSO Smart DASSA Apps (app madre)
 app.use('/api/bienvenida',     bienvenidaRouter);
 app.use('/api/triny',          trinyRouter);
 app.use('/api/dashboard',       dashboardRouter);

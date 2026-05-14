@@ -11,6 +11,20 @@ const { sendPasswordChangedByAdmin, sendAccessApproved, sendAccessRejected } = r
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 const router = express.Router();
 
+function authenticate(req, res, next) {
+  const h = req.header('Authorization');
+  if (!h) return res.status(401).json({ error: 'Token no proporcionado' });
+  const jwt = require('jsonwebtoken');
+  try {
+    const decoded = jwt.verify(h.replace('Bearer ', ''), process.env.JWT_SECRET);
+    req.user = { id: decoded.userId, role: decoded.role };
+    next();
+  } catch (e) {
+    res.status(401).json({ error: 'Token inválido' });
+  }
+}
+router.use(authenticate);
+
 // Middleware: solo master_admin
 function requireAdmin(req, res, next) {
   if (!req.user || req.user.role !== 'master_admin') {

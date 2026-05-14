@@ -131,13 +131,13 @@ export default function App() {
               <Route path="/context"        element={<Context />} />
               <Route path="/calendar"       element={<Calendar />} />
               <Route path="/mis-pendientes" element={<MisPendientes />} />
+              <Route path="/auditor"        element={<Auditor />} />
               {/* Catch-all for pages still in development */}
               <Route path="/:slug"          element={<Suspense fallback={<PageFallback />}><Placeholder /></Suspense>} />
             </Route>
                   <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/request-access" element={<RequestAccess />} />
-              <Route path="/auditor" element={<Auditor />} />
       </Routes>
         </BrowserRouter>
       </AuthProvider>

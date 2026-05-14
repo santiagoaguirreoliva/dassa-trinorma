@@ -19,7 +19,6 @@ function buildNav(openFindings: number, legalAlerts: number, role?: string): Nav
   return [
     {
       group: 'Inicio',
-      emoji: '🏠',
       items: [
         { path: '/bienvenida',    label: 'Bienvenida',      icon: <Sparkles size={15} /> },
         { path: '/dashboard',     label: 'Dashboard',       icon: <LayoutDashboard size={15} /> },
@@ -31,7 +30,6 @@ function buildNav(openFindings: number, legalAlerts: number, role?: string): Nav
     },
     {
       group: 'Sistema TRINORMA',
-      emoji: '🛡️',
       subtitle: 'Ciclo anual + procedimientos',
       items: [
         { path: '/ciclo/2026',     label: 'Ciclo 2026 · DAG',     icon: <Workflow size={15} /> },
@@ -42,7 +40,6 @@ function buildNav(openFindings: number, legalAlerts: number, role?: string): Nav
     },
     {
       group: 'Estrategia',
-      emoji: '🧭',
       subtitle: 'Contexto · Objetivos · Cambios',
       items: [
         { path: '/context',         label: 'Contexto / FODA',     icon: <BarChart3 size={15} /> },
@@ -54,7 +51,6 @@ function buildNav(openFindings: number, legalAlerts: number, role?: string): Nav
     },
     {
       group: 'ISO 9001 · Calidad',
-      emoji: '✅',
       items: [
         { path: '/findings',     label: 'Hallazgos / NCs', icon: <Zap size={15} />, badge: openFindings || 0 },
         { path: '/documents',    label: 'Documentos',      icon: <FileText size={15} /> },
@@ -64,14 +60,12 @@ function buildNav(openFindings: number, legalAlerts: number, role?: string): Nav
     },
     {
       group: 'ISO 14001 · Ambiente',
-      emoji: '🌱',
       items: [
         { path: '/environmental', label: 'Aspectos Ambientales', icon: <Leaf size={15} /> },
       ],
     },
     {
       group: 'ISO 45001 · Seguridad',
-      emoji: '⛑',
       items: [
         { path: '/riesgos-amfe', label: 'Matriz AMFE',     icon: <Shield size={15} /> },
         { path: '/incidents',    label: 'Incidentes',      icon: <AlertTriangle size={15} /> },
@@ -81,7 +75,6 @@ function buildNav(openFindings: number, legalAlerts: number, role?: string): Nav
     },
     {
       group: 'Operativo',
-      emoji: '📦',
       items: [
         { path: '/bi-operativo', label: 'BI Operativo',  icon: <BarChart3 size={15} /> },
         { path: '/purchases',   label: 'Compras',        icon: <ShoppingCart size={15} /> },
@@ -92,14 +85,12 @@ function buildNav(openFindings: number, legalAlerts: number, role?: string): Nav
     },
     {
       group: 'Comunicaciones',
-      emoji: '📢',
       items: [
         { path: '/comunicaciones', label: 'Comunicaciones', icon: <Megaphone size={15} /> },
       ],
     },
     ...(isAdmin ? [{
       group: 'Configuración',
-      emoji: '⚙️',
       items: [
         { path: '/users',           label: 'Usuarios',     icon: <Users size={15} /> },
         { path: '/agent-settings',  label: 'Configurar IA', icon: <Bot size={15} /> },
@@ -108,7 +99,6 @@ function buildNav(openFindings: number, legalAlerts: number, role?: string): Nav
 
     ...(isAdmin || isAuditor ? [{
       group: 'Administracion',
-      emoji: 'A',
       subtitle: 'Solo master_admin / auditor',
       items: [
         ...(isAdmin || isAuditor ? [{ path: '/admin/pactos', label: 'Pactos Trinorma', icon: <Sparkles size={15} /> }] : []),
@@ -121,11 +111,11 @@ function buildNav(openFindings: number, legalAlerts: number, role?: string): Nav
 interface SidebarProps {
   openFindings?: number;
   legalAlerts?: number;
-  mobile?: boolean;
+  isOpen?: boolean;
   onClose?: () => void;
 }
 
-export default function Sidebar({ openFindings = 0, legalAlerts = 0, mobile = false, onClose }: SidebarProps) {
+export default function Sidebar({ openFindings = 0, legalAlerts = 0, isOpen = false, onClose }: SidebarProps) {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
@@ -138,10 +128,16 @@ export default function Sidebar({ openFindings = 0, legalAlerts = 0, mobile = fa
   const isActive = (path: string) => location.pathname === path || location.pathname.startsWith(path + '/');
 
   return (
-    <aside className={`
-      ${mobile ? 'fixed inset-y-0 left-0 z-50 w-72' : 'hidden lg:flex lg:w-64 lg:flex-col'}
-      bg-dassa-navy text-white flex-shrink-0
-    `}>
+    <aside
+      className={`
+        fixed top-14 md:top-16 bottom-0 left-0 z-40
+        w-[260px] md:w-[220px]
+        bg-dassa-navy text-white flex flex-col
+        transform transition-transform duration-200 ease-out
+        ${isOpen ? 'translate-x-0 shadow-2xl shadow-black/40' : '-translate-x-full md:translate-x-0'}
+      `}
+      aria-label="Navegación lateral"
+    >
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3.5 border-b border-white/10 bg-white/[0.02]">
         <div className="flex items-center gap-2.5">
@@ -157,8 +153,8 @@ export default function Sidebar({ openFindings = 0, legalAlerts = 0, mobile = fa
             <div className="text-[9px] text-dassa-celeste uppercase tracking-[0.18em] font-semibold mt-0.5">TRINORMA</div>
           </div>
         </div>
-        {mobile && onClose && (
-          <button onClick={onClose}><X size={18} /></button>
+        {onClose && (
+          <button onClick={onClose} className="md:hidden p-1.5 -mr-1 rounded-lg hover:bg-white/10 active:bg-white/20 text-white/70 hover:text-white touch-manipulation" aria-label="Cerrar menú"><X size={18} /></button>
         )}
       </div>
 
@@ -171,7 +167,6 @@ export default function Sidebar({ openFindings = 0, legalAlerts = 0, mobile = fa
               className="w-full flex items-center justify-between px-4 py-1.5 text-[10px] font-bold uppercase tracking-wider text-white/50 hover:text-white/80"
             >
               <span className="flex items-center gap-2">
-                {group.emoji && <span>{group.emoji}</span>}
                 {group.group}
               </span>
               {collapsed[group.group]

@@ -1,10 +1,11 @@
-import { useState } from 'react';
-import { Outlet } from 'react-router-dom';
-import Sidebar from './Sidebar';
-import TopNav from './TopNav';
-import BottomNav from './BottomNav';
-import { useQuery } from '@tanstack/react-query';
-import { api } from '@/lib/api';
+import { useState, useEffect } from "react";
+import { Outlet, useLocation } from "react-router-dom";
+import Sidebar from "./Sidebar";
+import TopNav from "./TopNav";
+import BottomNav from "./BottomNav";
+import { LayoutContext } from "./LayoutContext";
+import { useQuery } from "@tanstack/react-query";
+import { api } from "@/lib/api";
 
 interface DashStats {
   openFindings: number;
@@ -14,29 +15,38 @@ interface DashStats {
 
 export default function AppLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const location = useLocation();
+
+  // Auto-cerrar drawer mobile al navegar
+  useEffect(() => { setSidebarOpen(false); }, [location.pathname]);
 
   const { data: stats } = useQuery<DashStats>({
-    queryKey: ['dashboard-stats-nav'],
-    queryFn: () => api.get('/dashboard/stats'),
+    queryKey: ["dashboard-stats-nav"],
+    queryFn: () => api.get("/dashboard/stats"),
     refetchInterval: 60_000,
   });
 
   const legalAlerts = (stats?.expiredLegal ?? 0) + (stats?.expiringLegal ?? 0);
 
   return (
-    <div className="flex flex-col h-[100dvh] overflow-hidden bg-slate-100">
-      {/* Top navigation */}
-      <TopNav onMenuClick={() => setSidebarOpen(true)} />
+    <LayoutContext.Provider
+      value={{
+        openSidebar: () => setSidebarOpen(true),
+        closeSidebar: () => setSidebarOpen(false),
+        isSidebarOpen: sidebarOpen,
+      }}
+    >
+      <div className="flex flex-col h-[100dvh] overflow-hidden bg-slate-50">
+        <TopNav onMenuClick={() => setSidebarOpen(true)} />
 
-      <div className="flex flex-1 overflow-hidden min-w-0 relative">
-        {/* Mobile overlay — tap outside to close sidebar */}
-        {sidebarOpen && (
-          <div
-            className="fixed inset-0 bg-black/50 z-40 md:hidden"
-            onClick={() => setSidebarOpen(false)}
-            aria-hidden="true"
-          />
-        )}
+        {/* Backdrop drawer mobile */}
+        <div
+          className={`md:hidden fixed inset-0 bg-slate-900/60 backdrop-blur-[1px] z-30 transition-opacity duration-200 ${
+            sidebarOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+          }`}
+          onClick={() => setSidebarOpen(false)}
+          aria-hidden="true"
+        />
 
         <Sidebar
           openFindings={stats?.openFindings ?? 0}
@@ -45,14 +55,16 @@ export default function AppLayout() {
           onClose={() => setSidebarOpen(false)}
         />
 
-        {/* Main content — shifted right on md+ to accommodate fixed sidebar */}
-        <div className="flex flex-col flex-1 overflow-hidden min-w-0 md:ml-[220px]">
+        {/* Main content area: padded for fixed sidebar on md+ y bottomnav on mobile */}
+        <main
+          className="flex-1 overflow-y-auto overflow-x-hidden md:ml-[220px]"
+          style={{ paddingBottom: "calc(3.75rem + env(safe-area-inset-bottom, 0px))" }}
+        >
           <Outlet />
-        </div>
-      </div>
+        </main>
 
-      {/* Bottom nav — only on mobile */}
-      <BottomNav />
-    </div>
+        <BottomNav />
+      </div>
+    </LayoutContext.Provider>
   );
 }

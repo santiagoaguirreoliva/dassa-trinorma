@@ -4,6 +4,7 @@ import { authenticate } from '../middleware/auth.js';
 import { writeFileSync, mkdirSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
+import { randomUUID } from 'crypto';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const UPLOADS_DIR = join(__dirname, '../../uploads');
@@ -13,11 +14,23 @@ try { mkdirSync(UPLOADS_DIR, { recursive: true }); } catch {}
 const router = Router();
 
 // ─── UTILIDADES ─────────────────────────────────────────────
-function saveBase64File(base64Data, filename) {
+// Tipos de archivo permitidos en uploads (H-10 · hardening)
+const ALLOWED_UPLOAD_EXT = new Set(['jpg', 'jpeg', 'png', 'webp', 'pdf']);
+const MIME_TO_EXT = {
+  'image/jpeg': 'jpg', 'image/jpg': 'jpg', 'image/png': 'png',
+  'image/webp': 'webp', 'application/pdf': 'pdf',
+};
+
+function saveBase64File(base64Data, label) {
   const matches = base64Data.match(/^data:(.+);base64,(.+)$/);
   if (!matches) return null;
-  const ext = matches[1].split('/')[1] || 'bin';
-  const fname = `${Date.now()}-${filename}.${ext}`;
+  const mime = matches[1].toLowerCase().trim();
+  const ext = MIME_TO_EXT[mime];
+  // H-10: solo se aceptan tipos de la whitelist (no se confía en el mime del cliente)
+  if (!ext || !ALLOWED_UPLOAD_EXT.has(ext)) return null;
+  // H-04: nombre con UUID aleatorio — la URL deja de ser enumerable por timestamp
+  const safeLabel = String(label).replace(/[^a-z0-9-]/gi, '').slice(0, 24) || 'file';
+  const fname = `${safeLabel}-${randomUUID()}.${ext}`;
   const fpath = join(UPLOADS_DIR, fname);
   writeFileSync(fpath, Buffer.from(matches[2], 'base64'));
   return `/uploads/${fname}`;

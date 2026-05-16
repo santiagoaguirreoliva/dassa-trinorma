@@ -8,10 +8,11 @@
     "node",
     "typescript",
     "react",
-    "supabase"
+    "express",
+    "postgres"
   ],
   "repo": "github.com/santiagoaguirreoliva/dassa-trinorma",
-  "vps_path": "/home/dassa/dassa-sgi",
+  "vps_path": "/home/dassa/dassa4/apps/sgi",
   "processes": [
     {
       "pm2_name": "dassa-sgi",
@@ -25,15 +26,14 @@
   ],
   "databases": [
     {
-      "type": "supabase",
-      "project_ref": "dassa_sgi",
-      "role": "service_role",
-      "note": "DB Trinorma SGI"
+      "type": "postgres",
+      "access": "pg.Pool via DATABASE_URL",
+      "note": "PostgreSQL local · DB Trinorma SGI · 24 migraciones, sin Supabase ni RLS"
     }
   ],
   "credentials_vault_keys": [
     "sgi/admin_password",
-    "sgi/supabase_service_key"
+    "sgi/database_url"
   ],
   "client": {
     "name": "DASSA SA · Calidad / SGI Trinorma",

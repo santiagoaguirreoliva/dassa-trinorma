@@ -58,9 +58,9 @@ export default function PublicComm() {
           {/* MEMBRETE DASSA */}
           <div className="bg-dassa-red text-white p-6 rounded-t-2xl">
             <div className="flex items-center gap-3 mb-3">
-              <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center font-extrabold text-2xl" style={{fontFamily:"'Montserrat Alternates', sans-serif"}}>D</div>
+              <img src="/ds/logos/dassa-isotipo-red.png" alt="DASSA" className="w-12 h-12 rounded-lg select-none" draggable={false} />
               <div>
-                <div className="font-extrabold text-lg" style={{fontFamily:"'Montserrat Alternates', sans-serif", letterSpacing: '-0.5px'}}>DASSA</div>
+                <div className="font-extrabold text-lg" style={{letterSpacing: '-0.5px'}}>DASSA</div>
                 <div className="text-[10px] opacity-80 uppercase tracking-widest">Sistema de Gestión Integrado · TRINORMA</div>
               </div>
             </div>

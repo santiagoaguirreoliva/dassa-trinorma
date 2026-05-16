@@ -4,20 +4,24 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        sans: ['Montserrat', 'Helvetica Neue', 'system-ui', 'sans-serif'],
-        display: ['Montserrat', 'Helvetica Neue', 'system-ui', 'sans-serif'],
-        wordmark: ['Montserrat Alternates', 'Montserrat', 'sans-serif'],
-        secondary: ['Open Sans', 'Montserrat', 'system-ui', 'sans-serif'],
-        mono: ['DM Mono', 'ui-monospace', 'monospace'],
+        /* DASSA Marca 4.0 — Mulish única tipografía de marca · JetBrains Mono para datos */
+        sans: ['Mulish', 'system-ui', 'Helvetica Neue', 'sans-serif'],
+        display: ['Mulish', 'system-ui', 'Helvetica Neue', 'sans-serif'],
+        wordmark: ['Mulish', 'system-ui', 'sans-serif'],
+        secondary: ['Mulish', 'system-ui', 'sans-serif'],
+        mono: ['JetBrains Mono', 'ui-monospace', 'monospace'],
       },
       colors: {
-        /* DASSA brand */
-        'dassa-red':     { DEFAULT: '#BF1E2E', light: '#E84252', deep: '#9A1825', bordo: '#7A1320', 'bordo-dark': '#4D0C16', tint: '#FBE7E9' },
-        'dassa-celeste': { DEFAULT: '#5BBDC9', deep: '#2E96A4', tint: '#E2F4F7' },
-        'dassa-navy':    { DEFAULT: '#0F1A4A', deep: '#0A1235' },
-        /* Sidebar tokens (keep backward compat) */
-        sidebar: { DEFAULT: '#0F1A4A', border: '#1a2a5e', hover: '#1a2a5e', active: '#5BBDC9' },
-        /* Severity tokens DASSA — alertas y prioridades semánticas */
+        /* DASSA brand · Manual de Marca 4.0 (mayo 2026) */
+        'dassa-red':     { DEFAULT: '#C8202C', light: '#E0303E', deep: '#A8121E', bordo: '#A8121E', 'bordo-dark': '#7A0C14', tint: '#FBE5E6' },
+        'dassa-celeste': { DEFAULT: '#2BB8BE', deep: '#1F979C', tint: '#DDF2F3' },
+        'dassa-aqua':    { DEFAULT: '#2BB8BE', deep: '#1F979C', tint: '#DDF2F3' },
+        'dassa-navy':    { DEFAULT: '#2C5278', deep: '#1E3A57' },
+        'dassa-cream':   '#F5EFE3',
+        'dassa-ink':     '#1A1A1A',
+        /* Sidebar 4.0 — tinta neutra, acento aqua */
+        sidebar: { DEFAULT: '#1A1A1A', border: '#2E2E2E', hover: '#262625', active: '#2BB8BE' },
+        /* Severity tokens — alertas y prioridades semánticas (escala funcional, no marca) */
         severity: {
           critical: '#dc2626',  /* rojo crítico — NPR > 64, NCs urgentes */
           high:     '#f97316',  /* naranja alto — alertas */
@@ -26,9 +30,14 @@ export default {
           info:     '#3b82f6',  /* azul info */
         },
       },
+      borderRadius: {
+        /* Radios generosos · Manual 4.0 (esquinas 18-24px) */
+        'card': '18px',
+        'dassa': '24px',
+      },
       boxShadow: {
-        'dassa-card': '0 4px 12px rgba(20,20,20,.08), 0 1px 3px rgba(20,20,20,.06)',
-        'dassa-hero': '0 24px 60px rgba(190,30,45,.18), 0 6px 12px rgba(20,20,20,.08)',
+        'dassa-card': '0 4px 12px rgba(26,26,26,.08), 0 1px 3px rgba(26,26,26,.06)',
+        'dassa-hero': '0 24px 60px rgba(200,32,44,.16), 0 6px 12px rgba(26,26,26,.08)',
       },
     }
   },

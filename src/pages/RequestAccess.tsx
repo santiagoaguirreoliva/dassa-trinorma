@@ -32,7 +32,7 @@ export default function RequestAccess() {
   return (
     <div className="min-h-screen flex">
       <div className="hidden md:flex md:w-1/2 bg-dassa-red flex-col justify-center items-center p-12 text-white">
-        <img src="/brand/dassa-logo-white.svg" alt="DASSA" className="h-20 w-auto mb-6" />
+        <img src="/ds/logos/dassa-isotipo-red.png" alt="DASSA" className="h-20 w-auto mb-6" />
         <p className="text-center max-w-sm opacity-90 mb-6">Sistema de Gestión Integrado TRINORMA</p>
         <div className="flex gap-2 mb-8">
           <span className="px-4 py-1 border border-white/30 rounded-full text-xs">ISO 9001</span>

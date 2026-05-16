@@ -42,9 +42,9 @@ export default function SignupEmpresa() {
         {/* HEADER MARCA DASSA */}
         <div className="text-center mb-6">
           <div className="inline-flex items-center gap-3 mb-3">
-            <div className="w-14 h-14 bg-dassa-red rounded-2xl flex items-center justify-center font-extrabold text-3xl text-white shadow-xl" style={{fontFamily:"'Montserrat Alternates', sans-serif"}}>D</div>
+            <img src="/ds/logos/dassa-isotipo-red.png" alt="DASSA" className="w-14 h-14 rounded-2xl shadow-xl select-none" draggable={false} />
             <div className="text-left">
-              <div className="text-3xl font-extrabold text-white" style={{fontFamily:"'Montserrat Alternates', sans-serif", letterSpacing: '-1px'}}>DASSA SGI</div>
+              <div className="text-3xl font-extrabold text-white" style={{letterSpacing: '-1px'}}>DASSA SGI</div>
               <div className="text-[10px] text-dassa-celeste uppercase tracking-[3px]">TRINORMA · Software Empresarial</div>
             </div>
           </div>

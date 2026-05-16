@@ -48,9 +48,13 @@ export default function Login() {
 
         {/* Brand content */}
         <div className="relative z-10 text-center">
-          <h1 className="font-['Montserrat_Alternates',Montserrat,sans-serif] font-black text-[72px] text-white tracking-[-3px] leading-none mb-4">
-            DASSA
-          </h1>
+          {/* Logo oficial DASSA 4.0 — isotipo sobre rojo (ds/logos/) */}
+          <img
+            src="/ds/logos/dassa-isotipo-red.png"
+            alt="DASSA"
+            className="h-28 w-auto mx-auto mb-6 select-none"
+            draggable={false}
+          />
           <p className="text-white/70 text-sm font-medium max-w-[260px] mx-auto mb-8 leading-relaxed">
             Depósito Aduanero y Servicios<br />Especializados S.A.
           </p>
@@ -78,12 +82,15 @@ export default function Login() {
       <div className="flex-1 bg-white flex items-center justify-center p-8">
         <div className="w-full max-w-[380px]">
 
-          {/* Mobile logo */}
+          {/* Mobile logo — lockup oficial DASSA 4.0 (ds/logos/) */}
           <div className="md:hidden text-center mb-8">
-            <div className="inline-flex items-center justify-center w-12 h-12 bg-dassa-red rounded-xl mb-3">
-              <span className="font-['Montserrat_Alternates',Montserrat,sans-serif] font-black text-xl text-white"><img src="/brand/dassa-logo-white.svg" alt="DASSA" className="h-16 w-auto" /></span>
-            </div>
-            <h1 className="text-xl font-extrabold text-gray-900">DASSA SGI</h1>
+            <img
+              src="/ds/logos/dassa-logo-horizontal.png"
+              alt="DASSA"
+              className="h-10 w-auto mx-auto mb-3 select-none"
+              draggable={false}
+            />
+            <h1 className="text-xl font-extrabold text-dassa-ink">DASSA SGI</h1>
           </div>
 
           {/* Form header */}
@@ -101,7 +108,7 @@ export default function Login() {
 
           {/* Error */}
           {error && (
-            <div className="flex items-center gap-2.5 bg-dassa-red-tint border border-dassa-red/30 text-dassa-red-deep rounded-lg px-4 py-3 text-[13px] font-medium mb-5">
+            <div className="flex items-center gap-2.5 bg-dassa-red-tint border border-dassa-red/30 text-dassa-red-deep rounded-xl px-4 py-3 text-[13px] font-medium mb-5">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                 <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/>
                 <line x1="12" y1="16" x2="12.01" y2="16"/>
@@ -121,7 +128,7 @@ export default function Login() {
                 required
                 autoComplete="email"
                 placeholder="usuario@dassa.com.ar"
-                className="w-full px-3.5 py-2.5 border border-gray-200 rounded-lg text-gray-800 text-[13.5px] placeholder-gray-400 focus:outline-none focus:border-dassa-red focus:ring-2 focus:ring-dassa-red/10 transition-colors font-sans"
+                className="w-full px-3.5 py-2.5 border border-gray-200 text-gray-800 text-[13.5px] placeholder-gray-400 focus:outline-none focus:border-dassa-red focus:ring-2 focus:ring-dassa-red/10 transition-colors font-sans rounded-xl"
               />
             </div>
 
@@ -135,7 +142,7 @@ export default function Login() {
                   required
                   autoComplete="current-password"
                   placeholder="••••••••"
-                  className="w-full px-3.5 py-2.5 pr-10 border border-gray-200 rounded-lg text-gray-800 text-[13.5px] placeholder-gray-400 focus:outline-none focus:border-dassa-red focus:ring-2 focus:ring-dassa-red/10 transition-colors font-sans"
+                  className="w-full px-3.5 py-2.5 pr-10 border border-gray-200 text-gray-800 text-[13.5px] placeholder-gray-400 focus:outline-none focus:border-dassa-red focus:ring-2 focus:ring-dassa-red/10 transition-colors font-sans rounded-xl"
                 />
                 <button
                   type="button"
@@ -150,7 +157,7 @@ export default function Login() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full h-11 bg-dassa-red text-white font-bold text-[14px] rounded-lg
+              className="w-full h-11 bg-dassa-red text-white font-bold text-[14px] rounded-full
                          hover:bg-dassa-red-deep transition-colors shadow-md shadow-dassa-red/25
                          disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >

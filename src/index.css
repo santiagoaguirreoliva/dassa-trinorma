@@ -5,7 +5,10 @@
 * { box-sizing: border-box; }
 
 body {
-  font-family: 'Montserrat', 'Helvetica Neue', system-ui, sans-serif;
+  /* DASSA Marca 4.0 — Mulish (self-hosted vía ds/colors_and_type.css) */
+  font-family: 'Mulish', system-ui, 'Helvetica Neue', sans-serif;
+  background: var(--dassa-cream, #F5EFE3);
+  color: var(--dassa-ink, #1A1A1A);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -24,7 +27,7 @@ body {
 @layer components {
   /* ── Form fields ── */
   .input-field {
-    @apply w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm text-slate-800
+    @apply w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm text-slate-800
            placeholder-slate-400 focus:outline-none focus:border-dassa-red focus:ring-2
            focus:ring-dassa-red/10 transition-colors font-sans;
     /* Prevents iOS auto-zoom on focus */
@@ -59,7 +62,7 @@ body {
 
   /* ── Mobile card row (replaces table row on small screens) ── */
   .mobile-card-row {
-    @apply bg-white rounded-xl border border-slate-200 p-4 space-y-2 shadow-sm;
+    @apply bg-white rounded-card border border-slate-200 p-4 space-y-2 shadow-sm;
   }
   .mobile-card-label {
     @apply text-[10px] font-bold text-slate-400 uppercase tracking-wider;

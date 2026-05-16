@@ -39,7 +39,7 @@ export default function AppLayout() {
         isSidebarOpen: sidebarOpen,
       }}
     >
-      <div className="flex flex-col h-[100dvh] overflow-hidden bg-slate-50">
+      <div className="flex flex-col h-[100dvh] overflow-hidden bg-dassa-cream">
         <TopNav onMenuClick={() => setSidebarOpen(true)} />
 
         {/* Backdrop drawer mobile */}

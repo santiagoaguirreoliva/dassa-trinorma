@@ -121,7 +121,7 @@ export default function NovedadesAdmin() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
               <div>
                 <label className="block text-sm font-semibold mb-1">Título</label>
-                <input type="text" value={editing.title || ''} onChange={e => setEditing({ ...editing, title: e.target.value })} className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:border-dassa-red focus:ring-1 focus:ring-[#BF1E2E] outline-none" placeholder="🚀 Nueva función disponible" />
+                <input type="text" value={editing.title || ''} onChange={e => setEditing({ ...editing, title: e.target.value })} className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:border-dassa-red focus:ring-1 focus:ring-[#C8202C] outline-none" placeholder="🚀 Nueva función disponible" />
               </div>
               <div>
                 <label className="block text-sm font-semibold mb-1">Categoría</label>

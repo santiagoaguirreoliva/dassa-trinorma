@@ -35,9 +35,9 @@ export default function TopNav({ onMenuClick }: Props) {
           aria-label="DASSA SGI"
         >
           <img
-            src="/brand/dassa-logo-white.svg"
+            src="/ds/logos/dassa-isotipo-red.png"
             alt="DASSA"
-            className="h-6 md:h-7 w-auto select-none"
+            className="h-8 md:h-9 w-auto select-none rounded-lg"
             draggable={false}
           />
           <span className="hidden sm:inline text-white/40 text-base font-light leading-none">·</span>

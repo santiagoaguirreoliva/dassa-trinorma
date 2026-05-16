@@ -132,7 +132,7 @@ export default function Sidebar({ openFindings = 0, legalAlerts = 0, isOpen = fa
       className={`
         fixed top-14 md:top-16 bottom-0 left-0 z-40
         w-[260px] md:w-[220px]
-        bg-dassa-navy text-white flex flex-col
+        bg-dassa-ink text-white flex flex-col
         transform transition-transform duration-200 ease-out
         ${isOpen ? 'translate-x-0 shadow-2xl shadow-black/40' : '-translate-x-full md:translate-x-0'}
       `}
@@ -142,7 +142,7 @@ export default function Sidebar({ openFindings = 0, legalAlerts = 0, isOpen = fa
       <div className="flex items-center justify-between px-4 py-3.5 border-b border-white/10 bg-white/[0.02]">
         <div className="flex items-center gap-2.5">
           <img
-            src="/brand/dassa-isotipo.svg"
+            src="/ds/logos/dassa-isotipo.png"
             alt=""
             aria-hidden="true"
             className="w-8 h-8 select-none"
@@ -207,7 +207,7 @@ export default function Sidebar({ openFindings = 0, legalAlerts = 0, isOpen = fa
       {/* User footer */}
       <div className="p-3 border-t border-white/10">
         <div className="flex items-center gap-2 text-xs">
-          <div className="w-7 h-7 bg-dassa-celeste rounded-full flex items-center justify-center text-[10px] font-bold text-dassa-navy">
+          <div className="w-7 h-7 bg-dassa-celeste rounded-full flex items-center justify-center text-[10px] font-bold text-dassa-ink">
             {(user?.full_name?.[0] || 'U').toUpperCase()}
           </div>
           <div className="flex-1 overflow-hidden">

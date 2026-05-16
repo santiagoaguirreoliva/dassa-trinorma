@@ -103,7 +103,7 @@ export default function ResetPassword() {
   return (
     <div className="min-h-screen flex">
       <div className="hidden md:flex md:w-1/2 bg-dassa-red flex-col justify-center items-center p-12 text-white">
-        <img src="/brand/dassa-logo-white.svg" alt="DASSA" className="h-20 w-auto mb-6" />
+        <img src="/ds/logos/dassa-isotipo-red.png" alt="DASSA" className="h-20 w-auto mb-6" />
         <p className="text-center max-w-sm opacity-90">Depósito Aduanero y Servicios Especializados S.A.</p>
       </div>
 

@@ -49,7 +49,7 @@ function getInitials(name: string) {
 }
 
 function colorForUser(name: string) {
-  const colors = ['#BF1E2E', '#0EA5E9', '#10B981', '#F59E0B', '#8B5CF6', '#EC4899', '#6366F1', '#84CC16'];
+  const colors = ['#C8202C', '#0EA5E9', '#10B981', '#F59E0B', '#8B5CF6', '#EC4899', '#6366F1', '#84CC16'];
   const idx = (name.charCodeAt(0) + name.length) % colors.length;
   return colors[idx];
 }

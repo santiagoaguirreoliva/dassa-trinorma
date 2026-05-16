@@ -32,7 +32,7 @@ function layout({ title, body, ctaUrl, ctaLabel, footerNote }) {
 <body style="font-family:'Helvetica Neue',Arial,sans-serif;background:#f5f5f5;padding:20px;color:#141414;margin:0">
   <table width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;margin:0 auto;background:#fff;border:1px solid #ddd">
     <tr>
-      <td style="background:#BF1E2E;padding:24px">
+      <td style="background:#C8202C;padding:24px">
         <div style="color:#fff;font-weight:900;font-size:28px;letter-spacing:-1px;font-family:'Montserrat Alternates',sans-serif">DASSA</div>
         <div style="color:#fff;opacity:0.85;font-size:11px;letter-spacing:2px;margin-top:6px;text-transform:uppercase">Sistema de Gestión Integrado · TRINORMA</div>
       </td>
@@ -41,7 +41,7 @@ function layout({ title, body, ctaUrl, ctaLabel, footerNote }) {
       <td style="padding:32px">
         <h1 style="color:#0F1A4A;margin:0 0 18px;font-size:22px;font-weight:700">${title}</h1>
         <div style="color:#444;line-height:1.65;font-size:15px">${body}</div>
-        ${ctaUrl ? `<div style="margin-top:28px"><a href="${ctaUrl}" style="display:inline-block;background:#BF1E2E;color:#fff;padding:14px 28px;text-decoration:none;font-weight:700;font-size:14px;letter-spacing:0.5px">${ctaLabel || 'Ver en SGI'}</a></div>` : ''}
+        ${ctaUrl ? `<div style="margin-top:28px"><a href="${ctaUrl}" style="display:inline-block;background:#C8202C;color:#fff;padding:14px 28px;text-decoration:none;font-weight:700;font-size:14px;letter-spacing:0.5px">${ctaLabel || 'Ver en SGI'}</a></div>` : ''}
         ${footerNote ? `<p style="color:#999;font-size:12px;margin-top:24px">${footerNote}</p>` : ''}
       </td>
     </tr>
@@ -108,7 +108,7 @@ async function sendPasswordChangedByAdmin(user, tempPassword) {
         <p>Hola <strong>${user.full_name}</strong>,</p>
         <p>Un administrador restableció tu contraseña en el SGI Trinorma.</p>
         <p>Tu nueva contraseña temporal es:</p>
-        <div style="background:#FBE7E9;border:1px solid #BF1E2E;padding:14px;font-family:monospace;font-size:18px;font-weight:bold;color:#BF1E2E;text-align:center;margin:16px 0">${tempPassword}</div>
+        <div style="background:#FBE5E6;border:1px solid #C8202C;padding:14px;font-family:monospace;font-size:18px;font-weight:bold;color:#C8202C;text-align:center;margin:16px 0">${tempPassword}</div>
         <p>Al ingresar al sistema te pediremos que la cambies por una nueva.</p>
       `,
       ctaUrl: `${APP_URL}/login`,
@@ -158,12 +158,12 @@ async function sendAuditorReport(user, report) {
       title: `Reporte semanal — ${user.full_name}`,
       body: `
         <p>Tu auditor IA TRINORMA repasó tus pendientes y prioridades de la semana:</p>
-        <div style="background:#F8F8F8;padding:18px;border-left:4px solid #BF1E2E;margin:18px 0;line-height:1.7">
+        <div style="background:#F8F8F8;padding:18px;border-left:4px solid #C8202C;margin:18px 0;line-height:1.7">
           ${report.summary.replace(/\n/g, '<br>')}
         </div>
         <table cellpadding="8" cellspacing="0" style="width:100%;border:1px solid #eee;font-size:13px">
           <tr style="background:#F8F8F8"><td><strong>Pendientes totales</strong></td><td>${report.pendientes_total}</td></tr>
-          <tr><td><strong>Pendientes vencidos</strong></td><td style="color:#BF1E2E"><strong>${report.pendientes_vencidos}</strong></td></tr>
+          <tr><td><strong>Pendientes vencidos</strong></td><td style="color:#C8202C"><strong>${report.pendientes_vencidos}</strong></td></tr>
           <tr style="background:#F8F8F8"><td><strong>Capacitaciones pendientes</strong></td><td>${report.capacitaciones_pendientes}</td></tr>
           <tr><td><strong>NCs asignadas</strong></td><td>${report.ncs_asignadas}</td></tr>
           <tr style="background:#F8F8F8"><td><strong>Score de riesgo</strong></td><td>${report.riesgo_score}/100</td></tr>

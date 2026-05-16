@@ -135,7 +135,7 @@ async function runFullAudit({ triggeredBy = null, type = 'weekly' } = {}) {
               <li>Costo: <strong>USD $${totalCost.toFixed(4)}</strong></li>
             </ul>
             <h3 style="color:#0F1A4A;margin-top:24px">Análisis ejecutivo</h3>
-            <div style="background:#F8F8F8;padding:16px;border-left:4px solid #BF1E2E;line-height:1.65">
+            <div style="background:#F8F8F8;padding:16px;border-left:4px solid #C8202C;line-height:1.65">
               ${insights.content.replace(/\n/g, '<br>')}
             </div>
           `,

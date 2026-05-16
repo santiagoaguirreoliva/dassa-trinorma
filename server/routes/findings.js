@@ -1,104 +1,14 @@
 import { Router } from 'express';
 import { query } from '../db/db.js';
 import { authenticate } from '../middleware/auth.js';
-import { writeFileSync, mkdirSync } from 'fs';
-import { join, dirname } from 'path';
-import { fileURLToPath } from 'url';
-import { randomUUID } from 'crypto';
-
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const UPLOADS_DIR = join(__dirname, '../../uploads');
-
-try { mkdirSync(UPLOADS_DIR, { recursive: true }); } catch {}
+import { saveBase64File } from '../services/uploads.js';
 
 const router = Router();
 
-// ─── UTILIDADES ─────────────────────────────────────────────
-// Tipos de archivo permitidos en uploads (H-10 · hardening)
-const ALLOWED_UPLOAD_EXT = new Set(['jpg', 'jpeg', 'png', 'webp', 'pdf']);
-const MIME_TO_EXT = {
-  'image/jpeg': 'jpg', 'image/jpg': 'jpg', 'image/png': 'png',
-  'image/webp': 'webp', 'application/pdf': 'pdf',
-};
-
-function saveBase64File(base64Data, label) {
-  const matches = base64Data.match(/^data:(.+);base64,(.+)$/);
-  if (!matches) return null;
-  const mime = matches[1].toLowerCase().trim();
-  const ext = MIME_TO_EXT[mime];
-  // H-10: solo se aceptan tipos de la whitelist (no se confía en el mime del cliente)
-  if (!ext || !ALLOWED_UPLOAD_EXT.has(ext)) return null;
-  // H-04: nombre con UUID aleatorio — la URL deja de ser enumerable por timestamp
-  const safeLabel = String(label).replace(/[^a-z0-9-]/gi, '').slice(0, 24) || 'file';
-  const fname = `${safeLabel}-${randomUUID()}.${ext}`;
-  const fpath = join(UPLOADS_DIR, fname);
-  writeFileSync(fpath, Buffer.from(matches[2], 'base64'));
-  return `/uploads/${fname}`;
-}
-
 const ADMIN_ROLES = ['master_admin', 'director', 'sgi_leader'];
 
-// ─── RUTA PÚBLICA (sin auth) ─────────────────────────────────
-// POST /api/public/nc — desde el QR público
-router.post('/nc', async (req, res) => {
-  const {
-    description, area, detected_by, detected_by_email,
-    affected_client, client_complaint,
-    immediate_action_required, immediate_action,
-    current_status, comments,
-    photo_base64
-  } = req.body;
-
-  if (!description || !area) {
-    return res.status(400).json({ error: 'Descripción y sector son requeridos' });
-  }
-
-  try {
-    let evidence_urls = [];
-    if (photo_base64) {
-      const url = saveBase64File(photo_base64, 'nc-publica');
-      if (url) evidence_urls = [url];
-    }
-
-    const { rows } = await query(
-      `INSERT INTO findings
-         (title, description, finding_type, status, origin, area,
-          immediate_action, evidence_urls)
-       VALUES ($1,$2,'nc_real','abierto','desvio_operativo',$3,$4,$5)
-       RETURNING id, code`,
-      [
-        description.substring(0, 120),
-        `${description}\n\n---\nDetectó: ${detected_by || 'Anónimo'} ${detected_by_email ? '(' + detected_by_email + ')' : ''}\nAfectó cliente: ${affected_client || 'No'}\nReclamo cliente: ${client_complaint || 'No'}\nAcción inmediata requerida: ${immediate_action_required || 'No'}\nEstado actual: ${current_status || ''}\nComentarios: ${comments || ''}`,
-        area,
-        immediate_action || null,
-        evidence_urls.length ? evidence_urls : null
-      ]
-    );
-
-    // Notificación in-app a SGI leaders y admins
-    const { rows: admins } = await query(
-      `SELECT id FROM users WHERE role IN ('master_admin','director','sgi_leader') AND is_active = true`
-    );
-    for (const admin of admins) {
-      await query(
-        `INSERT INTO notifications (user_id, title, message, type, source_module)
-         VALUES ($1,$2,$3,'warning','findings')`,
-        [admin.id, `Nueva NC pública: ${rows[0].code}`, `Sector: ${area} — ${description.substring(0, 80)}`]
-      );
-    }
-
-    res.status(201).json({
-      success: true,
-      code: rows[0].code,
-      message: 'No conformidad registrada correctamente'
-    });
-  } catch (err) {
-    console.error('Public NC error:', err);
-    res.status(500).json({ error: 'Error al registrar la no conformidad' });
-  }
-});
-
 // ─── RUTAS PRIVADAS (requieren auth) ────────────────────────
+// La ruta pública POST /nc se movió a routes/public-nc.js (H-06).
 router.use(authenticate);
 
 // GET /api/findings — listado con búsqueda y filtros

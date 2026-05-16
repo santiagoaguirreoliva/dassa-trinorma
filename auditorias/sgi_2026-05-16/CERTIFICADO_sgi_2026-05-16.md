@@ -32,15 +32,14 @@ con los estándares de:
 - **H-08** 🟢 — 3 vulnerabilidades `moderate` en dependencias de desarrollo
   (esbuild/vite/postcss). No afectan el runtime de producción; requieren un major bump de Vite.
 
-## Condición de cierre — paso de deploy pendiente
+## Cierre — completado 2026-05-16
 
-El fix crítico H-01 está aplicado en el código pero **el proceso `dassa-sgi` no fue reiniciado**.
-Para completar la entrega:
+- ✅ Cambios commiteados: 5 commits en `main` (`f95bf21` → `c04a4fe`).
+- ✅ Proceso `dassa-sgi` (PM2 id 53) reiniciado — `online`.
+- ✅ Fix crítico H-01 **verificado en producción**: `/api/auditor/runs` y `/api/profiles/me`
+  devuelven `application/json` HTTP 401 (antes devolvían `text/html`). `/api/health` → 200.
 
-1. `pm2 restart dassa-sgi --update-env`
-2. Verificar: `curl -s -w '%{content_type}' http://127.0.0.1:4001/api/auditor/runs` → debe
-   responder `application/json` con HTTP 401 (antes del fix devolvía `text/html`).
-3. Commitear los cambios de Fase 3 (H-07).
+El sistema queda con la entrega completa y el fix crítico activo en producción.
 
 Próxima auditoría recomendada: **2026-08-14** (90 días desde la entrega base).
 

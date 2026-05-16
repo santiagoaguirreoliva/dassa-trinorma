@@ -12,11 +12,11 @@ export default {
       },
       colors: {
         /* DASSA brand */
-        'dassa-red':     { DEFAULT: '#BE1E2D', light: '#E84252', deep: '#9A1825', bordo: '#7A1320', 'bordo-dark': '#4D0C16', tint: '#FBE7E9' },
-        'dassa-celeste': { DEFAULT: '#5BBFCC', deep: '#2E96A4', tint: '#E2F4F7' },
+        'dassa-red':     { DEFAULT: '#BF1E2E', light: '#E84252', deep: '#9A1825', bordo: '#7A1320', 'bordo-dark': '#4D0C16', tint: '#FBE7E9' },
+        'dassa-celeste': { DEFAULT: '#5BBDC9', deep: '#2E96A4', tint: '#E2F4F7' },
         'dassa-navy':    { DEFAULT: '#0F1A4A', deep: '#0A1235' },
         /* Sidebar tokens (keep backward compat) */
-        sidebar: { DEFAULT: '#0F1A4A', border: '#1a2a5e', hover: '#1a2a5e', active: '#5BBFCC' },
+        sidebar: { DEFAULT: '#0F1A4A', border: '#1a2a5e', hover: '#1a2a5e', active: '#5BBDC9' },
         /* Severity tokens DASSA — alertas y prioridades semánticas */
         severity: {
           critical: '#dc2626',  /* rojo crítico — NPR > 64, NCs urgentes */

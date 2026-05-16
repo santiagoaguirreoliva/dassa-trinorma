@@ -44,7 +44,7 @@ const ROLE_LABEL: Record<string, string> = {
 
 function getInitials(name: string) { return name.split(' ').slice(0,2).map(p=>p[0]||'').join('').toUpperCase(); }
 function colorForUser(name: string) {
-  const colors = ['#BE1E2D','#0EA5E9','#10B981','#F59E0B','#8B5CF6','#EC4899','#6366F1','#84CC16'];
+  const colors = ['#BF1E2E','#0EA5E9','#10B981','#F59E0B','#8B5CF6','#EC4899','#6366F1','#84CC16'];
   return colors[(name.charCodeAt(0) + name.length) % colors.length];
 }
 

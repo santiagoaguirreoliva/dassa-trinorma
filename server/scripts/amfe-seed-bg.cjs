@@ -1,4 +1,4 @@
-require("dotenv").config({ path: "/home/dassa/dassa-sgi/.env" });
+require("dotenv").config({ path: "/home/dassa/dassa4/apps/sgi/.env" });
 const { Pool } = require("pg");
 const Anthropic = require("@anthropic-ai/sdk");
 

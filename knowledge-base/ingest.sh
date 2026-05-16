@@ -5,13 +5,13 @@
 # =============================================================================
 # Uso:
 #   1. Descargá todas las carpetas TRINORMA del Drive a tu PC
-#   2. Subí los archivos a /home/dassa/dassa-sgi/knowledge-base/raw/ (con scp)
+#   2. Subí los archivos a /home/dassa/dassa4/apps/sgi/knowledge-base/raw/ (con scp)
 #   3. Corré: ./ingest.sh
 #   4. El script extrae texto y los carga en la tabla agent_knowledge
 # =============================================================================
 
 set -e
-KB_DIR="${KB_DIR:-/home/dassa/dassa-sgi/knowledge-base}"
+KB_DIR="${KB_DIR:-/home/dassa/dassa4/apps/sgi/knowledge-base}"
 RAW_DIR="$KB_DIR/raw"
 PROCESSED_DIR="$KB_DIR/processed"
 DEFAULT_CATEGORY="${DEFAULT_CATEGORY:-trinorma_2026}"
@@ -45,7 +45,7 @@ fi
 echo "[1/3] Verificando deps..."
 which pdftotext >/dev/null 2>&1 || sudo apt-get install -y poppler-utils
 which docx2txt >/dev/null 2>&1 || pip install --user docx2txt 2>/dev/null || true
-cd /home/dassa/dassa-sgi
+cd /home/dassa/dassa4/apps/sgi
 node -e "require('mammoth')" 2>/dev/null || npm install --save mammoth 2>&1 | tail -2
 
 # Función Node para insertar en DB
@@ -133,7 +133,7 @@ find "$RAW_DIR" -type f \( -name "*.pdf" -o -name "*.docx" -o -name "*.doc" -o -
   fi
 
   # Insertar en DB via node
-  cd /home/dassa/dassa-sgi
+  cd /home/dassa/dassa4/apps/sgi
   node /tmp/kb-insert.js "$file" "$content" "$category" || { echo "    ✗ Error insertando"; FAILED=$((FAILED+1)); continue; }
 
   # Mover a processed

@@ -264,6 +264,8 @@ app.use('/api/comunicaciones', commRouter);
 app.use('/api/ai-quality', aiQualityRouter);
 app.use('/api/calendar', calendarNixaRouter);
 app.use('/api/tenants', tenantsAdminRouter);
+app.use('/api/auditor', auditorRouter);
+app.use('/api/profiles', profilesRouter);
 
 app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok', env: process.env.NODE_ENV, ts: new Date().toISOString() });
@@ -319,13 +321,11 @@ if (process.env.NODE_ENV === 'production') {
   });
 }
 
+// Error handler — debe ir al final, después de todos los routers y del catch-all SPA
 app.use((err, _req, res, _next) => {
   console.error('Unhandled error:', err);
   res.status(500).json({ error: 'Error interno del servidor' });
 });
-
-app.use('/api/auditor', auditorRouter);
-app.use('/api/profiles', profilesRouter);
 
 // Start auditor cron
 startAuditorScheduler().catch(e => console.error("auditor scheduler error:", e));

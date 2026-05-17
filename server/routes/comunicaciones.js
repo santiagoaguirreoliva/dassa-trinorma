@@ -6,6 +6,7 @@ import express from 'express';
 import crypto from 'crypto';
 import { authenticate, requireRole } from '../middleware/auth.js';
 import { query } from '../db/db.js';
+import { pushToMadre } from '../services/madre-feed.js';
 
 const router = express.Router();
 const publicRouter = express.Router();
@@ -153,7 +154,9 @@ router.post('/:id/send', async (req, res) => {
     const { rows } = await query(`UPDATE communications SET status = 'enviada', sent_at = NOW(), updated_at = NOW() WHERE id = $1 AND status = 'borrador' RETURNING *`, [req.params.id]);
     if (!rows[0]) return res.status(409).json({ error: 'Comunicación no encontrada o ya enviada' });
     const publicUrl = `${process.env.APP_URL || 'https://trinorma.dassa.com.ar'}/c/${rows[0].public_token}`;
-    res.json({ ok: true, communication: rows[0], public_url: publicUrl });
+    // Replicar en el Centro de Comunicaciones de la app madre (best-effort).
+    const madre = await pushToMadre(rows[0], { log: console });
+    res.json({ ok: true, communication: rows[0], public_url: publicUrl, madre });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 

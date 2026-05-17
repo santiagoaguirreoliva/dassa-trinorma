@@ -537,10 +537,21 @@ async function runAiAnalysis(findingId) {
     'SELECT * FROM findings WHERE id = $1 AND deleted_at IS NULL', [findingId]
   );
   if (!rows[0]) throw new Error('Hallazgo no encontrado');
+  const finding = rows[0];
+
+  // NC anteriores del mismo tipo y sector — contexto para detectar recurrencia
+  const { rows: similar } = await query(
+    `SELECT code, title, description, status, ai_analysis->>'root_cause' AS root_cause
+       FROM findings
+      WHERE deleted_at IS NULL AND id != $1 AND finding_type = $2
+        AND ($3::text IS NULL OR area = $3)
+      ORDER BY created_at DESC LIMIT 8`,
+    [findingId, finding.finding_type, finding.area || null]
+  );
 
   const mod = await import('../services/findings-ai.cjs');
   const ai = mod.default || mod;
-  const result = await ai.analyzeFinding(rows[0]);
+  const result = await ai.analyzeFinding(finding, similar);
 
   await query(
     'UPDATE findings SET ai_analysis = $1, ai_analyzed_at = NOW() WHERE id = $2',

@@ -37,22 +37,41 @@ Pautas:
 - La oportunidad de mejora es una acción preventiva que evita recurrencia o eleva el estándar.
 - Si la información es insuficiente, igual proponé el análisis más razonable y aclaralo en el summary.
 
+Si te pasan un listado de NC anteriores del mismo sector y tipo, evaluá si esta NC
+es RECURRENTE: si describe un problema sustancialmente igual o de la misma causa raíz
+que alguna anterior. Una NC recurrente indica que la acción correctiva previa NO fue
+eficaz — es un hallazgo grave para el SGI.
+
 Respondé ÚNICAMENTE con un objeto JSON válido, sin texto adicional ni markdown, con esta forma exacta:
 {
   "porques": { "p1": "...", "p2": "...", "p3": "...", "p4": "...", "p5": "..." },
   "root_cause": "causa raíz en una frase",
   "corrective_actions": ["acción correctiva 1", "acción correctiva 2"],
   "improvement_opportunity": "oportunidad de mejora / acción preventiva",
-  "summary": "análisis breve en 2-3 oraciones"
+  "summary": "análisis breve en 2-3 oraciones",
+  "recurrence": {
+    "is_recurrent": false,
+    "related_codes": ["NC-XXXX"],
+    "note": "por qué es (o no) recurrente; si lo es, qué implica sobre la eficacia previa"
+  }
 }`;
 
 /**
  * Analiza una NC y devuelve la sugerencia estructurada.
  * @param {object} finding fila de findings (title, description, area, origin, finding_type, immediate_action)
- * @returns {Promise<object>} { porques, root_cause, corrective_actions, improvement_opportunity, summary, _model }
+ * @param {Array}  similar NC anteriores del mismo sector/tipo, para evaluar recurrencia
+ * @returns {Promise<object>} { porques, root_cause, corrective_actions, improvement_opportunity, summary, recurrence, _model }
  */
-async function analyzeFinding(finding) {
+async function analyzeFinding(finding, similar = []) {
   if (!finding || !finding.description) throw new Error('La NC no tiene descripción para analizar');
+
+  const similarBlock = (similar && similar.length)
+    ? `\n\nNC anteriores del mismo sector y tipo (para evaluar recurrencia):\n` +
+      similar.map(s =>
+        `- ${s.code} [${s.status}] ${s.title}: ${String(s.description || '').slice(0, 200)}` +
+        (s.root_cause ? ` · causa raíz registrada: ${s.root_cause}` : '')
+      ).join('\n')
+    : '\n\n(No hay NC anteriores comparables — is_recurrent debe ser false.)';
 
   const userPrompt = `Analizá esta No Conformidad / desvío del SGI de DASSA:
 
@@ -61,9 +80,9 @@ Título: ${finding.title || '—'}
 Sector / Área: ${finding.area || '—'}
 Origen: ${(finding.origin || '—').replace(/_/g, ' ')}
 Descripción: ${finding.description}
-Acción inmediata ya tomada: ${finding.immediate_action || 'Ninguna registrada'}
+Acción inmediata ya tomada: ${finding.immediate_action || 'Ninguna registrada'}${similarBlock}
 
-Generá el análisis de causa raíz y las sugerencias en el formato JSON indicado.`;
+Generá el análisis de causa raíz, las sugerencias y la evaluación de recurrencia en el formato JSON indicado.`;
 
   const resp = await getClient().messages.create({
     model: MODEL,
@@ -79,6 +98,7 @@ Generá el análisis de causa raíz y las sugerencias en el formato JSON indicad
   const parsed = JSON.parse(m[0]);
   // Normalización defensiva del shape esperado
   const p = parsed.porques || {};
+  const rec = parsed.recurrence || {};
   return {
     porques: {
       p1: String(p.p1 || ''), p2: String(p.p2 || ''), p3: String(p.p3 || ''),
@@ -89,6 +109,11 @@ Generá el análisis de causa raíz y las sugerencias en el formato JSON indicad
       ? parsed.corrective_actions.map(String).filter(Boolean) : [],
     improvement_opportunity: String(parsed.improvement_opportunity || ''),
     summary: String(parsed.summary || ''),
+    recurrence: {
+      is_recurrent: rec.is_recurrent === true,
+      related_codes: Array.isArray(rec.related_codes) ? rec.related_codes.map(String).filter(Boolean) : [],
+      note: String(rec.note || ''),
+    },
     _model: MODEL,
     _usage: resp.usage,
   };

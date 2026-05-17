@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { X, Plus, CheckCircle2,
          Clock, User, MessageSquare, Paperclip, Save, Loader2, Sparkles,
-         Archive, History } from 'lucide-react';
+         Archive, History, AlertTriangle } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { Badge, FINDING_STATUS, FINDING_TYPE, Avatar } from '@/components/ui';
@@ -312,6 +312,24 @@ export default function FindingDetail({ findingId, onClose }: Props) {
                 <p className="text-xs font-bold text-blue-700 uppercase tracking-wider mb-1">Método 5 Porqués</p>
                 <p className="text-xs text-blue-600">Preguntá "¿por qué?" 5 veces para llegar a la causa raíz del problema.</p>
               </div>
+
+              {/* ── Alerta de recurrencia ── */}
+              {ai?.recurrence?.is_recurrent && (
+                <div className="bg-amber-50 rounded-xl p-4 border border-amber-300">
+                  <p className="text-xs font-bold text-amber-800 uppercase tracking-wider flex items-center gap-1.5">
+                    <AlertTriangle size={13} /> NC recurrente detectada
+                  </p>
+                  {ai.recurrence.note && <p className="text-sm text-amber-900 mt-1">{ai.recurrence.note}</p>}
+                  {(ai.recurrence.related_codes?.length ?? 0) > 0 && (
+                    <p className="text-xs text-amber-700 mt-1.5">
+                      Relacionada con: <strong>{ai.recurrence.related_codes.join(', ')}</strong>
+                    </p>
+                  )}
+                  <p className="text-[11px] text-amber-600 mt-1.5">
+                    Una NC recurrente indica que la acción correctiva previa no fue eficaz (ISO 10.2).
+                  </p>
+                </div>
+              )}
 
               {/* ── Análisis IA de Triny ── */}
               <div className="bg-violet-50 rounded-xl p-4 border border-violet-200 space-y-3">

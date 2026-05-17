@@ -9,6 +9,9 @@ const SMTP_USER = process.env.SMTP_USER || 'info@dassa.com.ar';
 const SMTP_PASS = process.env.SMTP_PASS;  // App password de Gmail
 const SMTP_FROM = process.env.SMTP_FROM || `"DASSA SGI" <${SMTP_USER}>`;
 const APP_URL   = process.env.APP_URL || 'https://trinorma.dassa.com.ar';
+// Copia oculta de control: cada correo que sale por este mailer (Triny y los
+// mailers del SGI) se copia en silencio a esta dirección para verificación.
+const MAIL_BCC  = process.env.MAIL_BCC || '';
 
 let transport = null;
 function getTransport() {
@@ -65,6 +68,7 @@ async function sendMail({ to, subject, html, text, replyTo, from }) {
     const info = await t.sendMail({
       from: from || SMTP_FROM,
       to,
+      bcc: MAIL_BCC || undefined,
       subject,
       html,
       text: text || subject,

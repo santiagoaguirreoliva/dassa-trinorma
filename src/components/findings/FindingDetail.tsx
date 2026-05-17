@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { X, Plus, CheckCircle2,
-         Clock, User, MessageSquare, Paperclip, Save, Loader2, Sparkles } from 'lucide-react';
+         Clock, User, MessageSquare, Paperclip, Save, Loader2, Sparkles,
+         Archive, History } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { Badge, FINDING_STATUS, FINDING_TYPE, Avatar } from '@/components/ui';
@@ -27,7 +28,7 @@ const STATUS_IDX: Record<string, number> = {
 export default function FindingDetail({ findingId, onClose }: Props) {
   const { isAdmin } = useAuth();
   const qc = useQueryClient();
-  const [tab, setTab] = useState<'detalle' | 'causas' | 'acciones' | 'evidencia' | 'comentarios'>('detalle');
+  const [tab, setTab] = useState<'detalle' | 'causas' | 'acciones' | 'evidencia' | 'comentarios' | 'historial'>('detalle');
   const [newComment, setNewComment] = useState('');
   const [newAction, setNewAction] = useState({ description: '', due_date: '', responsible_id: '' });
   const [editMode, setEditMode] = useState(false);
@@ -71,6 +72,11 @@ export default function FindingDetail({ findingId, onClose }: Props) {
   const aiAnalyze = useMutation({
     mutationFn: () => api.post(`/findings/${findingId}/ai-analyze`, {}),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['finding', findingId] }),
+  });
+
+  const archiveFinding = useMutation({
+    mutationFn: () => api.delete(`/findings/${findingId}`),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['findings'] }); onClose(); },
   });
 
   if (isLoading) return (
@@ -144,7 +150,7 @@ export default function FindingDetail({ findingId, onClose }: Props) {
 
         {/* Tabs */}
         <div className="flex border-b border-slate-200 px-6 overflow-x-auto">
-          {(['detalle','causas','acciones','evidencia','comentarios'] as const).map(t => (
+          {(['detalle','causas','acciones','evidencia','comentarios','historial'] as const).map(t => (
             <button
               key={t}
               onClick={() => setTab(t)}
@@ -164,20 +170,33 @@ export default function FindingDetail({ findingId, onClose }: Props) {
           {tab === 'detalle' && (
             <div className="space-y-4">
               {isAdmin && (
-                <div className="flex justify-end">
+                <div className="flex justify-between items-center">
                   <button
-                    onClick={() => editMode ? updateFinding.mutate(editData) : setEditMode(true)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-bold hover:bg-blue-700"
+                    onClick={() => {
+                      if (window.confirm(`¿Archivar la NC ${finding.code}? La evidencia se conserva, pero la NC sale de los tableros activos.`))
+                        archiveFinding.mutate();
+                    }}
+                    disabled={archiveFinding.isPending}
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 text-slate-500 rounded-lg text-xs font-bold hover:bg-red-50 hover:text-red-600 disabled:opacity-50"
                   >
-                    {updateFinding.isPending ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />}
-                    {editMode ? 'Guardar' : 'Editar'}
+                    {archiveFinding.isPending ? <Loader2 size={12} className="animate-spin" /> : <Archive size={12} />}
+                    Archivar
                   </button>
-                  {editMode && (
-                    <button onClick={() => { setEditMode(false); setEditData({}); }}
-                      className="ml-2 px-3 py-1.5 bg-slate-200 text-slate-600 rounded-lg text-xs font-bold">
-                      Cancelar
+                  <div className="flex">
+                    <button
+                      onClick={() => editMode ? updateFinding.mutate(editData) : setEditMode(true)}
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-bold hover:bg-blue-700"
+                    >
+                      {updateFinding.isPending ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />}
+                      {editMode ? 'Guardar' : 'Editar'}
                     </button>
-                  )}
+                    {editMode && (
+                      <button onClick={() => { setEditMode(false); setEditData({}); }}
+                        className="ml-2 px-3 py-1.5 bg-slate-200 text-slate-600 rounded-lg text-xs font-bold">
+                        Cancelar
+                      </button>
+                    )}
+                  </div>
                 </div>
               )}
 
@@ -582,6 +601,48 @@ export default function FindingDetail({ findingId, onClose }: Props) {
                   {addComment.isPending ? <Loader2 size={14} className="animate-spin" /> : 'Enviar'}
                 </button>
               </div>
+            </div>
+          )}
+
+          {/* ─── HISTORIAL ─── */}
+          {tab === 'historial' && (
+            <div className="space-y-3">
+              <div className="flex items-center gap-1.5 text-xs font-bold text-slate-500 uppercase tracking-wider">
+                <History size={13} /> Trazabilidad de estados
+              </div>
+              {(finding.history ?? []).map((h: any) => {
+                const lbl = (s: string) => STATUS_FLOW.find(x => x.key === s)?.label || s || '—';
+                return (
+                  <div key={h.id} className="flex gap-3">
+                    <div className="w-2 h-2 rounded-full bg-blue-500 mt-1.5 flex-shrink-0" />
+                    <div className="flex-1 min-w-0 border-b border-slate-100 pb-3">
+                      <p className="text-sm text-slate-700">
+                        {h.from_status
+                          ? <>De <strong>{lbl(h.from_status)}</strong> a <strong>{lbl(h.to_status)}</strong></>
+                          : <>Alta en <strong>{lbl(h.to_status)}</strong></>}
+                      </p>
+                      <div className="flex items-center gap-2 mt-0.5 text-[11px] text-slate-400">
+                        <span>{h.changed_by_name || 'Sistema'}</span>
+                        <span>·</span>
+                        <span>{new Date(h.changed_at).toLocaleString('es-AR', { day:'2-digit', month:'2-digit', year:'2-digit', hour:'2-digit', minute:'2-digit' })}</span>
+                      </div>
+                      {h.note && <p className="text-xs text-slate-500 mt-1 italic">{h.note}</p>}
+                    </div>
+                  </div>
+                );
+              })}
+              {(finding.history ?? []).length === 0 && (
+                <div className="text-center py-6 text-slate-400">
+                  <History size={24} className="mx-auto mb-2 opacity-30" />
+                  <p className="text-sm">Sin movimientos registrados</p>
+                </div>
+              )}
+              {finding.closed_by_name && (
+                <p className="text-xs text-slate-400 pt-2">
+                  Cerrada por <strong className="text-slate-600">{finding.closed_by_name}</strong>
+                  {finding.closed_at ? ` el ${new Date(finding.closed_at).toLocaleDateString('es-AR')}` : ''}
+                </p>
+              )}
             </div>
           )}
 

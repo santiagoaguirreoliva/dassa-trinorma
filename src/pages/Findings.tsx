@@ -206,6 +206,12 @@ export default function Findings() {
     queryFn: () => api.get('/users'),
   });
 
+  const { data: stats } = useQuery<any>({
+    queryKey: ['findings-stats'],
+    queryFn: () => api.get('/findings/stats'),
+    refetchInterval: 30_000,
+  });
+
   const filtered = findings.filter(f => {
     const matchSearch = !search ||
       f.title.toLowerCase().includes(search.toLowerCase()) ||
@@ -294,6 +300,15 @@ export default function Findings() {
       </div>
 
       <PageContent>
+        {/* KPIs del módulo de NC */}
+        {stats && (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+            <KpiCard label="Abiertas" value={stats.open_count} tone="amber" />
+            <KpiCard label="Vencidas" value={stats.overdue_count} tone={stats.overdue_count > 0 ? 'red' : 'gray'} />
+            <KpiCard label="Cerradas (30 días)" value={stats.closed_30d} tone="emerald" />
+            <KpiCard label="Total registradas" value={stats.total} tone="blue" />
+          </div>
+        )}
         {isLoading ? (
           <div className="flex items-center justify-center h-64"><Spinner size={32} /></div>
         ) : view === 'kanban' ? (
@@ -422,5 +437,19 @@ export default function Findings() {
       {/* New NC modal */}
       {showNew && <NewFindingModal onClose={() => setShowNew(false)} users={users} />}
     </>
+  );
+}
+
+// ─── KPI Card ─────────────────────────────────────────────────
+function KpiCard({ label, value, tone }: { label: string; value: number; tone: string }) {
+  const tones: Record<string, string> = {
+    red: 'text-red-600', amber: 'text-amber-600', emerald: 'text-emerald-600',
+    blue: 'text-blue-700', gray: 'text-gray-500',
+  };
+  return (
+    <div className="bg-white rounded-xl border border-gray-200 px-4 py-3">
+      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{label}</p>
+      <p className={`text-2xl font-extrabold mt-0.5 ${tones[tone] || 'text-gray-700'}`}>{value ?? 0}</p>
+    </div>
   );
 }

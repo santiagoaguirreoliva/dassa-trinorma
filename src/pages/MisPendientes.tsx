@@ -4,6 +4,7 @@ import { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
+import TeamOverview from '@/components/tasks/TeamOverview';
 import {
   CheckSquare, AlertCircle, Calendar, Users, Filter,
   Loader2, CheckCircle2, ChevronRight, Building2, AlertTriangle,
@@ -72,6 +73,7 @@ export default function MisPendientes() {
   const [statusFilter, setStatusFilter] = useState<'all' | 'pendiente' | 'en_curso' | 'overdue'>('all');
   const [sourceFilter, setSourceFilter] = useState<string>('all');
   const [groupBy, setGroupBy] = useState<'none' | 'estado' | 'origen' | 'vencimiento'>('vencimiento');
+  const [board, setBoard] = useState<'mias' | 'equipo'>('mias');
   const [completing, setCompleting] = useState<string | null>(null);
   const [selected, setSelected] = useState<Task | null>(null);
   const [comments, setComments] = useState<any[]>([]);
@@ -193,6 +195,7 @@ export default function MisPendientes() {
   }, [tasks]);
 
   if (!user) return null;
+  const isSupervisor = ['master_admin', 'sgi_leader', 'director'].includes((user as any).role);
 
   return (
     <div className="flex-1 overflow-y-auto bg-slate-50">
@@ -207,11 +210,26 @@ export default function MisPendientes() {
             </h1>
             <p className="text-sm text-slate-600 mt-1.5">Todas tus tareas asignadas — comité, NCs, capacitaciones, todo.</p>
           </div>
-          <button onClick={load} className="bg-white border border-slate-200 hover:border-slate-300 hover:bg-slate-50 rounded-lg px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition-colors">
-            Refrescar
-          </button>
+          <div className="flex items-center gap-2">
+            {isSupervisor && (
+              <div className="flex bg-gray-100 rounded-lg p-0.5">
+                <button onClick={() => setBoard('mias')}
+                  className={`px-3 py-1.5 rounded-md text-sm font-semibold transition-colors ${board === 'mias' ? 'bg-white shadow-sm text-dassa-red' : 'text-gray-500'}`}>
+                  Mis tareas
+                </button>
+                <button onClick={() => setBoard('equipo')}
+                  className={`px-3 py-1.5 rounded-md text-sm font-semibold transition-colors ${board === 'equipo' ? 'bg-white shadow-sm text-dassa-red' : 'text-gray-500'}`}>
+                  Equipo
+                </button>
+              </div>
+            )}
+            <button onClick={load} className="bg-white border border-slate-200 hover:border-slate-300 hover:bg-slate-50 rounded-lg px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition-colors">
+              Refrescar
+            </button>
+          </div>
         </div>
 
+        {board === 'equipo' ? <TeamOverview /> : (<>
         {/* KPIs */}
         <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
           <Stat label="Total" value={stats.total} color="bg-gray-100 text-gray-900" />
@@ -366,6 +384,7 @@ export default function MisPendientes() {
             ))}
           </div>
         )}
+        </>)}
       </div>
 
       {/* Modal detalle */}

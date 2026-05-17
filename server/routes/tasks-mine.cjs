@@ -118,20 +118,27 @@ router.patch('/mine/:id', async (req, res) => {
   }
 });
 
-// GET /api/tasks/team-overview (admin/sgi_leader)
-// Resumen de tareas por usuario
+// GET /api/tasks/team-overview (supervisores)
+// Resumen de tareas activas por usuario — cuenta por los tres caminos de
+// asignación (assigned_to, collaborator_id, task_assignees).
 router.get('/team-overview', async (req, res) => {
-  if (!['master_admin', 'sgi_leader'].includes(req.user.role)) {
+  if (!['master_admin', 'sgi_leader', 'director'].includes(req.user.role)) {
     return res.status(403).json({ error: 'No autorizado' });
   }
   try {
     const { rows } = await pool.query(`
       SELECT u.id, u.full_name, u.role, u.department,
              COUNT(t.id)::int AS pending_count,
-             COUNT(CASE WHEN t.due_date < CURRENT_DATE THEN 1 END)::int AS overdue_count,
-             COUNT(CASE WHEN t.priority = 'alta' THEN 1 END)::int AS high_priority_count
+             COUNT(t.id) FILTER (WHERE t.due_date < CURRENT_DATE)::int AS overdue_count,
+             COUNT(t.id) FILTER (WHERE t.priority IN ('alta','urgente'))::int AS high_priority_count
       FROM users u
-      LEFT JOIN tasks t ON t.assigned_to = u.id AND t.status NOT IN ('completada', 'cancelada')
+      LEFT JOIN tasks t
+        ON t.status NOT IN ('completada', 'cancelada')
+       AND (
+             t.assigned_to = u.id
+          OR t.collaborator_id = u.id
+          OR EXISTS (SELECT 1 FROM task_assignees ta WHERE ta.task_id = t.id AND ta.user_id = u.id)
+           )
       WHERE u.is_active = TRUE
       GROUP BY u.id, u.full_name, u.role, u.department
       ORDER BY overdue_count DESC, pending_count DESC

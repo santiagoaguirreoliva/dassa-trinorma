@@ -18,6 +18,7 @@ interface Training {
   instructor?: string; duration_hours?: number; is_mandatory: boolean;
   reminder_days: number; organized_by_name?: string;
   participants_count: number; attended_count: number; evidence_count: number;
+  efficacy_result?: string;
 }
 interface Participant {
   id: string; user_id?: string; full_name?: string; position?: string;
@@ -895,6 +896,11 @@ export default function Trainings() {
     const now = new Date();
     return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
   });
+  const conPart = trainings.filter(t => t.participants_count > 0);
+  const asistenciaProm = conPart.length
+    ? Math.round(conPart.reduce((s, t) => s + t.attended_count / t.participants_count, 0) / conPart.length * 100)
+    : 0;
+  const eficaces = completed.filter(t => t.efficacy_result === 'eficaz').length;
 
   return (
     <>
@@ -927,11 +933,13 @@ export default function Trainings() {
         {isLoading ? <div className="flex justify-center py-16"><Spinner size={32} /></div> : (
           <div className="space-y-5">
             {/* KPIs */}
-            <div className="grid grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
               <KPICard label="Próximas" value={upcoming.length} sub="Programadas" onClick={() => setFilterStatus('programada')} />
               <KPICard label="Obligatorias" value={mandatory.length} sub="Pendientes" alert={mandatory.length > 0} alertColor="#ef4444" onClick={() => setFilterType('capacitacion')} />
               <KPICard label="Este mes" value={thisMonth.length} sub="Total del mes" />
               <KPICard label="Completadas" value={completed.length} sub="Total histórico" onClick={() => setFilterStatus('completada')} />
+              <KPICard label="Asistencia" value={asistenciaProm} sub="% promedio" />
+              <KPICard label="Eficaces" value={eficaces} sub="Evaluadas ISO 7.2" />
             </div>
 
             {/* Filtros */}

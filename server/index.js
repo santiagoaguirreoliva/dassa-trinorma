@@ -74,6 +74,17 @@ cron.schedule('0 8 1 * *', async () => {
   } catch (e) { console.error('[findings informe mensual]', e.message); }
 }, { timezone: 'America/Argentina/Buenos_Aires' });
 
+// CRON · Recordatorios de capacitaciones próximas — diario, 07:00 AR
+cron.schedule('0 7 * * *', async () => {
+  try {
+    const { createRequire: cr } = await import('module');
+    const reqCjs = cr(import.meta.url);
+    const tr = reqCjs('./services/trainings-reminders.cjs');
+    const r = await tr.runTrainingReminders();
+    console.log('[trainings] recordatorios:', JSON.stringify(r));
+  } catch (e) { console.error('[trainings recordatorios]', e.message); }
+}, { timezone: 'America/Argentina/Buenos_Aires' });
+
 // CRON · Recordatorios de verificación de eficacia de NC — diario, 09:00 AR
 cron.schedule('0 9 * * *', async () => {
   try {

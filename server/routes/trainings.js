@@ -83,6 +83,16 @@ router.get('/', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+// POST /api/trainings/reminders/run — corre los recordatorios manualmente
+router.post('/reminders/run', requireRole(...MGMT), async (req, res) => {
+  try {
+    const mod = await import('../services/trainings-reminders.cjs');
+    const svc = mod.default || mod;
+    const dryRun = req.query.dry_run === '1' || req.query.dry_run === 'true';
+    res.json(await svc.runTrainingReminders({ dryRun }));
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
 // GET /api/trainings/upcoming — próximas (para dashboard)
 router.get('/upcoming', async (req, res) => {
   try {

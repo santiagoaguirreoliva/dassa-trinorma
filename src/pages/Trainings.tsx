@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   BookOpen, Plus, Calendar, ChevronLeft, ChevronRight,
   X, Loader2, CheckCircle2, Users, Bell,
-  Paperclip, Trash2, Upload, Shield
+  Paperclip, Trash2, Upload, Shield, Pencil
 } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
@@ -172,6 +172,7 @@ function TrainingDetail({ trainingId, onClose }: { trainingId: string; onClose: 
   const [tab, setTab] = useState<'info' | 'participantes' | 'evidencia' | 'ftri36'>('info');
   const [newExt, setNewExt] = useState({ name: '', position: '', sector: '' });
   const [showAddExt, setShowAddExt] = useState(false);
+  const [editing, setEditing] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const { data, isLoading } = useQuery<any>({
@@ -230,6 +231,11 @@ function TrainingDetail({ trainingId, onClose }: { trainingId: string; onClose: 
     onSuccess: () => qc.invalidateQueries({ queryKey: ['training', trainingId] }),
   });
 
+  const deleteTraining = useMutation({
+    mutationFn: () => api.delete(`/trainings/${trainingId}`),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['trainings'] }); onClose(); },
+  });
+
   if (isLoading || !data) return (
     <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center">
       <Spinner size={32} />
@@ -285,7 +291,21 @@ function TrainingDetail({ trainingId, onClose }: { trainingId: string; onClose: 
                 disabled={sendReminder.isPending}
                 className="ml-auto flex items-center gap-1 px-2.5 py-1 bg-amber-100 text-amber-700 rounded-full text-[10px] font-bold hover:bg-amber-200">
                 {sendReminder.isPending ? <Loader2 size={10} className="animate-spin" /> : <Bell size={10} />}
-                Enviar recordatorio
+                Recordatorio
+              </button>
+              <button onClick={() => setEditing(true)}
+                className="flex items-center gap-1 px-2.5 py-1 bg-blue-100 text-blue-700 rounded-full text-[10px] font-bold hover:bg-blue-200">
+                <Pencil size={10} /> Editar
+              </button>
+              <button
+                onClick={() => {
+                  if (window.confirm(`¿Eliminar la capacitación "${data.title}"? Se borran también sus participantes y evidencia. Esta acción no se puede deshacer.`))
+                    deleteTraining.mutate();
+                }}
+                disabled={deleteTraining.isPending}
+                className="flex items-center gap-1 px-2.5 py-1 bg-gray-100 text-gray-500 rounded-full text-[10px] font-bold hover:bg-red-50 hover:text-red-600 disabled:opacity-50">
+                {deleteTraining.isPending ? <Loader2 size={10} className="animate-spin" /> : <Trash2 size={10} />}
+                Eliminar
               </button>
             </div>
           )}
@@ -494,6 +514,10 @@ function TrainingDetail({ trainingId, onClose }: { trainingId: string; onClose: 
             </div>
           )}
         </div>
+
+        {editing && (
+          <TrainingFormModal training={data} onClose={() => setEditing(false)} />
+        )}
       </div>
     </div>
   );
@@ -510,26 +534,45 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   );
 }
 
-// ─── New Training Modal ───────────────────────────────────────
-function NewTrainingModal({ onClose }: { onClose: () => void }) {
+// ─── Training Form Modal (crear / editar) ─────────────────────
+function TrainingFormModal({ training, initialDate, onClose }: {
+  training?: any; initialDate?: string; onClose: () => void;
+}) {
   const qc = useQueryClient();
-  useAuth();
+  const isEdit = !!training;
   const [form, setForm] = useState({
-    title: '', description: '', objective: '', legal_framework: '',
-    training_type: 'capacitacion', category: 'obligatoria',
-    scheduled_date: '', location: '', instructor: '',
-    duration_hours: '', is_mandatory: true, reminder_days: '7',
+    title: training?.title || '',
+    description: training?.description || '',
+    objective: training?.objective || '',
+    legal_framework: training?.legal_framework || '',
+    training_type: training?.training_type || 'capacitacion',
+    category: training?.category || 'obligatoria',
+    scheduled_date: training?.scheduled_date ? String(training.scheduled_date).slice(0, 16) : (initialDate || ''),
+    location: training?.location || '',
+    instructor: training?.instructor || '',
+    duration_hours: training?.duration_hours != null ? String(training.duration_hours) : '',
+    is_mandatory: training?.is_mandatory ?? true,
+    reminder_days: training?.reminder_days != null ? String(training.reminder_days) : '7',
   });
   const [error, setError] = useState('');
   const set = (k: string, v: any) => setForm(p => ({ ...p, [k]: v }));
 
-  const create = useMutation({
-    mutationFn: () => api.post('/trainings', {
-      ...form,
-      duration_hours: form.duration_hours ? parseFloat(form.duration_hours) : undefined,
-      reminder_days: parseInt(form.reminder_days),
-    }),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['trainings'] }); onClose(); },
+  const save = useMutation({
+    mutationFn: () => {
+      const payload = {
+        ...form,
+        duration_hours: form.duration_hours ? parseFloat(form.duration_hours) : undefined,
+        reminder_days: parseInt(form.reminder_days),
+      };
+      return isEdit
+        ? api.patch(`/trainings/${training.id}`, payload)
+        : api.post('/trainings', payload);
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['trainings'] });
+      if (isEdit) qc.invalidateQueries({ queryKey: ['training', training.id] });
+      onClose();
+    },
     onError: (e: any) => setError(e.message),
   });
 
@@ -537,7 +580,7 @@ function NewTrainingModal({ onClose }: { onClose: () => void }) {
     <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={onClose}>
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between px-6 py-4 border-b">
-          <h3 className="text-[15px] font-extrabold text-gray-900">Nueva Capacitación</h3>
+          <h3 className="text-[15px] font-extrabold text-gray-900">{isEdit ? 'Editar Capacitación' : 'Nueva Capacitación'}</h3>
           <button onClick={onClose}><X size={18} className="text-gray-400" /></button>
         </div>
         <div className="p-6 space-y-4">
@@ -621,11 +664,11 @@ function NewTrainingModal({ onClose }: { onClose: () => void }) {
           {error && <p className="text-xs text-red-500 bg-red-50 px-3 py-2 rounded-lg">{error}</p>}
           <div className="flex gap-2 pt-1">
             <button onClick={onClose} className="flex-1 py-2.5 border border-gray-200 rounded-xl text-sm font-semibold text-gray-600">Cancelar</button>
-            <button onClick={() => !create.isPending && create.mutate()}
-              disabled={!form.title || !form.scheduled_date || create.isPending}
+            <button onClick={() => !save.isPending && save.mutate()}
+              disabled={!form.title || !form.scheduled_date || save.isPending}
               className="flex-1 py-2.5 bg-dassa-red-deep text-white font-bold text-sm rounded-xl hover:bg-dassa-red flex items-center justify-center gap-2 disabled:opacity-50">
-              {create.isPending && <Loader2 size={14} className="animate-spin" />}
-              Crear capacitación
+              {save.isPending && <Loader2 size={14} className="animate-spin" />}
+              {isEdit ? 'Guardar cambios' : 'Crear capacitación'}
             </button>
           </div>
         </div>
@@ -635,9 +678,13 @@ function NewTrainingModal({ onClose }: { onClose: () => void }) {
 }
 
 // ─── Calendar View ────────────────────────────────────────────
-function CalendarView({ trainings, onSelect }: { trainings: Training[]; onSelect: (id: string) => void }) {
+function CalendarView({ trainings, onSelect, onNewOnDay }: {
+  trainings: Training[]; onSelect: (id: string) => void; onNewOnDay?: (iso: string) => void;
+}) {
   const [year, setYear] = useState(new Date().getFullYear());
   const [month, setMonth] = useState(new Date().getMonth());
+  const pad = (n: number) => String(n).padStart(2, '0');
+  const isoForDay = (day: number) => `${year}-${pad(month + 1)}-${pad(day)}T09:00`;
 
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const firstDay = new Date(year, month, 1).getDay();
@@ -688,6 +735,13 @@ function CalendarView({ trainings, onSelect }: { trainings: Training[]; onSelect
                 ${isToday ? 'bg-dassa-red text-white' : 'text-gray-500'}`}>
                 {day}
               </span>
+              {onNewOnDay && (
+                <button onClick={() => onNewOnDay(isoForDay(day))}
+                  title="Nueva capacitación este día"
+                  className="absolute top-1 right-1 w-4 h-4 rounded-full bg-gray-100 text-gray-400 hover:bg-dassa-red hover:text-white flex items-center justify-center text-[12px] leading-none">
+                  +
+                </button>
+              )}
               <div className="mt-0.5 space-y-0.5 overflow-hidden">
                 {events.slice(0, 2).map(t => {
                   const sc = STATUS_CONFIG[t.status];
@@ -717,6 +771,7 @@ export default function Trainings() {
   const [view, setView] = useState<'list' | 'calendar'>('list');
   const [selected, setSelected] = useState<string | null>(null);
   const [showNew, setShowNew] = useState(false);
+  const [newDate, setNewDate] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
   const [filterType, setFilterType] = useState('');
 
@@ -801,7 +856,8 @@ export default function Trainings() {
             </div>
 
             {view === 'calendar' ? (
-              <CalendarView trainings={filtered} onSelect={setSelected} />
+              <CalendarView trainings={filtered} onSelect={setSelected}
+                onNewOnDay={isAdmin ? (iso => { setNewDate(iso); setShowNew(true); }) : undefined} />
             ) : (
               <div className="space-y-2">
                 {filtered.map(t => {
@@ -865,7 +921,12 @@ export default function Trainings() {
       </PageContent>
 
       {selected && <TrainingDetail trainingId={selected} onClose={() => setSelected(null)} />}
-      {showNew && <NewTrainingModal onClose={() => setShowNew(false)} />}
+      {showNew && (
+        <TrainingFormModal
+          initialDate={newDate}
+          onClose={() => { setShowNew(false); setNewDate(''); }}
+        />
+      )}
     </>
   );
 }

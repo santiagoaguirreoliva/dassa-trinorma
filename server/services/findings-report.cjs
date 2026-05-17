@@ -70,6 +70,7 @@ async function collectData() {
 
   return {
     periodLabel,
+    from, to,
     resumen: resumen[0],
     porTipo,
     porSector,
@@ -194,25 +195,84 @@ function renderHtml({ data, narrative }) {
   });
 }
 
+// Persiste un informe en el histórico (un registro por período — upsert).
+async function persistReport(report, opts = {}) {
+  const { data, narrative } = report;
+  const { rows } = await pool.query(
+    `INSERT INTO findings_reports
+       (period_label, period_from, period_to, data, narrative, generated_by, recipients, email_status)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
+     ON CONFLICT (period_from) DO UPDATE SET
+       period_label = EXCLUDED.period_label,
+       period_to    = EXCLUDED.period_to,
+       data         = EXCLUDED.data,
+       narrative    = EXCLUDED.narrative,
+       generated_at = NOW(),
+       generated_by = EXCLUDED.generated_by,
+       recipients   = EXCLUDED.recipients,
+       email_status = EXCLUDED.email_status
+     RETURNING id`,
+    [data.periodLabel, data.from, data.to, JSON.stringify(data), JSON.stringify(narrative),
+     opts.generatedBy || null, opts.recipients || null, opts.emailStatus || null]
+  );
+  return rows[0].id;
+}
+
 /**
- * Genera y envía el informe mensual de NC por correo.
- * @param {object} opts { dryRun } — si dryRun, genera pero no envía.
+ * Genera el informe mensual de NC, lo persiste en el histórico y —si no es
+ * dryRun— lo envía por correo.
+ * @param {object} opts { dryRun, generatedBy } — dryRun: genera y guarda sin enviar.
  */
 async function sendMonthlyFindingsReport(opts = {}) {
   const report = await generateMonthlyReport();
   const html = renderHtml(report);
   const subject = `📊 Informe mensual de NC y desvíos · ${report.data.periodLabel}`;
 
-  if (opts.dryRun) {
-    return { ok: true, dryRun: true, recipients: REPORT_TO, period: report.data.periodLabel, report };
+  let emailStatus = 'no_enviado';
+  let sendRes = { skipped: true };
+  if (!opts.dryRun) {
+    sendRes = await mailer.sendMail({
+      to: REPORT_TO.join(', '), replyTo: 'santiago@dassa.com.ar', subject, html,
+    });
+    emailStatus = sendRes.ok ? 'enviado' : (sendRes.skipped ? 'omitido_sin_smtp' : 'error');
   }
-  const res = await mailer.sendMail({
-    to: REPORT_TO.join(', '),
-    replyTo: 'santiago@dassa.com.ar',
-    subject,
-    html,
+
+  const id = await persistReport(report, {
+    generatedBy: opts.generatedBy || null,
+    recipients: REPORT_TO.join(', '),
+    emailStatus,
   });
-  return { ...res, recipients: REPORT_TO, period: report.data.periodLabel };
+
+  return {
+    ok: true, id, dryRun: !!opts.dryRun, sent: !opts.dryRun,
+    recipients: REPORT_TO, period: report.data.periodLabel, emailStatus, report,
+  };
 }
 
-module.exports = { generateMonthlyReport, sendMonthlyFindingsReport };
+// Lista de informes del histórico (metadata + resumen, sin el detalle completo).
+async function listReports() {
+  const { rows } = await pool.query(
+    `SELECT r.id, r.period_label, r.period_from, r.generated_at,
+            r.recipients, r.email_status,
+            r.data->'resumen' AS resumen,
+            u.full_name AS generated_by_name
+       FROM findings_reports r
+       LEFT JOIN users u ON u.id = r.generated_by
+      ORDER BY r.period_from DESC`
+  );
+  return rows;
+}
+
+// Informe completo por id.
+async function getReport(id) {
+  const { rows } = await pool.query(
+    `SELECT r.*, u.full_name AS generated_by_name
+       FROM findings_reports r
+       LEFT JOIN users u ON u.id = r.generated_by
+      WHERE r.id = $1`,
+    [id]
+  );
+  return rows[0] || null;
+}
+
+module.exports = { generateMonthlyReport, sendMonthlyFindingsReport, listReports, getReport };

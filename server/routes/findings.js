@@ -84,8 +84,34 @@ router.get('/stats', async (_req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+// GET /api/findings/reports — histórico de informes mensuales de NC
+router.get('/reports', async (req, res) => {
+  if (!ADMIN_ROLES.includes(req.user.role)) {
+    return res.status(403).json({ error: 'Sin permiso' });
+  }
+  try {
+    const mod = await import('../services/findings-report.cjs');
+    const svc = mod.default || mod;
+    res.json(await svc.listReports());
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// GET /api/findings/reports/:rid — informe mensual completo
+router.get('/reports/:rid', async (req, res) => {
+  if (!ADMIN_ROLES.includes(req.user.role)) {
+    return res.status(403).json({ error: 'Sin permiso' });
+  }
+  try {
+    const mod = await import('../services/findings-report.cjs');
+    const svc = mod.default || mod;
+    const report = await svc.getReport(req.params.rid);
+    if (!report) return res.status(404).json({ error: 'Informe no encontrado' });
+    res.json(report);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
 // POST /api/findings/report/monthly — genera el informe mensual de NC/desvíos.
-// ?dry_run=1 → lo genera y lo devuelve sin enviar el correo.
+// Siempre lo persiste en el histórico. ?dry_run=1 → no envía el correo.
 router.post('/report/monthly', async (req, res) => {
   if (!ADMIN_ROLES.includes(req.user.role)) {
     return res.status(403).json({ error: 'Sin permiso para generar el informe' });
@@ -94,7 +120,7 @@ router.post('/report/monthly', async (req, res) => {
     const mod = await import('../services/findings-report.cjs');
     const svc = mod.default || mod;
     const dryRun = req.query.dry_run === '1' || req.query.dry_run === 'true';
-    const result = await svc.sendMonthlyFindingsReport({ dryRun });
+    const result = await svc.sendMonthlyFindingsReport({ dryRun, generatedBy: req.user.id });
     res.json(result);
   } catch (err) {
     res.status(500).json({ error: err.message });

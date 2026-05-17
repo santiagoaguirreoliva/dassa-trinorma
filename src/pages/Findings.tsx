@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Plus, LayoutGrid, List, Search, Loader2, X, AlertTriangle, Download } from 'lucide-react';
+import { Plus, LayoutGrid, List, Search, Loader2, X, AlertTriangle, Download, FileText } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { Header } from '@/components/layout/Header';
 import { Badge, FINDING_STATUS, FINDING_TYPE, Avatar, Spinner, PageContent } from '@/components/ui';
 import FindingDetail from '@/components/findings/FindingDetail';
+import FindingsReports from '@/components/findings/FindingsReports';
 import { exportToCSV } from '@/lib/exportCsv';
 
 // ─── Tipos ──────────────────────────────────────────────────
@@ -188,7 +189,7 @@ function NewFindingModal({ onClose, users }: { onClose: () => void; users: any[]
 // ─── MAIN PAGE ────────────────────────────────────────────────
 export default function Findings() {
   const { isAdmin } = useAuth();
-  const [view, setView] = useState<'kanban' | 'table'>('kanban');
+  const [view, setView] = useState<'kanban' | 'table' | 'informes'>('kanban');
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [showNew, setShowNew] = useState(false);
   const [search, setSearch] = useState('');
@@ -243,6 +244,10 @@ export default function Findings() {
                 className={`p-1.5 rounded-md transition-colors ${view === 'table' ? 'bg-white shadow-sm text-dassa-red' : 'text-gray-400'}`}>
                 <List size={15} />
               </button>
+              <button onClick={() => setView('informes')} title="Informes mensuales"
+                className={`p-1.5 rounded-md transition-colors ${view === 'informes' ? 'bg-white shadow-sm text-dassa-red' : 'text-gray-400'}`}>
+                <FileText size={15} />
+              </button>
             </div>
             <button
               onClick={() => exportToCSV(filtered as unknown as Record<string, unknown>[], `hallazgos-${new Date().toISOString().slice(0,10)}`, [
@@ -273,6 +278,7 @@ export default function Findings() {
       />
 
       {/* Filters bar */}
+      {view !== 'informes' && (
       <div className="bg-white border-b border-gray-200 px-6 py-2.5 flex items-center gap-3 flex-wrap">
         <div className="relative flex-1 min-w-[180px] max-w-xs">
           <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -298,6 +304,7 @@ export default function Findings() {
         )}
         <span className="ml-auto text-xs text-gray-400">{filtered.length} resultados</span>
       </div>
+      )}
 
       <PageContent>
         {/* KPIs del módulo de NC */}
@@ -309,7 +316,9 @@ export default function Findings() {
             <KpiCard label="Total registradas" value={stats.total} tone="blue" />
           </div>
         )}
-        {isLoading ? (
+        {view === 'informes' ? (
+          <FindingsReports />
+        ) : isLoading ? (
           <div className="flex items-center justify-center h-64"><Spinner size={32} /></div>
         ) : view === 'kanban' ? (
 

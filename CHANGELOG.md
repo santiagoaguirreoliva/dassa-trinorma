@@ -13,6 +13,23 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/), versionado [S
 - **H-12 · Accesibilidad de páginas públicas** (`Login.tsx`, `PublicNC.tsx`, `PublicComm.tsx`): landmark `<main>` en todas las vistas; `aria-label` en botones-ícono (toggle contraseña, quitar foto, spinner) e inputs sin `<label>`; contraste corregido (`text-gray-400 → text-gray-500`, fallaba 4.5:1 AA); touch targets de íconos ampliados a 36–40 px.
 - **Deploy**: commit `b27cf24` (botón HOME al portal Smart DASSA Apps) buildeado y activo en producción.
 
+### Módulo de No Conformidades — cumplimiento ISO 10.2 + robustecimiento · 2026-05-17
+
+**Cumplimiento ISO 10.2** (migración 027):
+- Cambio de estado de NC restringido a roles admin del SGI.
+- No se puede cerrar una NC sin verificar la eficacia de la acción correctiva (ISO 10.2 d).
+- `DELETE` de NC pasó a soft-delete (`deleted_at`) — ISO exige retener la información documentada; no se destruye evidencia.
+- Tabla `finding_status_history` + `closed_by`: trazabilidad completa de transiciones de estado.
+- `days_open` se congela en `closed_at` para NC cerradas; alta de NC y de acción correctiva ahora transaccionales; kanban con columna "Sin clasificar" para estados fuera de rango.
+
+**Fase 1 — Aviso automático**: nuevo `findings-mailer.cjs`; cada alta de NC envía un correo branded al equipo de calidad (`maria@` + `santiago@`).
+
+**Fase 2 — Análisis IA con Triny** (migración 028): `findings-ai.cjs` analiza causa raíz (5 porqués), sugiere acciones correctivas y oportunidad de mejora. Endpoint `POST /findings/:id/ai-analyze`, pre-análisis automático de Nixa al alta, panel IA en los tabs Causas y Acciones de `FindingDetail`.
+
+**Fase 3 — Dashboard y UI**: barra de KPIs en la página de NC; tab Historial con trazabilidad de estados; botón Archivar.
+
+**Fase 4 — Informe mensual**: `findings-report.cjs` + cron día 1 08:00 AR — Triny arma el informe del tratamiento de NC del mes (KPIs, distribución, análisis de tendencias) y lo envía a `maria@` + `santiago@`. Endpoint `POST /findings/report/monthly` para generación on-demand.
+
 ### Pre-entrega · auditoría 2026-05-14
 - **Fix crítico de auth**: `auditor.cjs`, `profiles.cjs` y `users-extra.cjs` ahora aplican `router.use(authenticate)` (antes `requireAdmin` chequeaba `req.user` sin middleware previo).
 - **Fix bug SQL** `dashboard.js` charts: `COALESCE(status::text, ...)` en findings y purchases (el enum no aceptaba el fallback como string).

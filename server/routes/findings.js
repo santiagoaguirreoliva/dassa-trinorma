@@ -212,6 +212,12 @@ router.post('/', async (req, res) => {
     await client.query('COMMIT');
 
     // Aviso por correo al equipo de calidad (best-effort, fuera de la transacción)
+    if (finding.assigned_to) {
+      try {
+        const { rows: an } = await query('SELECT full_name FROM users WHERE id = $1', [finding.assigned_to]);
+        finding.assigned_to_name = an[0]?.full_name || null;
+      } catch { /* nombre del responsable es opcional para el aviso */ }
+    }
     notifyNewFinding(finding, req.user).catch(e => console.error('[findings] mail alta NC:', e.message));
 
     res.status(201).json(finding);

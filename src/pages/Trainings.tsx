@@ -23,6 +23,7 @@ interface Participant {
   id: string; user_id?: string; full_name?: string; position?: string;
   department?: string; external_name?: string; external_position?: string;
   external_sector?: string; attended: boolean; dni?: string; score?: number;
+  conforme?: boolean;
 }
 interface Evidence {
   id: string; file_url: string; file_name?: string; file_type?: string;
@@ -48,6 +49,10 @@ const TYPE_CONFIG: Record<string, { label: string; emoji: string }> = {
 
 const MONTHS = ['Enero','Febrero','Marzo','Abril','Mayo','Junio',
   'Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+
+const EFFICACY_LABEL: Record<string, string> = {
+  eficaz: 'Eficaz', parcial: 'Parcialmente eficaz', no_eficaz: 'No eficaz',
+};
 
 // ─── F-TRI-36 View (pantalla) ────────────────────────────────
 function FTri36View({ training, participants }: { training: any; participants: Participant[] }) {
@@ -156,7 +161,8 @@ function FTri36View({ training, participants }: { training: any; participants: P
                 Resultado de la eficacia de la acción Formativa:
               </td>
               <td className="px-4 py-3 min-h-[32px]">
-                {training.status === 'completada' ? 'Completada satisfactoriamente' : '—'}
+                {EFFICACY_LABEL[training.efficacy_result] || '—'}
+                {training.efficacy_method ? ` · ${training.efficacy_method}` : ''}
               </td>
             </tr>
           </tbody>
@@ -192,9 +198,14 @@ function TrainingDetail({ trainingId, onClose }: { trainingId: string; onClose: 
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['training', trainingId] }); qc.invalidateQueries({ queryKey: ['trainings'] }); },
   });
 
-  const toggleAttendance = useMutation({
-    mutationFn: ({ pid, attended }: { pid: string; attended: boolean }) =>
-      api.patch(`/trainings/${trainingId}/participants/${pid}`, { attended }),
+  const updateParticipant = useMutation({
+    mutationFn: ({ pid, ...fields }: { pid: string; [k: string]: any }) =>
+      api.patch(`/trainings/${trainingId}/participants/${pid}`, fields),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['training', trainingId] }),
+  });
+
+  const saveEfficacy = useMutation({
+    mutationFn: (payload: any) => api.patch(`/trainings/${trainingId}/efficacy`, payload),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['training', trainingId] }),
   });
 
@@ -387,7 +398,8 @@ function TrainingDetail({ trainingId, onClose }: { trainingId: string; onClose: 
                     <div key={p.id} className={`flex items-center gap-3 p-3 rounded-xl border transition-colors
                       ${p.attended ? 'bg-emerald-50 border-emerald-200' : 'bg-white border-gray-200 hover:border-gray-300'}`}>
                       <button
-                        onClick={() => toggleAttendance.mutate({ pid: p.id, attended: !p.attended })}
+                        onClick={() => updateParticipant.mutate({ pid: p.id, attended: !p.attended })}
+                        title="Presente"
                         className={`w-5 h-5 rounded-full border-2 flex-shrink-0 flex items-center justify-center transition-colors
                           ${p.attended ? 'bg-emerald-500 border-emerald-500' : 'border-gray-300 hover:border-emerald-400'}`}>
                         {p.attended && <CheckCircle2 size={12} className="text-white" />}
@@ -401,10 +413,22 @@ function TrainingDetail({ trainingId, onClose }: { trainingId: string; onClose: 
                         <p className="text-[10px] text-gray-400">{sector}{isExt ? ' · Externo' : ''}</p>
                       </div>
                       {isAdmin && (
-                        <button onClick={() => removeParticipant.mutate(p.id)}
-                          className="text-gray-300 hover:text-red-400 transition-colors flex-shrink-0">
-                          <Trash2 size={13} />
-                        </button>
+                        <>
+                          <input type="number" step="0.5" min="0" max="10" defaultValue={p.score ?? ''}
+                            onBlur={e => { if (e.target.value !== '') updateParticipant.mutate({ pid: p.id, score: parseFloat(e.target.value) }); }}
+                            placeholder="Nota" title="Nota de evaluación"
+                            className="w-14 border border-gray-200 rounded px-1.5 py-1 text-xs flex-shrink-0" />
+                          <button onClick={() => updateParticipant.mutate({ pid: p.id, conforme: !p.conforme })}
+                            title="Conformidad del participante"
+                            className={`text-[10px] font-bold px-2 py-1 rounded-full flex-shrink-0 transition-colors
+                              ${p.conforme ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-400 hover:bg-gray-200'}`}>
+                            Conforme
+                          </button>
+                          <button onClick={() => removeParticipant.mutate(p.id)}
+                            className="text-gray-300 hover:text-red-400 transition-colors flex-shrink-0">
+                            <Trash2 size={13} />
+                          </button>
+                        </>
                       )}
                     </div>
                   );
@@ -496,6 +520,9 @@ function TrainingDetail({ trainingId, onClose }: { trainingId: string; onClose: 
                   Vista del acta oficial F-TRI-36 Rev.03. Marcá la asistencia en la pestaña "Participantes" para que aparezca reflejada acá.
                 </p>
               </div>
+              {isAdmin && (
+                <EfficacyForm training={data} onSave={(p: any) => saveEfficacy.mutate(p)} saving={saveEfficacy.isPending} />
+              )}
               <FTri36View training={data} participants={data.participants || []} />
             </div>
           )}
@@ -548,6 +575,49 @@ function EvidenceSection({ title, hint, items, isAdmin, uploading, onUpload, onD
           {uploading ? <Loader2 size={15} className="animate-spin" /> : <Upload size={15} />}
           Subir archivo (jpg, png, pdf)
         </button>
+      )}
+    </div>
+  );
+}
+
+function EfficacyForm({ training, onSave, saving }: { training: any; onSave: (p: any) => void; saving: boolean }) {
+  const [result, setResult] = useState(training.efficacy_result || '');
+  const [method, setMethod] = useState(training.efficacy_method || '');
+  const [notes, setNotes] = useState(training.efficacy_notes || '');
+  return (
+    <div className="bg-white border border-gray-200 rounded-xl p-4 space-y-3">
+      <p className="text-xs font-bold text-gray-700 uppercase tracking-wider">Evaluación de eficacia · ISO 9001 §7.2</p>
+      <div>
+        <label className="label-field">Resultado</label>
+        <select value={result} onChange={e => setResult(e.target.value)} className="input-field">
+          <option value="">— Sin evaluar —</option>
+          <option value="eficaz">Eficaz</option>
+          <option value="parcial">Parcialmente eficaz</option>
+          <option value="no_eficaz">No eficaz</option>
+        </select>
+      </div>
+      <div>
+        <label className="label-field">¿Cómo se verificó la eficacia?</label>
+        <textarea value={method} onChange={e => setMethod(e.target.value)} rows={2}
+          placeholder="Evaluación escrita, observación en el puesto, examen, indicadores de desempeño..."
+          className="input-field resize-none" />
+      </div>
+      <div>
+        <label className="label-field">Observaciones</label>
+        <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={2}
+          placeholder="Conclusiones de la evaluación" className="input-field resize-none" />
+      </div>
+      <button onClick={() => onSave({ efficacy_result: result || null, efficacy_method: method, efficacy_notes: notes })}
+        disabled={saving}
+        className="px-4 py-2 bg-dassa-red-deep text-white rounded-lg text-sm font-bold hover:bg-dassa-red disabled:opacity-50 flex items-center gap-2">
+        {saving && <Loader2 size={14} className="animate-spin" />}
+        Guardar evaluación
+      </button>
+      {training.efficacy_evaluated_by_name && (
+        <p className="text-[11px] text-gray-400">
+          Última evaluación: {training.efficacy_evaluated_by_name}
+          {training.efficacy_evaluated_at ? ` · ${new Date(training.efficacy_evaluated_at).toLocaleDateString('es-AR')}` : ''}
+        </p>
       )}
     </div>
   );

@@ -104,8 +104,11 @@ router.get('/upcoming', async (req, res) => {
 router.get('/:id', async (req, res) => {
   try {
     const { rows } = await query(
-      `SELECT t.*, u.full_name AS organized_by_name
-         FROM trainings t LEFT JOIN users u ON u.id = t.organized_by
+      `SELECT t.*, u.full_name AS organized_by_name,
+              ev.full_name AS efficacy_evaluated_by_name
+         FROM trainings t
+         LEFT JOIN users u  ON u.id  = t.organized_by
+         LEFT JOIN users ev ON ev.id = t.efficacy_evaluated_by
         WHERE t.id = $1`, [req.params.id]
     );
     if (!rows[0]) return res.status(404).json({ error: 'No encontrado' });
@@ -312,17 +315,38 @@ router.post('/:id/participants', requireRole(...MGMT), async (req, res) => {
 });
 
 router.patch('/:id/participants/:pid', requireRole(...MGMT), async (req, res) => {
-  const { attended, score, dni } = req.body;
+  const { attended, score, dni, conforme } = req.body;
   try {
     const { rows } = await query(
       `UPDATE training_participants SET
          attended = COALESCE($1, attended),
          score = COALESCE($2, score),
          dni = COALESCE($3, dni),
+         conforme = COALESCE($4, conforme),
          attendance_date = CASE WHEN $1 = true THEN NOW() ELSE attendance_date END
-       WHERE id = $4 RETURNING *`,
-      [attended ?? null, score ?? null, dni ?? null, req.params.pid]
+       WHERE id = $5 RETURNING *`,
+      [attended ?? null, score ?? null, dni ?? null, conforme ?? null, req.params.pid]
     );
+    res.json(rows[0]);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// PATCH /api/trainings/:id/efficacy — registrar evaluación de eficacia (ISO 7.2)
+router.patch('/:id/efficacy', requireRole(...MGMT), async (req, res) => {
+  const { efficacy_result, efficacy_method, efficacy_notes } = req.body;
+  if (efficacy_result && !['eficaz', 'parcial', 'no_eficaz'].includes(efficacy_result)) {
+    return res.status(400).json({ error: 'Resultado de eficacia no válido' });
+  }
+  try {
+    const { rows } = await query(
+      `UPDATE trainings SET
+         efficacy_result = $1, efficacy_method = $2, efficacy_notes = $3,
+         efficacy_evaluated_by = $4, efficacy_evaluated_at = NOW()
+       WHERE id = $5 RETURNING *`,
+      [efficacy_result || null, efficacy_method || null, efficacy_notes || null,
+       req.user.id, req.params.id]
+    );
+    if (!rows[0]) return res.status(404).json({ error: 'No encontrado' });
     res.json(rows[0]);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });

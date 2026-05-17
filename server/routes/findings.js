@@ -84,6 +84,30 @@ router.get('/stats', async (_req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+// GET /api/findings/analytics — series para los gráficos del módulo de NC
+router.get('/analytics', async (_req, res) => {
+  try {
+    const [trend, pareto, byStatus] = await Promise.all([
+      query(
+        `SELECT to_char(gs, 'YYYY-MM') AS mes,
+                (SELECT COUNT(*) FROM findings f WHERE f.deleted_at IS NULL
+                   AND date_trunc('month', f.created_at) = gs)::int AS creadas,
+                (SELECT COUNT(*) FROM findings f WHERE f.deleted_at IS NULL
+                   AND date_trunc('month', f.closed_at) = gs)::int AS cerradas
+           FROM generate_series(
+                  date_trunc('month', NOW()) - INTERVAL '11 months',
+                  date_trunc('month', NOW()), INTERVAL '1 month') gs
+          ORDER BY gs`
+      ),
+      query(`SELECT origin, COUNT(*)::int AS n FROM findings
+               WHERE deleted_at IS NULL GROUP BY origin ORDER BY n DESC`),
+      query(`SELECT status, COUNT(*)::int AS n FROM findings
+               WHERE deleted_at IS NULL GROUP BY status`),
+    ]);
+    res.json({ trend: trend.rows, pareto: pareto.rows, byStatus: byStatus.rows });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
 // GET /api/findings/reports — histórico de informes mensuales de NC
 router.get('/reports', async (req, res) => {
   if (!ADMIN_ROLES.includes(req.user.role)) {

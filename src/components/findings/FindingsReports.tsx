@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { FileText, Loader2, X, Sparkles, Mail } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
+import FindingsAnalytics from './FindingsAnalytics';
 
 const TYPE_LABEL: Record<string, string> = {
   nc_real: 'NC Reales', nc_potencial: 'NC Potenciales',
@@ -36,7 +37,9 @@ export default function FindingsReports() {
   });
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
+      <FindingsAnalytics />
+
       <div className="flex items-center justify-between gap-3">
         <div>
           <h3 className="text-sm font-extrabold text-gray-900">Informes mensuales de NC y desvíos</h3>

@@ -52,14 +52,14 @@ router.get('/:id', async (req, res) => {
 
 // POST /api/employees
 router.post('/', requireRole('master_admin', 'director', 'sgi_leader'), async (req, res) => {
-  const { full_name, email, phone, sector, position, evaluator_id, secondary_evaluator_id, user_id } = req.body;
+  const { full_name, email, phone, whatsapp, sector, position, evaluator_id, secondary_evaluator_id, user_id } = req.body;
   if (!full_name) return res.status(400).json({ error: 'El nombre completo es requerido' });
 
   try {
     const { rows } = await query(
-      `INSERT INTO employees (full_name, email, phone, sector, position, evaluator_id, secondary_evaluator_id, user_id)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *`,
-      [full_name, email || null, phone || null, sector || null, position || null,
+      `INSERT INTO employees (full_name, email, phone, whatsapp, sector, position, evaluator_id, secondary_evaluator_id, user_id)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *`,
+      [full_name, email || null, phone || null, whatsapp || null, sector || null, position || null,
        evaluator_id || null, secondary_evaluator_id || null, user_id || null]);
     res.status(201).json(rows[0]);
   } catch (err) {
@@ -70,7 +70,7 @@ router.post('/', requireRole('master_admin', 'director', 'sgi_leader'), async (r
 
 // PATCH /api/employees/:id
 router.patch('/:id', requireRole('master_admin', 'director', 'sgi_leader'), async (req, res) => {
-  const ALLOWED = ['full_name', 'email', 'phone', 'sector', 'position',
+  const ALLOWED = ['full_name', 'email', 'phone', 'whatsapp', 'sector', 'position',
                    'evaluator_id', 'secondary_evaluator_id', 'user_id', 'is_active'];
   const updates = [];
   const params = [];

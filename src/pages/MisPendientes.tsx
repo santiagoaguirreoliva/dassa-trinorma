@@ -74,6 +74,9 @@ export default function MisPendientes() {
   const [sourceFilter, setSourceFilter] = useState<string>('all');
   const [groupBy, setGroupBy] = useState<'none' | 'estado' | 'origen' | 'vencimiento'>('vencimiento');
   const [board, setBoard] = useState<'mias' | 'equipo'>('mias');
+  const [search, setSearch] = useState('');
+  const [showNew, setShowNew] = useState(false);
+  const [users, setUsers] = useState<any[]>([]);
   const [completing, setCompleting] = useState<string | null>(null);
   const [selected, setSelected] = useState<Task | null>(null);
   const [comments, setComments] = useState<any[]>([]);
@@ -94,6 +97,7 @@ export default function MisPendientes() {
   }
 
   useEffect(() => { load(); }, []);
+  useEffect(() => { api.get<any[]>('/users').then(setUsers).catch(() => {}); }, []);
 
   // Comentarios de la tarea seleccionada
   useEffect(() => {
@@ -153,9 +157,16 @@ export default function MisPendientes() {
       if (statusFilter === 'pendiente' && t.status !== 'pendiente') return false;
       if (statusFilter === 'en_curso' && t.status !== 'en_curso') return false;
       if (sourceFilter !== 'all' && t.source_module !== sourceFilter) return false;
+      if (search.trim()) {
+        const q = search.trim().toLowerCase();
+        const hit = t.title.toLowerCase().includes(q)
+          || (t.task_number || '').toLowerCase().includes(q)
+          || (t.description || '').toLowerCase().includes(q);
+        if (!hit) return false;
+      }
       return true;
     });
-  }, [tasks, statusFilter, sourceFilter]);
+  }, [tasks, statusFilter, sourceFilter, search]);
 
   const groups = useMemo(() => {
     if (groupBy === 'none') return [{ key: 'all', label: '', order: 0, tasks: filtered }];
@@ -226,6 +237,9 @@ export default function MisPendientes() {
             <button onClick={load} className="bg-white border border-slate-200 hover:border-slate-300 hover:bg-slate-50 rounded-lg px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition-colors">
               Refrescar
             </button>
+            <button onClick={() => setShowNew(true)} className="bg-dassa-red hover:bg-dassa-red-deep text-white rounded-lg px-4 py-2 text-sm font-bold shadow-sm transition-colors">
+              + Nueva tarea
+            </button>
           </div>
         </div>
 
@@ -242,6 +256,12 @@ export default function MisPendientes() {
         {/* Filtros */}
         <div className="bg-white rounded-xl border border-slate-200/60 shadow-dassa-card p-4 mb-4 flex flex-wrap gap-3 items-center">
           <Filter className="w-5 h-5 text-gray-500" />
+          <input
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder="Buscar tarea..."
+            className="text-sm border border-gray-300 rounded-lg px-3 py-1.5 w-44 focus:outline-none focus:border-dassa-red"
+          />
           <div className="flex gap-1">
             {[
               { v: 'all', l: 'Todas' },
@@ -386,6 +406,16 @@ export default function MisPendientes() {
         )}
         </>)}
       </div>
+
+      {/* Modal nueva tarea */}
+      {showNew && (
+        <NewTaskModal
+          users={users}
+          currentUserId={user.id}
+          onClose={() => setShowNew(false)}
+          onCreated={load}
+        />
+      )}
 
       {/* Modal detalle */}
       {selected && (
@@ -534,6 +564,96 @@ export default function MisPendientes() {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+function NewTaskModal({ users, currentUserId, onClose, onCreated }: {
+  users: any[]; currentUserId: string; onClose: () => void; onCreated: () => void;
+}) {
+  const [form, setForm] = useState({
+    title: '', description: '', priority: 'media', due_date: '', assigned_to: currentUserId,
+  });
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+  const set = (k: string, v: string) => setForm(p => ({ ...p, [k]: v }));
+
+  async function save() {
+    if (!form.title.trim()) { setError('El título es obligatorio'); return; }
+    setSaving(true);
+    setError('');
+    try {
+      await api.post('/tasks', {
+        title: form.title.trim(),
+        description: form.description.trim() || null,
+        priority: form.priority,
+        due_date: form.due_date || null,
+        assigned_to: form.assigned_to || null,
+      });
+      onCreated();
+      onClose();
+    } catch (e: any) {
+      setError(e.message || 'No se pudo crear la tarea');
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={onClose}>
+      <div className="bg-white rounded-2xl max-w-lg w-full" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between border-b border-gray-200 p-5">
+          <h2 className="text-lg font-bold text-gray-900">Nueva tarea</h2>
+          <button onClick={onClose} aria-label="Cerrar"><X className="w-5 h-5 text-gray-400" /></button>
+        </div>
+        <div className="p-5 space-y-3">
+          <div>
+            <label className="text-xs font-bold text-gray-600 uppercase tracking-wider">Título *</label>
+            <input value={form.title} onChange={e => set('title', e.target.value)}
+              placeholder="¿Qué hay que hacer?"
+              className="w-full mt-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-dassa-red" />
+          </div>
+          <div>
+            <label className="text-xs font-bold text-gray-600 uppercase tracking-wider">Descripción</label>
+            <textarea value={form.description} onChange={e => set('description', e.target.value)}
+              rows={3} placeholder="Detalle (opcional)"
+              className="w-full mt-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-dassa-red resize-none" />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs font-bold text-gray-600 uppercase tracking-wider">Prioridad</label>
+              <select value={form.priority} onChange={e => set('priority', e.target.value)}
+                className="w-full mt-1 border border-gray-200 rounded-lg px-2 py-2 text-sm bg-white">
+                <option value="baja">baja</option>
+                <option value="media">media</option>
+                <option value="alta">alta</option>
+                <option value="urgente">urgente</option>
+              </select>
+            </div>
+            <div>
+              <label className="text-xs font-bold text-gray-600 uppercase tracking-wider">Fecha límite</label>
+              <input type="date" value={form.due_date} onChange={e => set('due_date', e.target.value)}
+                className="w-full mt-1 border border-gray-200 rounded-lg px-2 py-2 text-sm" />
+            </div>
+          </div>
+          <div>
+            <label className="text-xs font-bold text-gray-600 uppercase tracking-wider">Responsable</label>
+            <select value={form.assigned_to} onChange={e => set('assigned_to', e.target.value)}
+              className="w-full mt-1 border border-gray-200 rounded-lg px-2 py-2 text-sm bg-white">
+              <option value="">Sin asignar</option>
+              {users.map(u => <option key={u.id} value={u.id}>{u.full_name}</option>)}
+            </select>
+          </div>
+          {error && <p className="text-xs text-red-500 bg-red-50 px-3 py-2 rounded-lg">{error}</p>}
+        </div>
+        <div className="flex justify-end gap-2 border-t border-gray-200 p-4">
+          <button onClick={onClose} className="px-4 py-2 text-sm font-semibold text-gray-600 hover:bg-gray-100 rounded-lg">Cancelar</button>
+          <button onClick={save} disabled={saving || !form.title.trim()}
+            className="px-5 py-2 bg-dassa-red text-white font-bold text-sm rounded-lg hover:bg-dassa-red-deep disabled:opacity-50 flex items-center gap-2">
+            {saving && <Loader2 className="w-4 h-4 animate-spin" />}
+            Crear tarea
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

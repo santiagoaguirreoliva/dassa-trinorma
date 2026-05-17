@@ -105,6 +105,44 @@ router.get('/stats', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+// ─── GET /api/tasks/analytics — métricas de seguimiento ─────────
+router.get('/analytics', async (_req, res) => {
+  try {
+    const [cumpl, tiempo, trend, byStatus] = await Promise.all([
+      query(`
+        SELECT
+          COUNT(*) FILTER (WHERE completed_at::date <= due_date)::int AS a_tiempo,
+          COUNT(*) FILTER (WHERE completed_at::date > due_date)::int  AS tarde,
+          COUNT(*)::int AS total
+        FROM tasks
+        WHERE status = 'completada' AND completed_at IS NOT NULL AND due_date IS NOT NULL`),
+      query(`
+        SELECT ROUND(AVG(EXTRACT(EPOCH FROM (completed_at - created_at)) / 86400)::numeric, 1) AS dias_prom
+        FROM tasks WHERE status = 'completada' AND completed_at IS NOT NULL`),
+      query(`
+        SELECT to_char(gs, 'YYYY-MM-DD') AS semana,
+               (SELECT COUNT(*) FROM tasks t WHERE date_trunc('week', t.created_at) = gs)::int AS creadas,
+               (SELECT COUNT(*) FROM tasks t WHERE t.status = 'completada'
+                  AND date_trunc('week', t.completed_at) = gs)::int AS completadas
+          FROM generate_series(
+                 date_trunc('week', NOW()) - INTERVAL '7 weeks',
+                 date_trunc('week', NOW()), INTERVAL '1 week') gs
+         ORDER BY gs`),
+      query(`SELECT status, COUNT(*)::int AS n FROM tasks GROUP BY status`),
+    ]);
+    const c = cumpl.rows[0];
+    res.json({
+      cumplimiento: {
+        a_tiempo: c.a_tiempo, tarde: c.tarde, total: c.total,
+        pct_a_tiempo: c.total ? Math.round((c.a_tiempo / c.total) * 100) : null,
+      },
+      dias_prom: tiempo.rows[0]?.dias_prom != null ? Number(tiempo.rows[0].dias_prom) : null,
+      trend: trend.rows,
+      by_status: byStatus.rows,
+    });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
 // ─── GET /api/tasks/by-user — tasks grouped by assigned user ────
 router.get('/by-user', async (req, res) => {
   try {

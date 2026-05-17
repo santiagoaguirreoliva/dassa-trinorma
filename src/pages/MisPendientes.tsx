@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { api } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 import TeamOverview from '@/components/tasks/TeamOverview';
+import TaskMetrics from '@/components/tasks/TaskMetrics';
 import {
   CheckSquare, AlertCircle, Calendar, Users, Filter,
   Loader2, CheckCircle2, ChevronRight, Building2, AlertTriangle,
@@ -73,7 +74,7 @@ export default function MisPendientes() {
   const [statusFilter, setStatusFilter] = useState<'all' | 'pendiente' | 'en_curso' | 'overdue'>('all');
   const [sourceFilter, setSourceFilter] = useState<string>('all');
   const [groupBy, setGroupBy] = useState<'none' | 'estado' | 'origen' | 'vencimiento'>('vencimiento');
-  const [board, setBoard] = useState<'mias' | 'equipo'>('mias');
+  const [board, setBoard] = useState<'mias' | 'equipo' | 'metricas'>('mias');
   const [search, setSearch] = useState('');
   const [showNew, setShowNew] = useState(false);
   const [users, setUsers] = useState<any[]>([]);
@@ -232,6 +233,10 @@ export default function MisPendientes() {
                   className={`px-3 py-1.5 rounded-md text-sm font-semibold transition-colors ${board === 'equipo' ? 'bg-white shadow-sm text-dassa-red' : 'text-gray-500'}`}>
                   Equipo
                 </button>
+                <button onClick={() => setBoard('metricas')}
+                  className={`px-3 py-1.5 rounded-md text-sm font-semibold transition-colors ${board === 'metricas' ? 'bg-white shadow-sm text-dassa-red' : 'text-gray-500'}`}>
+                  Métricas
+                </button>
               </div>
             )}
             <button onClick={load} className="bg-white border border-slate-200 hover:border-slate-300 hover:bg-slate-50 rounded-lg px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition-colors">
@@ -243,7 +248,7 @@ export default function MisPendientes() {
           </div>
         </div>
 
-        {board === 'equipo' ? <TeamOverview /> : (<>
+        {board === 'equipo' ? <TeamOverview /> : board === 'metricas' ? <TaskMetrics /> : (<>
         {/* KPIs */}
         <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
           <Stat label="Total" value={stats.total} color="bg-gray-100 text-gray-900" />

@@ -1,9 +1,25 @@
 import { Router } from 'express';
+import { readFileSync } from 'node:fs';
 import { query } from '../db/db.js';
 import { authenticate } from '../middleware/auth.js';
 
 const router = Router();
 router.use(authenticate);
+
+// Contexto canónico DEPOFIS/DASSA — fuente única: dassa4/docs/DEPOFIS-AGENT-CONTEXT.md
+// (redistribuir con dassa4/docs/distribuir-depofis-context.sh tras editarlo).
+function loadDepofisContext() {
+  const candidates = [
+    process.env.DEPOFIS_CONTEXT_PATH,
+    '/home/dassa/dassa4/apps/sgi/DEPOFIS-AGENT-CONTEXT.md',
+    '/home/dassa/dassa4/docs/DEPOFIS-AGENT-CONTEXT.md',
+  ].filter(Boolean);
+  for (const p of candidates) {
+    try { return readFileSync(p, 'utf8').trim(); } catch { /* probar siguiente */ }
+  }
+  return '';
+}
+const DEPOFIS_CONTEXT = loadDepofisContext();
 
 // GET /api/committee
 router.get('/', async (req, res) => {
@@ -141,6 +157,7 @@ ${rows[0].minutes}`;
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
         max_tokens: 2000,
+        ...(DEPOFIS_CONTEXT ? { system: [{ type: 'text', text: DEPOFIS_CONTEXT, cache_control: { type: 'ephemeral' } }] } : {}),
         messages: [{ role: 'user', content: prompt }],
       }),
     });

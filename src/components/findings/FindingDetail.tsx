@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { X, Plus, CheckCircle2,
-         Clock, User, MessageSquare, Paperclip, Save, Loader2 } from 'lucide-react';
+         Clock, User, MessageSquare, Paperclip, Save, Loader2, Sparkles } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { Badge, FINDING_STATUS, FINDING_TYPE, Avatar } from '@/components/ui';
@@ -68,6 +68,11 @@ export default function FindingDetail({ findingId, onClose }: Props) {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['finding', findingId] }),
   });
 
+  const aiAnalyze = useMutation({
+    mutationFn: () => api.post(`/findings/${findingId}/ai-analyze`, {}),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['finding', findingId] }),
+  });
+
   if (isLoading) return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
       <div className="bg-white rounded-2xl p-8"><Loader2 size={28} className="animate-spin text-blue-500" /></div>
@@ -85,6 +90,7 @@ export default function FindingDetail({ findingId, onClose }: Props) {
     : {};
 
   const ed = (k: string) => editData[k] ?? finding[k] ?? '';
+  const ai = finding.ai_analysis || null;
 
   return (
     <div className="fixed inset-0 bg-black/60 z-50 flex items-start justify-end overflow-hidden" onClick={onClose}>
@@ -287,6 +293,58 @@ export default function FindingDetail({ findingId, onClose }: Props) {
                 <p className="text-xs font-bold text-blue-700 uppercase tracking-wider mb-1">Método 5 Porqués</p>
                 <p className="text-xs text-blue-600">Preguntá "¿por qué?" 5 veces para llegar a la causa raíz del problema.</p>
               </div>
+
+              {/* ── Análisis IA de Triny ── */}
+              <div className="bg-violet-50 rounded-xl p-4 border border-violet-200 space-y-3">
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-xs font-bold text-violet-700 uppercase tracking-wider flex items-center gap-1.5">
+                    <Sparkles size={13} /> Análisis de Triny IA
+                  </p>
+                  {isAdmin && (
+                    <button
+                      onClick={() => aiAnalyze.mutate()}
+                      disabled={aiAnalyze.isPending}
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-violet-600 text-white rounded-lg text-xs font-bold hover:bg-violet-700 disabled:opacity-50"
+                    >
+                      {aiAnalyze.isPending ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}
+                      {ai ? 'Reanalizar' : 'Analizar con Triny'}
+                    </button>
+                  )}
+                </div>
+                {aiAnalyze.isPending && (
+                  <p className="text-xs text-violet-600">Triny está analizando la causa raíz…</p>
+                )}
+                {aiAnalyze.isError && (
+                  <p className="text-xs text-red-500">No se pudo completar el análisis. Reintentá en unos segundos.</p>
+                )}
+                {ai ? (
+                  <>
+                    {ai.summary && <p className="text-sm text-slate-700">{ai.summary}</p>}
+                    {ai.root_cause && (
+                      <div className="bg-white rounded-lg p-2.5 border border-violet-100">
+                        <p className="text-[10px] font-bold text-violet-500 uppercase tracking-wider">Causa raíz</p>
+                        <p className="text-sm text-slate-700 mt-0.5">{ai.root_cause}</p>
+                      </div>
+                    )}
+                    {isAdmin && ai.porques && (
+                      <button
+                        onClick={() => setEditData(p => ({
+                          ...p,
+                          porq_p1: ai.porques.p1, porq_p2: ai.porques.p2, porq_p3: ai.porques.p3,
+                          porq_p4: ai.porques.p4, porq_p5: ai.porques.p5,
+                        }))}
+                        className="text-xs font-bold text-violet-700 hover:underline"
+                      >
+                        ↓ Aplicar la sugerencia a los 5 porqués
+                      </button>
+                    )}
+                  </>
+                ) : !aiAnalyze.isPending && (
+                  <p className="text-xs text-violet-600">
+                    Todavía no hay análisis IA.{isAdmin ? ' Tocá "Analizar con Triny" para generarlo.' : ''}
+                  </p>
+                )}
+              </div>
               {[1,2,3,4,5].map(n => {
                 const key = `p${n}`;
                 const val = porques[key] || '';
@@ -340,6 +398,35 @@ export default function FindingDetail({ findingId, onClose }: Props) {
           {/* ─── ACCIONES CORRECTIVAS ─── */}
           {tab === 'acciones' && (
             <div className="space-y-4">
+
+              {/* Sugerencias de Triny IA */}
+              {ai && ((ai.corrective_actions?.length ?? 0) > 0 || ai.improvement_opportunity) && (
+                <div className="bg-violet-50 rounded-xl p-4 border border-violet-200 space-y-2">
+                  <p className="text-xs font-bold text-violet-700 uppercase tracking-wider flex items-center gap-1.5">
+                    <Sparkles size={13} /> Sugerencias de Triny
+                  </p>
+                  {(ai.corrective_actions ?? []).map((act: string, i: number) => (
+                    <div key={i} className="flex items-start gap-2 bg-white rounded-lg p-2.5 border border-violet-100">
+                      <p className="flex-1 text-sm text-slate-700">{act}</p>
+                      {isAdmin && (
+                        <button
+                          onClick={() => { setNewAction(p => ({ ...p, description: act })); }}
+                          className="text-xs font-bold text-violet-700 hover:underline flex-shrink-0"
+                        >
+                          Usar
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                  {ai.improvement_opportunity && (
+                    <div className="bg-white rounded-lg p-2.5 border border-violet-100">
+                      <p className="text-[10px] font-bold text-violet-500 uppercase tracking-wider">Oportunidad de mejora</p>
+                      <p className="text-sm text-slate-700 mt-0.5">{ai.improvement_opportunity}</p>
+                    </div>
+                  )}
+                </div>
+              )}
+
               {(finding.actions ?? []).map((a: any) => (
                 <div key={a.id} className={`p-4 rounded-xl border ${a.status === 'completada' ? 'bg-emerald-50 border-emerald-200' : 'bg-white border-slate-200'}`}>
                   <div className="flex items-start gap-3">

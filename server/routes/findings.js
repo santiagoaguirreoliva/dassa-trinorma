@@ -220,6 +220,10 @@ router.post('/', async (req, res) => {
     }
     notifyNewFinding(finding, req.user).catch(e => console.error('[findings] mail alta NC:', e.message));
 
+    // Pre-análisis de Nixa: la IA estudia la NC apenas se registra y deja
+    // su sugerencia de causa raíz lista para que calidad la revise.
+    runAiAnalysis(finding.id).catch(e => console.error('[findings] pre-análisis Nixa:', e.message));
+
     res.status(201).json(finding);
   } catch (err) {
     await client.query('ROLLBACK');
@@ -467,6 +471,40 @@ router.delete('/:id/comments/:cid', async (req, res) => {
     res.json({ message: 'Eliminado' });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
+
+// POST /api/findings/:id/ai-analyze — Triny analiza la NC: causa raíz (5 porqués)
+// + acciones correctivas + oportunidad de mejora. Guarda la sugerencia en ai_analysis.
+router.post('/:id/ai-analyze', async (req, res) => {
+  if (!ADMIN_ROLES.includes(req.user.role)) {
+    return res.status(403).json({ error: 'Sin permiso para ejecutar el análisis IA' });
+  }
+  try {
+    const result = await runAiAnalysis(req.params.id);
+    res.json(result);
+  } catch (err) {
+    const notFound = /no encontrad/i.test(err.message);
+    res.status(notFound ? 404 : 500).json({ error: err.message });
+  }
+});
+
+// runAiAnalysis — corre el análisis IA de una NC y persiste la sugerencia.
+// Usado por el endpoint on-demand y por el pre-análisis automático al dar de alta.
+async function runAiAnalysis(findingId) {
+  const { rows } = await query(
+    'SELECT * FROM findings WHERE id = $1 AND deleted_at IS NULL', [findingId]
+  );
+  if (!rows[0]) throw new Error('Hallazgo no encontrado');
+
+  const mod = await import('../services/findings-ai.cjs');
+  const ai = mod.default || mod;
+  const result = await ai.analyzeFinding(rows[0]);
+
+  await query(
+    'UPDATE findings SET ai_analysis = $1, ai_analyzed_at = NOW() WHERE id = $2',
+    [JSON.stringify(result), findingId]
+  );
+  return result;
+}
 
 // notifyNewFinding — aviso por correo al equipo de calidad cuando entra una NC.
 // Se resuelve de forma perezosa para no acoplar el router al mailer.

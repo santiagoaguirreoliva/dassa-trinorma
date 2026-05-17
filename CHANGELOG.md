@@ -50,6 +50,14 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/), versionado [S
 
 **Fase T4 — Seguimiento con Triny** (migración 033): desactivado el digest quincenal legacy de `email.js` que se solapaba con el recordatorio de lunes; el seguimiento de tareas queda centralizado en Triny (lunes personal, viernes y mensual a María y Santiago, intimación diaria de vencidas).
 
+**Fase T5 — Vista de equipo**: `/team-overview` cuenta por los tres caminos de asignación; pantalla de carga por persona (pendientes/vencidas/prioridad) con toggle "Mis tareas / Equipo" para supervisores.
+
+**Fase T6 — Alta rápida y búsqueda**: botón "Nueva tarea" con modal en Mis Pendientes; búsqueda por título, número o descripción.
+
+**Fase T7 — Métricas**: endpoint `/tasks/analytics` (cumplimiento de plazos, tiempo promedio de cierre, tendencia semanal); modo "Métricas" con KPIs y gráfico.
+
+**Fase T8 — Cierre por responsable + IA**: cada responsable cierra su parte (`task_assignees.completed_at`); la tarea se cierra cuando todos terminan. El resumen semanal del viernes abre con un análisis ejecutivo generado por Triny.
+
 ### Pre-entrega · auditoría 2026-05-14
 - **Fix crítico de auth**: `auditor.cjs`, `profiles.cjs` y `users-extra.cjs` ahora aplican `router.use(authenticate)` (antes `requireAdmin` chequeaba `req.user` sin middleware previo).
 - **Fix bug SQL** `dashboard.js` charts: `COALESCE(status::text, ...)` en findings y purchases (el enum no aceptaba el fallback como string).

@@ -1,133 +1,38 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useState } from 'react';
-import { Megaphone, Link as LinkIcon, Loader2, MessageCircle } from 'lucide-react';
-import CommunicationEditor from '@/components/CommunicationEditor';
-import { api } from '@/lib/api';
+// Comunicaciones — unificadas en el Centro de Comunicaciones de Smart DASSA Apps.
+// El módulo propio del SGI quedó deprecado para evitar la duplicación del
+// registro F-TRI-06 entre la app hija y la app madre.
+import { Megaphone, ExternalLink } from 'lucide-react';
 import { Header } from '@/components/layout/Header';
-import { Spinner, PageContent, KPICard } from '@/components/ui';
+import { PageContent } from '@/components/ui';
 
-interface Comm { id:string; code:string; title:string; category:string; status:string; sender_name:string; sent_at:string; public_token:string; num_recipients:number; num_reads:number; num_confirmed:number; }
+const CENTRO_URL = 'https://apps.dassa.com.ar/comunicaciones';
 
 export default function Comunicaciones() {
-  useQueryClient();
-  const [showNew, setShowNew] = useState(false);
-
-  const { data, isLoading } = useQuery<{ok:boolean;communications:Comm[]}>({
-    queryKey: ['comunicaciones'],
-    queryFn: () => api.get('/comunicaciones'),
-    refetchInterval: 20_000,
-  });
-
-  if (isLoading || !data) return <PageContent><Spinner/></PageContent>;
-  const enviadas = data.communications.filter(c=>c.status==='enviada').length;
-  const borradores = data.communications.filter(c=>c.status==='borrador').length;
-  const lecturas = data.communications.reduce((s,c)=>s+(c.num_reads||0),0);
-  const confirmadas = data.communications.reduce((s,c)=>s+(c.num_confirmed||0),0);
-
   return (
-    <PageContent>
-      <Header title="📢 Comunicaciones Formales" subtitle={`${data.communications.length} comunicaciones · F-TRI-06 vivo`} icon={<Megaphone size={20}/>}/>
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-        <KPICard label="Enviadas" value={enviadas}/>
-        <KPICard label="Borradores" value={borradores}/>
-        <KPICard label="Lecturas registradas" value={lecturas}/>
-        <KPICard label="Confirmadas" value={confirmadas} sub={lecturas? `${Math.round(confirmadas/lecturas*100)}%`:'—'}/>
-      </div>
-      <div className="flex items-center justify-between mb-3">
-        <h3 className="text-sm font-bold text-gray-700">Historial</h3>
-        <button onClick={()=>setShowNew(true)} className="px-3 py-1.5 bg-dassa-red text-white text-xs font-bold rounded-lg hover:bg-dassa-red-deep">+ Nueva</button>
-      </div>
-      <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-        <table className="w-full text-xs">
-          <thead className="bg-gray-50 border-b">
-            <tr>
-              <th className="text-left px-3 py-2 text-[10px] font-bold text-gray-500 uppercase">Código</th>
-              <th className="text-left px-3 py-2 text-[10px] font-bold text-gray-500 uppercase">Título</th>
-              <th className="text-left px-3 py-2 text-[10px] font-bold text-gray-500 uppercase">Estado</th>
-              <th className="text-left px-3 py-2 text-[10px] font-bold text-gray-500 uppercase">Lecturas</th>
-              <th className="text-left px-3 py-2 text-[10px] font-bold text-gray-500 uppercase">Link</th>
-            </tr>
-          </thead>
-          <tbody>
-            {data.communications.map(c=>(
-              <tr key={c.id} className="border-b hover:bg-gray-50">
-                <td className="px-3 py-2"><code className="text-[10px] font-bold text-dassa-celeste-deep">{c.code}</code></td>
-                <td className="px-3 py-2">
-                  <div className="font-semibold text-gray-900">{c.title}</div>
-                  <div className="text-[10px] text-gray-500">{c.category} · {c.sender_name}</div>
-                </td>
-                <td className="px-3 py-2">
-                  <span className={`text-[10px] px-2 py-0.5 rounded font-bold ${c.status==='enviada'?'bg-emerald-100 text-emerald-700':'bg-gray-100 text-gray-600'}`}>{c.status}</span>
-                </td>
-                <td className="px-3 py-2 text-[10px] text-gray-600">
-                  {c.num_reads||0} lecturas · {c.num_confirmed||0} confirmadas / {c.num_recipients||0} destinatarios
-                </td>
-                <td className="px-3 py-2">
-                  {c.status==='enviada' && (
-                    <div className="flex flex-col gap-1">
-                      <a href={`/c/${c.public_token}`} target="_blank" rel="noreferrer" className="text-[10px] text-dassa-celeste-deep font-bold hover:underline flex items-center gap-1">
-                        <LinkIcon size={10}/> Abrir
-                      </a>
-                      <button onClick={()=>shareWhatsApp(c.id)} className="text-[10px] text-emerald-700 font-bold hover:underline flex items-center gap-1">
-                        <MessageCircle size={10}/> WhatsApp
-                      </button>
-                    </div>
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-      {showNew && <NewCommModal onClose={()=>setShowNew(false)}/>}
-    </PageContent>
-  );
-}
-
-async function shareWhatsApp(id: string) {
-  try {
-    const r = await fetch(`/api/comunicaciones/${id}/whatsapp-share`, {
-      headers: { Authorization: `Bearer ${localStorage.getItem('dassa_token')}` }
-    });
-    const data = await r.json();
-    if (!data.ok) { alert('Error: ' + data.error); return; }
-    // Copiar texto al clipboard
-    try {
-      await navigator.clipboard.writeText(data.whatsapp_text);
-    } catch {}
-    // Abrir WhatsApp con el texto pre-cargado
-    window.open(data.whatsapp_link, '_blank');
-  } catch (e: any) { alert(e.message); }
-}
-
-function NewCommModal({ onClose }: { onClose:()=>void }) {
-  const qc = useQueryClient();
-  const [form, setForm] = useState({ title:'', body_md:'', category:'info', scope:'internal' });
-  const create = useMutation({
-    mutationFn: () => api.post('/comunicaciones', form),
-    onSuccess: () => { qc.invalidateQueries({ queryKey:['comunicaciones'] }); onClose(); },
-  });
-  return (
-    <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-white rounded-2xl w-full max-w-lg p-6" onClick={e=>e.stopPropagation()}>
-        <h3 className="text-lg font-extrabold mb-4">Nueva Comunicación</h3>
-        <input placeholder="Título" value={form.title} onChange={e=>setForm({...form, title:e.target.value})} className="input-field w-full mb-2"/>
-        <CommunicationEditor value={form.body_md} onChange={(v: string)=>setForm({...form, body_md: v})}/>
-        <select value={form.category} onChange={e=>setForm({...form, category:e.target.value})} className="input-field w-full mb-2">
-          <option value="info">Info general</option>
-          <option value="politica">Política</option>
-          <option value="cambio">Cambio</option>
-          <option value="capacitacion">Capacitación</option>
-          <option value="alerta">Alerta</option>
-        </select>
-        <div className="flex gap-2 justify-end mt-4">
-          <button onClick={onClose} className="px-3 py-1.5 text-xs text-gray-600">Cancelar</button>
-          <button onClick={()=>create.mutate()} disabled={!form.title || !form.body_md || create.isPending}
-            className="px-4 py-1.5 bg-dassa-red text-white text-xs font-bold rounded-lg disabled:opacity-50 flex items-center gap-1">
-            {create.isPending && <Loader2 size={12} className="animate-spin"/>} Crear (borrador)
-          </button>
-        </div>
-      </div>
-    </div>
+    <>
+      <Header title="Comunicaciones" subtitle="Centralizadas en Smart DASSA Apps" />
+      <PageContent>
+        <main className="max-w-xl mx-auto mt-8 bg-white rounded-2xl border border-gray-200 p-8 text-center">
+          <div className="w-14 h-14 rounded-2xl bg-dassa-red-tint flex items-center justify-center mx-auto mb-4">
+            <Megaphone className="w-7 h-7 text-dassa-red" />
+          </div>
+          <h2 className="text-lg font-extrabold text-gray-900">Comunicaciones unificadas</h2>
+          <p className="text-sm text-gray-600 mt-2 leading-relaxed">
+            Las comunicaciones se gestionan de forma centralizada en el{' '}
+            <strong>Centro de Comunicaciones de Smart DASSA Apps</strong>: directorio único de
+            destinatarios, acuses de lectura con firma, recordatorios automáticos y registro
+            F-TRI-06. Así evitamos tener el mismo registro duplicado en dos sistemas.
+          </p>
+          <a
+            href={CENTRO_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 mt-5 px-5 py-2.5 bg-dassa-red text-white font-bold text-sm rounded-xl hover:bg-dassa-red-deep transition-colors"
+          >
+            <ExternalLink size={16} /> Ir al Centro de Comunicaciones
+          </a>
+        </main>
+      </PageContent>
+    </>
   );
 }

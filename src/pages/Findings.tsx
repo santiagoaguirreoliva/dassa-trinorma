@@ -14,7 +14,7 @@ interface Finding {
   id: string; code: string; title: string; description: string;
   finding_type: string; status: string; origin: string; area: string;
   due_date?: string; reported_by_name?: string;
-  assigned_to_name?: string; assigned_to_avatar?: string;
+  assigned_to?: string; assigned_to_name?: string; assigned_to_avatar?: string;
   days_open: number; actions_count: number; comments_count: number;
   created_at: string;
 }
@@ -43,13 +43,19 @@ const TIPOS = [
 const AREAS = ['', 'Depósito — Almacén', 'Coordinación', 'Plazoleta', 'Administración', 'Mantenimiento', 'Otros'];
 
 // ─── NC Card (kanban) ─────────────────────────────────────────
-function NCCard({ finding, onClick }: { finding: Finding; onClick: () => void }) {
+function NCCard({ finding, onClick, draggable, onDragStart }: {
+  finding: Finding; onClick: () => void;
+  draggable?: boolean; onDragStart?: (e: React.DragEvent) => void;
+}) {
   const tc = FINDING_TYPE[finding.finding_type];
   const overdue = finding.due_date && new Date(finding.due_date) < new Date() && finding.status !== 'cerrado';
   return (
     <div
       onClick={onClick}
+      draggable={draggable}
+      onDragStart={onDragStart}
       className={`bg-white rounded-xl border p-3 cursor-pointer hover:shadow-md transition-all group
+        ${draggable ? 'active:cursor-grabbing' : ''}
         ${overdue ? 'border-red-200 bg-red-50' : 'border-gray-200'}`}
     >
       <div className="flex items-start justify-between gap-1 mb-2">
@@ -195,11 +201,22 @@ export default function Findings() {
   const [search, setSearch] = useState('');
   const [filterType, setFilterType] = useState('');
   const [filterArea, setFilterArea] = useState('');
+  const [filterStatus, setFilterStatus] = useState('');
+  const [filterAssigned, setFilterAssigned] = useState('');
+  const [dragId, setDragId] = useState<string | null>(null);
+  const qc = useQueryClient();
 
   const { data: findings = [], isLoading } = useQuery<Finding[]>({
     queryKey: ['findings'],
     queryFn: () => api.get('/findings'),
     refetchInterval: 30_000,
+  });
+
+  const moveCard = useMutation({
+    mutationFn: ({ id, status }: { id: string; status: string }) =>
+      api.patch(`/findings/${id}/status`, { status }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['findings'] }),
+    onError: (e: any) => alert(e.message || 'No se pudo mover la NC'),
   });
 
   const { data: users = [] } = useQuery<any[]>({
@@ -220,7 +237,9 @@ export default function Findings() {
       f.area?.toLowerCase().includes(search.toLowerCase());
     const matchType = !filterType || f.finding_type === filterType;
     const matchArea = !filterArea || f.area?.includes(filterArea);
-    return matchSearch && matchType && matchArea;
+    const matchStatus = !filterStatus || f.status === filterStatus;
+    const matchAssigned = !filterAssigned || f.assigned_to === filterAssigned;
+    return matchSearch && matchType && matchArea && matchStatus && matchAssigned;
   });
 
   const openCount = findings.filter(f => f.status !== 'cerrado').length;
@@ -296,8 +315,18 @@ export default function Findings() {
           className="border border-gray-200 rounded-lg px-2.5 py-1.5 text-xs focus:outline-none">
           {AREAS.map(a => <option key={a} value={a}>{a || 'Todos los sectores'}</option>)}
         </select>
-        {(search || filterType || filterArea) && (
-          <button onClick={() => { setSearch(''); setFilterType(''); setFilterArea(''); }}
+        <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)}
+          className="border border-gray-200 rounded-lg px-2.5 py-1.5 text-xs focus:outline-none">
+          <option value="">Todos los estados</option>
+          {KANBAN_COLS.map(c => <option key={c.key} value={c.key}>{c.label}</option>)}
+        </select>
+        <select value={filterAssigned} onChange={e => setFilterAssigned(e.target.value)}
+          className="border border-gray-200 rounded-lg px-2.5 py-1.5 text-xs focus:outline-none">
+          <option value="">Todos los responsables</option>
+          {users.map((u: any) => <option key={u.id} value={u.id}>{u.full_name}</option>)}
+        </select>
+        {(search || filterType || filterArea || filterStatus || filterAssigned) && (
+          <button onClick={() => { setSearch(''); setFilterType(''); setFilterArea(''); setFilterStatus(''); setFilterAssigned(''); }}
             className="text-xs text-gray-400 hover:text-red-500 flex items-center gap-1">
             <X size={12} /> Limpiar
           </button>
@@ -327,7 +356,15 @@ export default function Findings() {
             {KANBAN_COLS.map(col => {
               const cards = filtered.filter(f => f.status === col.key);
               return (
-                <div key={col.key} className="flex-shrink-0 w-[230px]">
+                <div
+                  key={col.key}
+                  className="flex-shrink-0 w-[230px]"
+                  onDragOver={isAdmin ? (e => e.preventDefault()) : undefined}
+                  onDrop={isAdmin ? (() => {
+                    if (dragId) moveCard.mutate({ id: dragId, status: col.key });
+                    setDragId(null);
+                  }) : undefined}
+                >
                   <div className="flex items-center gap-2 mb-3">
                     <div className={`w-2.5 h-2.5 rounded-full ${col.color}`} />
                     <span className="text-xs font-bold text-gray-700">{col.label}</span>
@@ -337,7 +374,9 @@ export default function Findings() {
                   </div>
                   <div className="space-y-2">
                     {cards.map(f => (
-                      <NCCard key={f.id} finding={f} onClick={() => setSelectedId(f.id)} />
+                      <NCCard key={f.id} finding={f} onClick={() => setSelectedId(f.id)}
+                        draggable={isAdmin}
+                        onDragStart={() => setDragId(f.id)} />
                     ))}
                     {cards.length === 0 && (
                       <div className="border-2 border-dashed border-gray-100 rounded-xl h-24 flex items-center justify-center">

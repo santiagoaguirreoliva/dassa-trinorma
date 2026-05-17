@@ -74,6 +74,10 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/), versionado [S
 
 **Fase C7 — Empleados y handoff a María** (migración 038): el módulo de Empleados estaba escrito sobre un schema inexistente (`first_name`, `employee_number`, `department`) y no permitía crear ni editar — reescrito sobre la tabla real (`full_name`, `sector`, `is_active`) + campo `whatsapp` para comunicaciones. Triny le deriva a María (correo programado + 5 tareas de adopción) la explicación de los cambios y lo que debe completar.
 
+### Comunicaciones — unificadas en la app madre · 2026-05-17
+
+El SGI tenía un módulo de Comunicaciones propio que duplicaba el registro F-TRI-06 del Centro de Comunicaciones de Smart DASSA Apps (más completo: directorio único, audiencias, recordatorios por email) y que además estaba roto (la confirmación de lectura fallaba por columnas inexistentes). La página del SGI pasa a redirigir al Centro de la app madre — una sola fuente, sin duplicación. Los links públicos `/c/:token` ya repartidos siguen disponibles.
+
 ### Pre-entrega · auditoría 2026-05-14
 - **Fix crítico de auth**: `auditor.cjs`, `profiles.cjs` y `users-extra.cjs` ahora aplican `router.use(authenticate)` (antes `requireAdmin` chequeaba `req.user` sin middleware previo).
 - **Fix bug SQL** `dashboard.js` charts: `COALESCE(status::text, ...)` en findings y purchases (el enum no aceptaba el fallback como string).

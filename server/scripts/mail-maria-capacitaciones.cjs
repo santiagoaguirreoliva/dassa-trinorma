@@ -12,11 +12,12 @@ const APP_URL = process.env.APP_URL || 'https://trinorma.dassa.com.ar';
 
 const body = `
   <p>Hola <strong>María</strong>,</p>
-  <p>Soy Triny. Te escribo para contarte que se hicieron mejoras importantes en el módulo de
-  <strong>Capacitaciones</strong> del SGI Trinorma, y para pedirte una mano con algunas cosas que
-  ahora dependen de tu carga.</p>
+  <p>Soy Triny. Te escribo para contarte que se hicieron mejoras importantes en el SGI Trinorma
+  —sobre todo en <strong>Capacitaciones</strong>, <strong>Empleados</strong> y
+  <strong>Comunicaciones</strong>— y para pedirte una mano con algunas cosas que ahora dependen
+  de tu carga.</p>
 
-  <h3 style="color:#0F1A4A;font-size:15px;margin:20px 0 8px">Qué mejoramos</h3>
+  <h3 style="color:#0F1A4A;font-size:15px;margin:20px 0 8px">Qué mejoramos en Capacitaciones</h3>
   <ol style="line-height:1.7;font-size:14px;color:#444;padding-left:20px">
     <li><strong>Seguridad</strong>: solo los roles de gestión pueden crear, editar o borrar capacitaciones (antes cualquier usuario podía).</li>
     <li><strong>Editar y borrar</strong>: ahora se puede corregir una capacitación con la fecha mal cargada, y crear una capacitación desde cualquier día del calendario.</li>
@@ -26,6 +27,12 @@ const body = `
     <li><strong>Competencias por puesto</strong>: una vista nueva cruza las capacitaciones que requiere cada puesto con las que cada persona efectivamente hizo.</li>
   </ol>
   <p style="font-size:14px;color:#444">También se arregló el módulo de <strong>Empleados</strong> (antes no se podían cargar ni editar) y se sumó el campo de <strong>WhatsApp</strong> para comunicaciones.</p>
+
+  <p style="font-size:14px;color:#444">Y las <strong>Comunicaciones</strong> se unificaron: ahora se gestionan desde el
+  <strong>Centro de Comunicaciones de Smart DASSA Apps</strong> — un solo lugar para toda la empresa,
+  con directorio de destinatarios, acuses de lectura con firma y recordatorios automáticos. Desde el
+  SGI, el menú "Comunicaciones" te lleva directo ahí. Ya no hace falta cargar comunicaciones por
+  separado en el SGI.</p>
 
   <h3 style="color:#0F1A4A;font-size:15px;margin:20px 0 8px">Qué necesito de vos</h3>
   <p style="font-size:14px;color:#444">Te dejé estas tareas en <strong>"Mis Pendientes"</strong> del sistema:</p>
@@ -49,9 +56,9 @@ const body = `
     to: 'maria@dassa.com.ar',
     from: 'TRINY DASSA 🤖 <auto@dassa.com.ar>',
     replyTo: 'santiago@dassa.com.ar',
-    subject: '📚 Mejoras en el módulo de Capacitaciones — qué cambió y qué necesito de vos',
+    subject: '📋 Mejoras en el SGI — Capacitaciones, Empleados y Comunicaciones',
     html: mailer.layout({
-      title: 'Mejoras en el módulo de Capacitaciones',
+      title: 'Mejoras en el SGI Trinorma',
       body,
       ctaUrl: `${APP_URL}/mis-pendientes`,
       ctaLabel: 'Ver mis tareas en el SGI',

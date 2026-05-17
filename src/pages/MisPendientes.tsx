@@ -7,7 +7,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import {
   CheckSquare, AlertCircle, Calendar, Users, Filter,
   Loader2, CheckCircle2, ChevronRight, Building2, AlertTriangle,
-  GraduationCap, ShoppingCart, FileText, X,
+  GraduationCap, ShoppingCart, FileText, X, MessageSquare,
 } from 'lucide-react';
 
 interface Assignee { id: string; name: string; email: string; role: 'principal' | 'colaborador'; }
@@ -63,6 +63,10 @@ export default function MisPendientes() {
   const [sourceFilter, setSourceFilter] = useState<string>('all');
   const [completing, setCompleting] = useState<string | null>(null);
   const [selected, setSelected] = useState<Task | null>(null);
+  const [comments, setComments] = useState<any[]>([]);
+  const [newComment, setNewComment] = useState('');
+  const [closeNote, setCloseNote] = useState('');
+  const [posting, setPosting] = useState(false);
 
   async function load() {
     setLoading(true);
@@ -78,16 +82,39 @@ export default function MisPendientes() {
 
   useEffect(() => { load(); }, []);
 
+  // Comentarios de la tarea seleccionada
+  useEffect(() => {
+    if (!selected) { setComments([]); setCloseNote(''); setNewComment(''); return; }
+    api.get<any[]>(`/tasks/${selected.id}/comments`).then(setComments).catch(() => setComments([]));
+  }, [selected]);
+
   async function markDone(id: string) {
     setCompleting(id);
     try {
-      await api.patch(`/tasks/mine/${id}`, { status: 'completada', completed_at: new Date().toISOString() });
+      await api.patch(`/tasks/mine/${id}`, {
+        status: 'completada',
+        observations: closeNote.trim() || undefined,
+      });
       setTasks(t => t.filter(x => x.id !== id));
       setSelected(null);
     } catch (e: any) {
       alert('Error: ' + e.message);
     } finally {
       setCompleting(null);
+    }
+  }
+
+  async function addComment() {
+    if (!selected || !newComment.trim()) return;
+    setPosting(true);
+    try {
+      const c = await api.post<any>(`/tasks/${selected.id}/comments`, { body: newComment.trim() });
+      setComments(cs => [...cs, c]);
+      setNewComment('');
+    } catch (e: any) {
+      alert('Error: ' + e.message);
+    } finally {
+      setPosting(false);
     }
   }
 
@@ -327,13 +354,67 @@ export default function MisPendientes() {
                   ))}
                 </div>
               </div>
-              <button
-                onClick={() => markDone(selected.id)}
-                disabled={completing === selected.id}
-                className="w-full bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-300 text-white font-bold py-3 rounded-lg flex items-center justify-center gap-2">
-                {completing === selected.id ? <Loader2 className="w-5 h-5 animate-spin" /> : <CheckCircle2 className="w-5 h-5" />}
-                Marcar como completada
-              </button>
+              {/* Comentarios / historial */}
+              <div>
+                <h4 className="font-bold text-sm text-gray-700 mb-2 flex items-center gap-1.5">
+                  <MessageSquare className="w-4 h-4" /> Comentarios y observaciones
+                </h4>
+                <div className="space-y-2 mb-3">
+                  {comments.length === 0 && (
+                    <p className="text-xs text-gray-400">Sin comentarios todavía.</p>
+                  )}
+                  {comments.map(c => (
+                    <div key={c.id}
+                      className={`rounded-lg p-2.5 border text-sm ${
+                        c.kind === 'cierre' ? 'bg-emerald-50 border-emerald-200'
+                        : c.kind === 'reapertura' ? 'bg-amber-50 border-amber-200'
+                        : 'bg-gray-50 border-gray-100'}`}>
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-xs font-bold text-gray-700">{c.author_name || 'Usuario'}</span>
+                        {c.kind === 'cierre' && <span className="text-[10px] font-bold text-emerald-600 uppercase">Cierre</span>}
+                        <span className="text-[10px] text-gray-400">
+                          {new Date(c.created_at).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                      </div>
+                      <p className="text-gray-700 mt-0.5">{c.body}</p>
+                    </div>
+                  ))}
+                </div>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={newComment}
+                    onChange={e => setNewComment(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && addComment()}
+                    placeholder="Escribí un comentario..."
+                    className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-dassa-red"
+                  />
+                  <button
+                    onClick={addComment}
+                    disabled={!newComment.trim() || posting}
+                    className="px-4 py-2 bg-gray-900 text-white rounded-lg text-sm font-bold hover:bg-gray-800 disabled:opacity-50">
+                    {posting ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Enviar'}
+                  </button>
+                </div>
+              </div>
+
+              {/* Observación de cierre + completar */}
+              <div className="border-t border-gray-100 pt-4">
+                <textarea
+                  value={closeNote}
+                  onChange={e => setCloseNote(e.target.value)}
+                  rows={2}
+                  placeholder="Observación de cierre (opcional) — qué se hizo, resultado, evidencia..."
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-emerald-400 resize-none mb-2"
+                />
+                <button
+                  onClick={() => markDone(selected.id)}
+                  disabled={completing === selected.id}
+                  className="w-full bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-300 text-white font-bold py-3 rounded-lg flex items-center justify-center gap-2">
+                  {completing === selected.id ? <Loader2 className="w-5 h-5 animate-spin" /> : <CheckCircle2 className="w-5 h-5" />}
+                  Marcar como completada
+                </button>
+              </div>
               {selected.committee_id && (
                 <button
                   onClick={() => { navigate(`/committee/${selected.committee_id}`); setSelected(null); }}

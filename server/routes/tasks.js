@@ -310,6 +310,39 @@ router.patch('/:id', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+// ─── GET /api/tasks/:id/comments — historial de comentarios ─────
+router.get('/:id/comments', async (req, res) => {
+  try {
+    const { rows } = await query(
+      `SELECT tc.id, tc.body, tc.kind, tc.created_at,
+              u.full_name AS author_name, u.avatar_url AS author_avatar
+         FROM task_comments tc
+         LEFT JOIN users u ON u.id = tc.user_id
+        WHERE tc.task_id = $1
+        ORDER BY tc.created_at`,
+      [req.params.id]
+    );
+    res.json(rows);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// ─── POST /api/tasks/:id/comments — agregar comentario ──────────
+router.post('/:id/comments', async (req, res) => {
+  const { body } = req.body;
+  if (!body || !body.trim()) return res.status(400).json({ error: 'El comentario no puede estar vacío' });
+  try {
+    const exists = await query('SELECT 1 FROM tasks WHERE id = $1', [req.params.id]);
+    if (!exists.rows.length) return res.status(404).json({ error: 'Tarea no encontrada' });
+
+    const { rows } = await query(
+      `INSERT INTO task_comments (task_id, user_id, body, kind)
+       VALUES ($1, $2, $3, 'comentario') RETURNING *`,
+      [req.params.id, req.user.id, body.trim()]
+    );
+    res.status(201).json({ ...rows[0], author_name: req.user.full_name });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
 // ─── DELETE /api/tasks/:id ──────────────────────────────────────
 router.delete('/:id', requireRole('master_admin', 'director', 'sgi_leader'), async (req, res) => {
   try {

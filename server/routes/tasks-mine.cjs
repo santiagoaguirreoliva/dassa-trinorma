@@ -103,6 +103,15 @@ router.patch('/mine/:id', async (req, res) => {
       `UPDATE tasks SET ${updates.join(', ')} WHERE id = $1`,
       params
     );
+
+    // La observación queda también en el historial de comentarios
+    if (observations && observations.trim()) {
+      await pool.query(
+        `INSERT INTO task_comments (task_id, user_id, body, kind) VALUES ($1,$2,$3,$4)`,
+        [req.params.id, req.user.id, observations.trim(),
+         status === 'completada' ? 'cierre' : 'comentario']
+      );
+    }
     res.json({ ok: true });
   } catch (e) {
     res.status(500).json({ error: e.message });

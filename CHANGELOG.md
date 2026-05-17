@@ -40,6 +40,16 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/), versionado [S
 
 **Fase 9 — Kanban interactivo**: drag & drop de tarjetas entre columnas para cambiar estado; filtros por estado y por responsable.
 
+### Módulo de Tareas — saneamiento y seguimiento · 2026-05-17
+
+**Fase T1 — Saneamiento** (migración 031): `tasks.js` lee y escribe `task_assignees` (antes una tarea multi-responsable no aparecía para los colaboradores); notificación in-app al asignar; cierre de tarea consistente entre endpoints (observación opcional, se agrega al historial); fix del rol colaborador en el wizard de comité; índice duplicado eliminado; `priority` con CHECK constraint; ruta `/tasks` redirige a `/mis-pendientes` (los mails enlazaban a una ruta inexistente).
+
+**Fase T2 — Comentarios** (migración 032): tabla `task_comments` con historial (autor, fecha, tipo); endpoints `GET`/`POST /tasks/:id/comments`; la observación de cierre queda registrada como comentario; sección de comentarios en el detalle de Mis Pendientes.
+
+**Fase T3 — Agrupación y acciones**: tareas agrupadas por vencimiento / estado / origen; cambio de prioridad y "marcar en curso" desde el detalle.
+
+**Fase T4 — Seguimiento con Triny** (migración 033): desactivado el digest quincenal legacy de `email.js` que se solapaba con el recordatorio de lunes; el seguimiento de tareas queda centralizado en Triny (lunes personal, viernes y mensual a María y Santiago, intimación diaria de vencidas).
+
 ### Pre-entrega · auditoría 2026-05-14
 - **Fix crítico de auth**: `auditor.cjs`, `profiles.cjs` y `users-extra.cjs` ahora aplican `router.use(authenticate)` (antes `requireAdmin` chequeaba `req.user` sin middleware previo).
 - **Fix bug SQL** `dashboard.js` charts: `COALESCE(status::text, ...)` en findings y purchases (el enum no aceptaba el fallback como string).

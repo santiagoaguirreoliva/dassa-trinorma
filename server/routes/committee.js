@@ -281,7 +281,7 @@ router.post('/wizard', async (req, res) => {
       for (let i=0; i<nt.assignees.length; i++) {
         await client.query(
           "INSERT INTO task_assignees (task_id, user_id, role) VALUES ($1,$2,$3) ON CONFLICT DO NOTHING",
-          [tid, nt.assignees[i], i===0 ? 'principal' : 'principal']
+          [tid, nt.assignees[i], i===0 ? 'principal' : 'colaborador']
         );
       }
       await client.query("UPDATE tasks SET assigned_to=$1 WHERE id=$2", [nt.assignees[0], tid]);

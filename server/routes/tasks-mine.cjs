@@ -75,14 +75,26 @@ router.patch('/mine/:id', async (req, res) => {
       return res.status(403).json({ error: 'No autorizado' });
     }
 
-    const { status, priority, observations, completed_at } = req.body;
+    const { status, priority, observations } = req.body;
     const updates = [];
     const params = [req.params.id];
     let i = 2;
-    if (status) { updates.push(`status = $${i++}::task_status`); params.push(status); }
     if (priority) { updates.push(`priority = $${i++}`); params.push(priority); }
-    if (observations !== undefined) { updates.push(`observations = $${i++}`); params.push(observations); }
-    if (completed_at) { updates.push(`completed_at = $${i++}`); params.push(completed_at); }
+    if (status) {
+      updates.push(`status = $${i++}::task_status`); params.push(status);
+      // Al completar se sella la fecha de cierre; al reabrir se limpia.
+      updates.push(status === 'completada'
+        ? `completed_at = COALESCE(completed_at, NOW())`
+        : `completed_at = NULL`);
+    }
+    if (observations && observations.trim()) {
+      // La observación se agrega al historial del campo, no lo pisa.
+      const prefix = status === 'completada'
+        ? `[Cierre ${new Date().toLocaleDateString('es-AR')}] `
+        : `[${new Date().toLocaleDateString('es-AR')}] `;
+      updates.push(`observations = COALESCE(observations || E'\\n', '') || $${i++}`);
+      params.push(prefix + observations.trim());
+    }
     updates.push(`updated_at = NOW()`);
 
     if (updates.length === 1) return res.status(400).json({ error: 'Nada para actualizar' });

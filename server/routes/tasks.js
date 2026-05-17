@@ -18,7 +18,14 @@ router.get('/', async (req, res) => {
              c.full_name  AS creator_name,
              col.full_name AS collaborator_name, col.email AS collaborator_email,
              f.code AS finding_code,
-             cm.meeting_date AS committee_date
+             cm.meeting_date AS committee_date,
+             COALESCE((
+               SELECT json_agg(json_build_object(
+                        'id', ua.id, 'name', ua.full_name, 'role', ta.role
+                      ) ORDER BY ta.role)
+                 FROM task_assignees ta JOIN users ua ON ua.id = ta.user_id
+                WHERE ta.task_id = t.id
+             ), '[]'::json) AS assignees
         FROM tasks t
         LEFT JOIN users u   ON u.id  = t.assigned_to
         LEFT JOIN users c   ON c.id  = t.created_by
@@ -30,7 +37,8 @@ router.get('/', async (req, res) => {
     let i = 1;
 
     if (mine === 'true') {
-      q += ` AND (t.assigned_to = $${i} OR t.collaborator_id = $${i})`;
+      q += ` AND (t.assigned_to = $${i} OR t.collaborator_id = $${i}
+                  OR EXISTS (SELECT 1 FROM task_assignees ta WHERE ta.task_id = t.id AND ta.user_id = $${i}))`;
       params.push(req.user.id); i++;
     }
     if (assigned_to) {
@@ -134,7 +142,14 @@ router.get('/:id', async (req, res) => {
              c.full_name AS creator_name,
              col.full_name AS collaborator_name, col.email AS collaborator_email,
              f.code AS finding_code, f.title AS finding_title,
-             cm.meeting_date AS committee_date
+             cm.meeting_date AS committee_date,
+             COALESCE((
+               SELECT json_agg(json_build_object(
+                        'id', ua.id, 'name', ua.full_name, 'role', ta.role
+                      ) ORDER BY ta.role)
+                 FROM task_assignees ta JOIN users ua ON ua.id = ta.user_id
+                WHERE ta.task_id = t.id
+             ), '[]'::json) AS assignees
         FROM tasks t
         LEFT JOIN users u   ON u.id  = t.assigned_to
         LEFT JOIN users c   ON c.id  = t.created_by
@@ -165,8 +180,29 @@ router.post('/', async (req, res) => {
        finding_id || null, committee_id || null,
        category || null, iso_norm || null, origin_type || 'manual',
        origin_detail || null, observations || null]);
+    const task = rows[0];
 
-    // Send email notification to assigned user
+    // Sincronizar el modelo multi-responsable (task_assignees)
+    if (assigned_to) {
+      await query(
+        `INSERT INTO task_assignees (task_id, user_id, role) VALUES ($1,$2,'principal')
+         ON CONFLICT (task_id, user_id) DO NOTHING`, [task.id, assigned_to]);
+    }
+    if (collaborator_id) {
+      await query(
+        `INSERT INTO task_assignees (task_id, user_id, role) VALUES ($1,$2,'colaborador')
+         ON CONFLICT (task_id, user_id) DO NOTHING`, [task.id, collaborator_id]);
+    }
+
+    // Notificación in-app al responsable (independiente del correo)
+    if (assigned_to && assigned_to !== req.user.id) {
+      await query(
+        `INSERT INTO notifications (user_id, title, message, type, source_module)
+         VALUES ($1,$2,$3,'info','tasks')`,
+        [assigned_to, `Nueva tarea asignada${task.task_number ? ': ' + task.task_number : ''}`, title]);
+    }
+
+    // Aviso por correo al responsable
     if (assigned_to) {
       const userRes = await query('SELECT full_name, email FROM users WHERE id = $1', [assigned_to]);
       if (userRes.rows[0]?.email) {
@@ -181,7 +217,7 @@ router.post('/', async (req, res) => {
       }
     }
 
-    res.status(201).json(rows[0]);
+    res.status(201).json(task);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
@@ -248,10 +284,6 @@ router.put('/:id', async (req, res) => {
 router.patch('/:id', async (req, res) => {
   const { status, observations, completed_at } = req.body;
   if (!status) return res.status(400).json({ error: 'Status requerido' });
-  // Require observations when completing a task
-  if (status === 'completada' && !observations?.trim()) {
-    return res.status(400).json({ error: 'Las observaciones son obligatorias al completar una tarea' });
-  }
   try {
     const updates = ['status = $1'];
     const values = [status];
@@ -259,10 +291,16 @@ router.patch('/:id', async (req, res) => {
     if (status === 'completada') {
       updates.push(`completed_at = $${idx++}`);
       values.push(completed_at ? new Date(completed_at) : new Date());
-      updates.push(`observations = COALESCE(observations || E'\\n', '') || $${idx++}`);
-      values.push(`[Completada ${new Date().toLocaleDateString('es-AR')}] ${observations.trim()}`);
     } else {
       updates.push('completed_at = NULL');
+    }
+    // La observación de cierre es opcional; si viene, se suma al historial.
+    if (observations && observations.trim()) {
+      const prefix = status === 'completada'
+        ? `[Cierre ${new Date().toLocaleDateString('es-AR')}] `
+        : `[${new Date().toLocaleDateString('es-AR')}] `;
+      updates.push(`observations = COALESCE(observations || E'\\n', '') || $${idx++}`);
+      values.push(prefix + observations.trim());
     }
     values.push(req.params.id);
     const { rows } = await query(

@@ -92,6 +92,7 @@ export default function App() {
             <Route path="/c/:token"   element={<PublicComm />} />
             <Route path="/"           element={<Navigate to="/login" replace />} />
             <Route path="/home"       element={<Navigate to="/bienvenida" replace />} />
+            <Route path="/tasks"      element={<Navigate to="/mis-pendientes" replace />} />
             <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
               <Route path="/bienvenida"     element={<Bienvenida />} />
               <Route path="/triny"          element={<Triny />} />

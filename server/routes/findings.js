@@ -1,11 +1,16 @@
 import { Router } from 'express';
-import { query } from '../db/db.js';
+import { query, getClient } from '../db/db.js';
 import { authenticate } from '../middleware/auth.js';
 import { saveBase64File } from '../services/uploads.js';
 
 const router = Router();
 
 const ADMIN_ROLES = ['master_admin', 'director', 'sgi_leader'];
+const VALID_STATUS = ['abierto', 'analisis', 'plan_accion', 'en_ejecucion', 'verificacion', 'cerrado'];
+const STATUS_LABEL = {
+  abierto: 'Detectado', analisis: 'En Análisis', plan_accion: 'Plan de AC',
+  en_ejecucion: 'En Ejecución', verificacion: 'Verificación', cerrado: 'Cerrado',
+};
 
 // ─── RUTAS PRIVADAS (requieren auth) ────────────────────────
 // La ruta pública POST /nc se movió a routes/public-nc.js (H-06).
@@ -14,7 +19,8 @@ router.use(authenticate);
 // GET /api/findings — listado con búsqueda y filtros
 router.get('/', async (req, res) => {
   const { status, type, area, assigned, search } = req.query;
-  const where = ['1=1'];
+  // F-C: por defecto solo NC vigentes; ?include_deleted=1 las incluye (admins)
+  const where = ['f.deleted_at IS NULL'];
   const params = [];
   let i = 1;
   if (status)   { where.push(`f.status = $${i++}`);       params.push(status); }
@@ -32,7 +38,8 @@ router.get('/', async (req, res) => {
       `SELECT f.*,
               r.full_name AS reported_by_name,
               a.full_name AS assigned_to_name, a.avatar_url AS assigned_to_avatar,
-              EXTRACT(DAY FROM NOW() - f.created_at)::int AS days_open,
+              -- F-E: en NC cerradas, los días se congelan en closed_at
+              EXTRACT(DAY FROM COALESCE(f.closed_at, NOW()) - f.created_at)::int AS days_open,
               (SELECT COUNT(*) FROM finding_actions fa WHERE fa.finding_id = f.id)::int AS actions_count,
               (SELECT COUNT(*) FROM finding_actions fa WHERE fa.finding_id = f.id AND fa.status = 'completada')::int AS actions_done,
               (SELECT COUNT(*) FROM finding_comments fc WHERE fc.finding_id = f.id)::int AS comments_count
@@ -71,6 +78,7 @@ router.get('/stats', async (_req, res) => {
         COUNT(*) FILTER (WHERE finding_type = 'desvio_cliente')::int AS desvio_cliente,
         COUNT(*)::int AS total
       FROM findings
+      WHERE deleted_at IS NULL
     `);
     res.json(rows[0]);
   } catch (err) { res.status(500).json({ error: err.message }); }
@@ -84,17 +92,19 @@ router.get('/:id', async (req, res) => {
               r.full_name AS reported_by_name,
               a.full_name AS assigned_to_name,
               v.full_name AS verified_by_name,
-              EXTRACT(DAY FROM NOW() - f.created_at)::int AS days_open
+              cl.full_name AS closed_by_name,
+              EXTRACT(DAY FROM COALESCE(f.closed_at, NOW()) - f.created_at)::int AS days_open
          FROM findings f
-         LEFT JOIN users r ON r.id = f.reported_by
-         LEFT JOIN users a ON a.id = f.assigned_to
-         LEFT JOIN users v ON v.id = f.verified_by
-        WHERE f.id = $1`,
+         LEFT JOIN users r  ON r.id  = f.reported_by
+         LEFT JOIN users a  ON a.id  = f.assigned_to
+         LEFT JOIN users v  ON v.id  = f.verified_by
+         LEFT JOIN users cl ON cl.id = f.closed_by
+        WHERE f.id = $1 AND f.deleted_at IS NULL`,
       [req.params.id]
     );
     if (!rows[0]) return res.status(404).json({ error: 'No encontrado' });
 
-    const [actions, comments] = await Promise.all([
+    const [actions, comments, history] = await Promise.all([
       query(
         `SELECT fa.*, u.full_name AS responsible_name
            FROM finding_actions fa
@@ -109,9 +119,17 @@ router.get('/:id', async (req, res) => {
           WHERE fc.finding_id = $1 ORDER BY fc.created_at`,
         [req.params.id]
       ),
+      // F-D: historial de transiciones de estado
+      query(
+        `SELECT h.*, u.full_name AS changed_by_name
+           FROM finding_status_history h
+           LEFT JOIN users u ON u.id = h.changed_by
+          WHERE h.finding_id = $1 ORDER BY h.changed_at`,
+        [req.params.id]
+      ),
     ]);
 
-    res.json({ ...rows[0], actions: actions.rows, comments: comments.rows });
+    res.json({ ...rows[0], actions: actions.rows, comments: comments.rows, history: history.rows });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
@@ -129,14 +147,18 @@ router.post('/', async (req, res) => {
     return res.status(400).json({ error: 'Título, descripción y tipo son requeridos' });
   }
 
+  // F-F: todo el alta (NC + historial + notificaciones) en una sola transacción
+  const client = await getClient();
   try {
+    await client.query('BEGIN');
+
     let evidence_urls = [];
     if (photo_base64) {
       const url = saveBase64File(photo_base64, 'nc-interna');
       if (url) evidence_urls = [url];
     }
 
-    const { rows } = await query(
+    const { rows } = await client.query(
       `INSERT INTO findings
          (title, description, finding_type, origin, area, due_date,
           assigned_to, immediate_action, cause_analysis_type, cause_analysis_content,
@@ -154,33 +176,51 @@ router.post('/', async (req, res) => {
         req.user.id
       ]
     );
+    const finding = rows[0];
+
+    // F-D: registrar el alta en el historial de estados
+    await client.query(
+      `INSERT INTO finding_status_history (finding_id, from_status, to_status, changed_by, note)
+       VALUES ($1, NULL, $2, $3, 'Alta de la NC')`,
+      [finding.id, finding.status, req.user.id]
+    );
 
     // Notificar al responsable asignado
     if (assigned_to && assigned_to !== req.user.id) {
-      await query(
+      await client.query(
         `INSERT INTO notifications (user_id, title, message, type, source_module)
          VALUES ($1,$2,$3,'warning','findings')`,
-        [assigned_to, `Nueva NC asignada: ${rows[0].code}`, title]
+        [assigned_to, `Nueva NC asignada: ${finding.code}`, title]
       );
     }
 
     // Notificar a SGI leaders si el reportante no es admin
     if (!ADMIN_ROLES.includes(req.user.role)) {
-      const { rows: leaders } = await query(
+      const { rows: leaders } = await client.query(
         `SELECT id FROM users WHERE role IN ('master_admin','director','sgi_leader') AND is_active = true AND id != $1`,
         [req.user.id]
       );
       for (const l of leaders) {
-        await query(
+        await client.query(
           `INSERT INTO notifications (user_id, title, message, type, source_module)
            VALUES ($1,$2,$3,'info','findings')`,
-          [l.id, `Nuevo hallazgo reportado: ${rows[0].code}`, `${req.user.full_name} reportó: ${title}`]
+          [l.id, `Nuevo hallazgo reportado: ${finding.code}`, `${req.user.full_name} reportó: ${title}`]
         );
       }
     }
 
-    res.status(201).json(rows[0]);
-  } catch (err) { res.status(500).json({ error: err.message }); }
+    await client.query('COMMIT');
+
+    // Aviso por correo al equipo de calidad (best-effort, fuera de la transacción)
+    notifyNewFinding(finding, req.user).catch(e => console.error('[findings] mail alta NC:', e.message));
+
+    res.status(201).json(finding);
+  } catch (err) {
+    await client.query('ROLLBACK');
+    res.status(500).json({ error: err.message });
+  } finally {
+    client.release();
+  }
 });
 
 // PATCH /api/findings/:id — editar NC
@@ -219,7 +259,7 @@ router.patch('/:id', async (req, res) => {
 
   try {
     const { rows } = await query(
-      `UPDATE findings SET ${updates.join(', ')} WHERE id = $${i} RETURNING *`,
+      `UPDATE findings SET ${updates.join(', ')} WHERE id = $${i} AND deleted_at IS NULL RETURNING *`,
       values
     );
     if (!rows[0]) return res.status(404).json({ error: 'No encontrado' });
@@ -239,42 +279,90 @@ router.patch('/:id', async (req, res) => {
 
 // PATCH /api/findings/:id/status — mover entre columnas kanban
 router.patch('/:id/status', async (req, res) => {
-  const { status } = req.body;
-  const valid = ['abierto','analisis','plan_accion','en_ejecucion','verificacion','cerrado'];
-  if (!valid.includes(status)) return res.status(400).json({ error: 'Estado no válido' });
+  // F-A: el cambio de estado es una acción de gestión — solo roles admin del SGI
+  if (!ADMIN_ROLES.includes(req.user.role)) {
+    return res.status(403).json({ error: 'Sin permiso para cambiar el estado de hallazgos' });
+  }
 
+  const { status, note } = req.body;
+  if (!VALID_STATUS.includes(status)) {
+    return res.status(400).json({ error: 'Estado no válido' });
+  }
+
+  const client = await getClient();
   try {
-    const extra = status === 'cerrado' ? ', closed_at = NOW()' : '';
-    const { rows } = await query(
-      `UPDATE findings SET status = $1${extra} WHERE id = $2 RETURNING id, code, status, assigned_to`,
-      [status, req.params.id]
+    await client.query('BEGIN');
+
+    const cur = await client.query(
+      'SELECT status, efficacy_verified, deleted_at FROM findings WHERE id = $1',
+      [req.params.id]
     );
-    if (!rows[0]) return res.status(404).json({ error: 'No encontrado' });
+    if (!cur.rows[0] || cur.rows[0].deleted_at) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ error: 'No encontrado' });
+    }
+    const fromStatus = cur.rows[0].status;
+
+    // F-B: ISO 10.2(d) — no se puede cerrar una NC sin verificar la eficacia
+    // de la acción correctiva tomada.
+    if (status === 'cerrado' && !cur.rows[0].efficacy_verified) {
+      await client.query('ROLLBACK');
+      return res.status(409).json({
+        error: 'No se puede cerrar la NC sin verificar la eficacia de la acción correctiva (ISO 10.2 d). Marcá "Eficacia verificada" en el panel de verificación antes de cerrar.',
+      });
+    }
+
+    const closing = status === 'cerrado';
+    const { rows } = await client.query(
+      `UPDATE findings
+          SET status = $1
+              ${closing ? ', closed_at = NOW(), closed_by = $3' : ''}
+        WHERE id = $2
+      RETURNING id, code, title, status, assigned_to`,
+      closing ? [status, req.params.id, req.user.id] : [status, req.params.id]
+    );
+
+    // F-D: registrar la transición en el historial
+    await client.query(
+      `INSERT INTO finding_status_history (finding_id, from_status, to_status, changed_by, note)
+       VALUES ($1,$2,$3,$4,$5)`,
+      [req.params.id, fromStatus, status, req.user.id, note || null]
+    );
 
     // Notificar al responsable cuando cambia estado
     if (rows[0].assigned_to && rows[0].assigned_to !== req.user.id) {
-      const statusLabel = { abierto: 'Detectado', analisis: 'En Análisis', plan_accion: 'Plan de AC', en_ejecucion: 'En Ejecución', verificacion: 'Verificación', cerrado: 'Cerrado' };
-      await query(
+      await client.query(
         `INSERT INTO notifications (user_id, title, message, type, source_module)
          VALUES ($1,$2,$3,'info','findings')`,
-        [rows[0].assigned_to, `NC ${rows[0].code} cambió a ${statusLabel[status]}`, `Actualizado por ${req.user.full_name}`]
+        [rows[0].assigned_to, `NC ${rows[0].code} cambió a ${STATUS_LABEL[status]}`, `Actualizado por ${req.user.full_name}`]
       );
     }
 
+    await client.query('COMMIT');
     res.json(rows[0]);
-  } catch (err) { res.status(500).json({ error: err.message }); }
+  } catch (err) {
+    await client.query('ROLLBACK');
+    res.status(500).json({ error: err.message });
+  } finally {
+    client.release();
+  }
 });
 
-// DELETE /api/findings/:id — admins pueden eliminar
+// DELETE /api/findings/:id — F-C: archiva (soft-delete), no borra.
+// ISO 10.2 exige retener la información documentada de las NC.
 router.delete('/:id', async (req, res) => {
   if (!ADMIN_ROLES.includes(req.user.role)) {
-    return res.status(403).json({ error: 'Sin permiso para eliminar' });
+    return res.status(403).json({ error: 'Sin permiso para archivar hallazgos' });
   }
   try {
-    await query('DELETE FROM finding_comments WHERE finding_id = $1', [req.params.id]);
-    await query('DELETE FROM finding_actions WHERE finding_id = $1', [req.params.id]);
-    await query('DELETE FROM findings WHERE id = $1', [req.params.id]);
-    res.json({ message: 'Eliminado' });
+    const { rows } = await query(
+      `UPDATE findings SET deleted_at = NOW(), deleted_by = $1
+        WHERE id = $2 AND deleted_at IS NULL
+      RETURNING id, code`,
+      [req.user.id, req.params.id]
+    );
+    if (!rows[0]) return res.status(404).json({ error: 'No encontrado o ya archivado' });
+    res.json({ message: `Hallazgo ${rows[0].code} archivado — la evidencia queda preservada` });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
@@ -282,33 +370,50 @@ router.delete('/:id', async (req, res) => {
 router.post('/:id/actions', async (req, res) => {
   const { description, responsible_id, due_date } = req.body;
   if (!description) return res.status(400).json({ error: 'Descripción requerida' });
+
+  // F-F: acción + tarea vinculada + notificación en una sola transacción
+  const client = await getClient();
   try {
-    const { rows } = await query(
+    await client.query('BEGIN');
+
+    const fnd = await client.query(
+      'SELECT code FROM findings WHERE id = $1 AND deleted_at IS NULL',
+      [req.params.id]
+    );
+    if (!fnd.rows[0]) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ error: 'Hallazgo no encontrado' });
+    }
+
+    const { rows } = await client.query(
       `INSERT INTO finding_actions (finding_id, description, responsible_id, due_date)
        VALUES ($1,$2,$3,$4) RETURNING *`,
       [req.params.id, description, responsible_id || null, due_date || null]
     );
 
-    // Crear tarea vinculada si tiene responsable
     if (responsible_id) {
-      await query(
+      await client.query(
         `INSERT INTO tasks (title, finding_id, assigned_to, due_date, source_module, created_by)
          VALUES ($1,$2,$3,$4,'findings',$5)`,
         [description, req.params.id, responsible_id, due_date || null, req.user.id]
       );
-      // Notificar al responsable
       if (responsible_id !== req.user.id) {
-        const { rows: findingRows } = await query('SELECT code FROM findings WHERE id = $1', [req.params.id]);
-        await query(
+        await client.query(
           `INSERT INTO notifications (user_id, title, message, type, source_module)
            VALUES ($1,$2,$3,'info','findings')`,
-          [responsible_id, `Nueva acción correctiva asignada`, `${findingRows[0]?.code}: ${description.substring(0, 80)}`]
+          [responsible_id, `Nueva acción correctiva asignada`, `${fnd.rows[0].code}: ${description.substring(0, 80)}`]
         );
       }
     }
 
+    await client.query('COMMIT');
     res.status(201).json(rows[0]);
-  } catch (err) { res.status(500).json({ error: err.message }); }
+  } catch (err) {
+    await client.query('ROLLBACK');
+    res.status(500).json({ error: err.message });
+  } finally {
+    client.release();
+  }
 });
 
 // PATCH /api/findings/:id/actions/:aid
@@ -356,5 +461,19 @@ router.delete('/:id/comments/:cid', async (req, res) => {
     res.json({ message: 'Eliminado' });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
+
+// notifyNewFinding — aviso por correo al equipo de calidad cuando entra una NC.
+// Se resuelve de forma perezosa para no acoplar el router al mailer.
+async function notifyNewFinding(finding, reporter) {
+  try {
+    const mod = await import('../services/findings-mailer.cjs');
+    const mailer = mod.default || mod;
+    if (typeof mailer.sendNewFindingAlert === 'function') {
+      await mailer.sendNewFindingAlert(finding, reporter);
+    }
+  } catch (err) {
+    console.error('[findings] notifyNewFinding:', err.message);
+  }
+}
 
 export default router;

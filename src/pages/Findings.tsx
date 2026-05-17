@@ -27,6 +27,10 @@ const KANBAN_COLS = [
   { key: 'cerrado',      label: 'Cerrado',       color: 'bg-emerald-500' },
 ];
 
+// F-G: estados conocidos del kanban — una NC con status fuera de este set
+// no debe quedar invisible, se muestra en una columna "Sin clasificar".
+const KNOWN_STATUS = new Set(KANBAN_COLS.map(c => c.key));
+
 const TIPOS = [
   { value: '', label: 'Todos' },
   { value: 'nc_real', label: 'NC Real' },
@@ -214,6 +218,7 @@ export default function Findings() {
 
   const openCount = findings.filter(f => f.status !== 'cerrado').length;
   const overdueCount = findings.filter(f => f.status !== 'cerrado' && f.due_date && new Date(f.due_date) < new Date()).length;
+  const orphans = filtered.filter(f => !KNOWN_STATUS.has(f.status));
 
   return (
     <>
@@ -319,6 +324,24 @@ export default function Findings() {
                 </div>
               );
             })}
+
+            {/* F-G: NC con estado fuera de las columnas conocidas */}
+            {orphans.length > 0 && (
+              <div className="flex-shrink-0 w-[230px]">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-2.5 h-2.5 rounded-full bg-gray-400" />
+                  <span className="text-xs font-bold text-gray-700">Sin clasificar</span>
+                  <span className="ml-auto text-xs font-bold text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded-full">
+                    {orphans.length}
+                  </span>
+                </div>
+                <div className="space-y-2">
+                  {orphans.map(f => (
+                    <NCCard key={f.id} finding={f} onClick={() => setSelectedId(f.id)} />
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
         ) : (

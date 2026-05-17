@@ -33,7 +33,7 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen flex">
+    <main className="min-h-screen flex">
 
       {/* ── Left panel — DASSA red brand ─────────────────── */}
       <div className="relative flex-none w-[45%] bg-dassa-red hidden md:flex flex-col items-center justify-center overflow-hidden px-12">
@@ -147,9 +147,10 @@ export default function Login() {
                 <button
                   type="button"
                   onClick={() => setShowPass(!showPass)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                  aria-label={showPass ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                  className="absolute right-1 top-1/2 -translate-y-1/2 flex items-center justify-center w-10 h-10 text-gray-500 hover:text-gray-700 transition-colors"
                 >
-                  {showPass ? <EyeOff size={15} /> : <Eye size={15} />}
+                  {showPass ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
               </div>
             </div>
@@ -172,11 +173,11 @@ export default function Login() {
         </div>
           </form>
 
-          <p className="text-center text-[11px] text-gray-400 mt-8 font-secondary">
+          <p className="text-center text-[11px] text-gray-500 mt-8 font-secondary">
             SGI TRINORMA · DASSA v2.0
           </p>
         </div>
       </div>
-    </div>
+    </main>
   );
 }

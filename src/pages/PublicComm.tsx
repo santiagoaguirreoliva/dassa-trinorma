@@ -42,16 +42,16 @@ export default function PublicComm() {
     },
   });
 
-  if (isLoading) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="animate-spin text-dassa-red"/></div>;
+  if (isLoading) return <main className="min-h-screen flex items-center justify-center"><Loader2 className="animate-spin text-dassa-red" aria-label="Cargando comunicación"/></main>;
   if (error || !data?.communication) return (
-    <div className="min-h-screen flex items-center justify-center p-8">
+    <main className="min-h-screen flex items-center justify-center p-8">
       <div className="text-center"><h1 className="text-xl font-bold text-gray-900">Link inválido</h1><p className="text-sm text-gray-500 mt-2">Esta comunicación no está disponible o ya fue archivada.</p></div>
-    </div>
+    </main>
   );
   const c = data.communication;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-dassa-celeste-tint p-4">
+    <main className="min-h-screen bg-gradient-to-br from-gray-50 to-dassa-celeste-tint p-4">
       <div className="max-w-2xl mx-auto pt-8">
         <div className="bg-white rounded-2xl shadow-xl border border-gray-200">
 
@@ -83,9 +83,12 @@ export default function PublicComm() {
               </div>
               <p className="text-[11px] text-gray-500 mb-3">Al confirmar registramos: tu nombre, fecha/hora, IP, dispositivo, navegador y huella digital · genera hash SHA-256 forense.</p>
               <input value={name} onChange={e=>setName(e.target.value)}
+                aria-label="Tu nombre completo"
                 placeholder="Tu NOMBRE COMPLETO (mínimo 3 letras · ej: Juan Pérez)"
                 className="w-full mb-2 px-3 py-2 border-2 border-gray-200 rounded-lg text-sm focus:border-dassa-celeste focus:outline-none"/>
-              <textarea value={feedback} onChange={e=>setFeedback(e.target.value)} rows={2} placeholder="Feedback / comentario (opcional)"
+              <textarea value={feedback} onChange={e=>setFeedback(e.target.value)} rows={2}
+                aria-label="Feedback o comentario (opcional)"
+                placeholder="Feedback / comentario (opcional)"
                 className="w-full mb-3 px-3 py-2 border border-gray-200 rounded-lg text-sm resize-none"/>
               <details className="mb-3 text-[10px] text-gray-500">
                 <summary className="cursor-pointer">📍 Datos del dispositivo que se van a registrar</summary>
@@ -119,10 +122,10 @@ export default function PublicComm() {
             </div>
           )}
         </div>
-        <p className="text-center text-[10px] text-gray-400 mt-4">
+        <p className="text-center text-[10px] text-gray-500 mt-4">
           DASSA SA · Sistema de Gestión Integrado TRINORMA · ISO 9001 · 14001 · 45001
         </p>
       </div>
-    </div>
+    </main>
   );
 }

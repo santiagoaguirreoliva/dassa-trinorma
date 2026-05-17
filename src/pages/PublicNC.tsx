@@ -69,7 +69,7 @@ export default function PublicNC() {
 
   if (step === 'success') {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+      <main className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
         <div className="bg-white rounded-2xl shadow-lg p-8 max-w-md w-full text-center">
           <div className="w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-4">
             <CheckCircle2 size={32} className="text-emerald-600" />
@@ -87,12 +87,12 @@ export default function PublicNC() {
             Registrar otra NC
           </button>
         </div>
-      </div>
+      </main>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-6 px-4">
+    <main className="min-h-screen bg-gray-50 py-6 px-4">
       <div className="max-w-lg mx-auto">
         {/* Header */}
         <div className="text-center mb-6">
@@ -100,7 +100,7 @@ export default function PublicNC() {
             D
           </div>
           <h1 className="text-lg font-extrabold text-gray-900">DASSA — Avisos de No Conformidades</h1>
-          <p className="text-xs text-gray-400 mt-1">Completá el formulario para registrar una no conformidad o desvío</p>
+          <p className="text-xs text-gray-500 mt-1">Completá el formulario para registrar una no conformidad o desvío</p>
         </div>
 
         <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 space-y-5">
@@ -277,8 +277,13 @@ export default function PublicNC() {
               <div className="flex items-center gap-2 p-3 bg-emerald-50 border border-emerald-200 rounded-xl">
                 <CheckCircle2 size={16} className="text-emerald-600 flex-shrink-0" />
                 <span className="text-sm text-emerald-700 flex-1 truncate">{form.photo_name}</span>
-                <button type="button" onClick={() => { set('photo_base64', ''); set('photo_name', ''); }}>
-                  <X size={14} className="text-gray-400" />
+                <button
+                  type="button"
+                  onClick={() => { set('photo_base64', ''); set('photo_name', ''); }}
+                  aria-label="Quitar foto adjunta"
+                  className="flex items-center justify-center w-9 h-9 -mr-1.5 text-gray-500 hover:text-gray-700 transition-colors"
+                >
+                  <X size={16} />
                 </button>
               </div>
             ) : (
@@ -287,8 +292,8 @@ export default function PublicNC() {
                 onClick={() => fileRef.current?.click()}
                 className="w-full border-2 border-dashed border-gray-200 rounded-xl py-5 flex flex-col items-center gap-2 hover:border-blue-300 hover:bg-dassa-red-tint transition-colors"
               >
-                <Upload size={20} className="text-gray-300" />
-                <span className="text-xs text-gray-400">Tocá para adjuntar una foto (máx. 5MB)</span>
+                <Upload size={20} className="text-gray-400" />
+                <span className="text-xs text-gray-500">Tocá para adjuntar una foto (máx. 5MB)</span>
               </button>
             )}
           </div>
@@ -311,11 +316,11 @@ export default function PublicNC() {
             {loading ? 'Registrando...' : 'Registrar No Conformidad'}
           </button>
 
-          <p className="text-center text-xs text-gray-400">
+          <p className="text-center text-xs text-gray-500">
             DASSA — Depósito Avellaneda Sur S.A. · Sistema de Gestión Integrado Trinorma
           </p>
         </form>
       </div>
-    </div>
+    </main>
   );
 }

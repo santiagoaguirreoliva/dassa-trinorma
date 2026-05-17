@@ -310,18 +310,10 @@ app.post('/api/tasks/check-notifications', async (req, res) => {
 });
 
 // ─── Scheduled tasks ─────────────────────────────────────────────
-// Bimonthly digest: 1st and 16th of each month at 08:00 AM Argentina (UTC-3 = 11:00 UTC)
-cron.schedule('0 11 1,16 * *', async () => {
-  console.log(`[Cron] Running bimonthly digest at ${new Date().toISOString()}`);
-  try {
-    const result = await sendBimonthlyDigest(dbQuery);
-    console.log('[Cron] Bimonthly digest result:', result);
-  } catch (err) {
-    console.error('[Cron] Bimonthly digest failed:', err.message);
-  }
-}, { timezone: 'America/Argentina/Buenos_Aires' });
-
-console.log('[Cron] Bimonthly task digest scheduled: 1st & 16th of each month at 08:00 AR');
+// El digest quincenal de tareas (email.js) se desactivó: el seguimiento de
+// tareas por correo lo centraliza Triny — recordatorio lunes, resumen viernes,
+// intimación diaria de vencidas e informe mensual. Los endpoints manuales
+// /api/tasks/send-digest y /api/tasks/check-notifications siguen disponibles.
 
 if (process.env.NODE_ENV === 'production') {
   const distPath = join(__dirname, '../dist');

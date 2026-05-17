@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { Bell, LogOut, Menu } from 'lucide-react';
+import { Bell, LogOut, Menu, Home } from 'lucide-react';
 import { useAuth, ROLE_LABELS } from '@/contexts/AuthContext';
 
 interface Props {
@@ -62,6 +62,18 @@ export default function TopNav({ onMenuClick }: Props) {
 
       {/* Right: notifications + user */}
       <div className="flex items-center gap-1 md:gap-2">
+        {/* Home — vuelve al portal Apps DASSA */}
+        <a
+          href="https://apps.dassa.com.ar"
+          target="_top"
+          title="Volver al portal Apps DASSA"
+          className="flex items-center gap-1.5 h-9 px-2.5 rounded-xl text-white/80 text-[12px] font-semibold
+                     hover:text-white hover:bg-white/10 active:bg-white/20 transition-colors touch-manipulation"
+        >
+          <Home size={16} />
+          <span className="hidden sm:inline">Apps DASSA</span>
+        </a>
+
         {/* Bell — 48×48 touch target */}
         <button
           className="relative w-12 h-12 flex items-center justify-center rounded-xl text-white/70

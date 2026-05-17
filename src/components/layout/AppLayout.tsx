@@ -1,5 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { Outlet, useLocation } from "react-router-dom";
+import { Spinner } from "@/components/ui";
 import Sidebar from "./Sidebar";
 import TopNav from "./TopNav";
 import BottomNav from "./BottomNav";
@@ -64,7 +65,9 @@ export default function AppLayout() {
           style={{ paddingBottom: "calc(3.75rem + env(safe-area-inset-bottom, 0px))" }}
         >
           <Breadcrumbs />
-          <Outlet />
+          <Suspense fallback={<div className="flex-1 flex items-center justify-center py-20"><Spinner size={28} /></div>}>
+            <Outlet />
+          </Suspense>
         </main>
 
         <BottomNav />

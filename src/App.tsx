@@ -1,62 +1,64 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { lazy, Suspense } from 'react';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import AppLayout from '@/components/layout/AppLayout';
 import Login from '@/pages/Login';
-import Bienvenida from '@/pages/Bienvenida';
-import Triny from '@/pages/Triny';
-import PactosAdmin from '@/pages/PactosAdmin';
-import NovedadesAdmin from '@/pages/NovedadesAdmin';
-import AgentSettings  from '@/pages/AgentSettings';
-import Ciclo2026      from '@/pages/Ciclo2026';
-import Organigrama    from '@/pages/Organigrama';
-import Puestos        from '@/pages/Puestos';
-import PuestoDetalle  from '@/pages/PuestoDetalle';
-import MiPuesto       from '@/pages/MiPuesto';
-import Objetivos      from '@/pages/Objetivos';
-import Cambios        from '@/pages/Cambios';
-import Procedimientos from '@/pages/Procedimientos';
-import RiesgosAMFE    from '@/pages/RiesgosAMFE';
-import Comunicaciones from '@/pages/Comunicaciones';
-import PublicComm     from '@/pages/PublicComm';
-import NixaInbox      from '@/pages/NixaInbox';
-import BIOperativo    from '@/pages/BIOperativo';
-import CalendarioNixa from '@/pages/CalendarioNixa';
-import Register from '@/pages/Register';
-import Dashboard from '@/pages/Dashboard';
-import Findings from '@/pages/Findings';
-import Risks from '@/pages/Risks';
-import Legal from '@/pages/Legal';
-import Purchases from '@/pages/Purchases';
-import Committee from '@/pages/Committee';
-import Users from '@/pages/Users';
-import Profile from '@/pages/Profile';
-import Trainings from '@/pages/Trainings';
-import Employees from '@/pages/Employees';
-import Incidents from '@/pages/Incidents';
-import Environmental from '@/pages/Environmental';
-import Documents from '@/pages/Documents';
-import CustomerSatisfaction from '@/pages/CustomerSatisfaction';
-import SistemaGestion from '@/pages/SistemaGestion';
-import Suppliers from '@/pages/Suppliers';
-import Context from '@/pages/Context';
-import Calendar from '@/pages/Calendar';
-import PublicNC from '@/pages/PublicNC';
-import SignupEmpresa from '@/pages/SignupEmpresa';
 import { Spinner } from '@/components/ui';
-import { lazy, Suspense } from 'react';
-import ForgotPassword from '@/pages/ForgotPassword';
-import ResetPassword from '@/pages/ResetPassword';
-import RequestAccess from '@/pages/RequestAccess';
-import Auditor from '@/pages/Auditor';
-import MisPendientes from '@/pages/MisPendientes';
+
+// Login y el shell (AppLayout) se cargan estáticos — son la primera pantalla.
+// Todo el resto va lazy: así el bundle inicial no arrastra recharts ni las 40
+// páginas internas. Cada página se descarga sólo al navegar a su ruta (H-11).
+const Bienvenida          = lazy(() => import('@/pages/Bienvenida'));
+const Triny               = lazy(() => import('@/pages/Triny'));
+const PactosAdmin         = lazy(() => import('@/pages/PactosAdmin'));
+const NovedadesAdmin      = lazy(() => import('@/pages/NovedadesAdmin'));
+const AgentSettings       = lazy(() => import('@/pages/AgentSettings'));
+const Ciclo2026           = lazy(() => import('@/pages/Ciclo2026'));
+const Organigrama         = lazy(() => import('@/pages/Organigrama'));
+const Puestos             = lazy(() => import('@/pages/Puestos'));
+const PuestoDetalle       = lazy(() => import('@/pages/PuestoDetalle'));
+const MiPuesto            = lazy(() => import('@/pages/MiPuesto'));
+const Objetivos           = lazy(() => import('@/pages/Objetivos'));
+const Cambios             = lazy(() => import('@/pages/Cambios'));
+const Procedimientos      = lazy(() => import('@/pages/Procedimientos'));
+const RiesgosAMFE         = lazy(() => import('@/pages/RiesgosAMFE'));
+const Comunicaciones      = lazy(() => import('@/pages/Comunicaciones'));
+const PublicComm          = lazy(() => import('@/pages/PublicComm'));
+const NixaInbox           = lazy(() => import('@/pages/NixaInbox'));
+const BIOperativo         = lazy(() => import('@/pages/BIOperativo'));
+const CalendarioNixa      = lazy(() => import('@/pages/CalendarioNixa'));
+const Register            = lazy(() => import('@/pages/Register'));
+const Dashboard           = lazy(() => import('@/pages/Dashboard'));
+const Findings            = lazy(() => import('@/pages/Findings'));
+const Risks               = lazy(() => import('@/pages/Risks'));
+const Legal               = lazy(() => import('@/pages/Legal'));
+const Purchases           = lazy(() => import('@/pages/Purchases'));
+const Committee           = lazy(() => import('@/pages/Committee'));
+const Users               = lazy(() => import('@/pages/Users'));
+const Profile             = lazy(() => import('@/pages/Profile'));
+const Trainings           = lazy(() => import('@/pages/Trainings'));
+const Employees           = lazy(() => import('@/pages/Employees'));
+const Incidents           = lazy(() => import('@/pages/Incidents'));
+const Environmental       = lazy(() => import('@/pages/Environmental'));
+const Documents           = lazy(() => import('@/pages/Documents'));
+const CustomerSatisfaction = lazy(() => import('@/pages/CustomerSatisfaction'));
+const SistemaGestion      = lazy(() => import('@/pages/SistemaGestion'));
+const Suppliers           = lazy(() => import('@/pages/Suppliers'));
+const Context             = lazy(() => import('@/pages/Context'));
+const Calendar            = lazy(() => import('@/pages/Calendar'));
+const PublicNC            = lazy(() => import('@/pages/PublicNC'));
+const SignupEmpresa       = lazy(() => import('@/pages/SignupEmpresa'));
+const ForgotPassword      = lazy(() => import('@/pages/ForgotPassword'));
+const ResetPassword       = lazy(() => import('@/pages/ResetPassword'));
+const RequestAccess       = lazy(() => import('@/pages/RequestAccess'));
+const Auditor             = lazy(() => import('@/pages/Auditor'));
+const MisPendientes       = lazy(() => import('@/pages/MisPendientes'));
+const Placeholder         = lazy(() => import('@/pages/Placeholder'));
 
 const qc = new QueryClient({
   defaultOptions: { queries: { staleTime: 30_000, retry: 1, refetchOnWindowFocus: false } },
 });
-
-// Lazy-load modules that still use the old pattern (to be refactored later)
-const Placeholder  = lazy(() => import('@/pages/Placeholder'));
 
 function LoadingScreen() {
   return (
@@ -76,15 +78,12 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-function PageFallback() {
-  return <div className="flex-1 flex items-center justify-center"><Spinner size={28} /></div>;
-}
-
 export default function App() {
   return (
     <QueryClientProvider client={qc}>
       <AuthProvider>
         <BrowserRouter>
+          <Suspense fallback={<LoadingScreen />}>
           <Routes>
             <Route path="/login"      element={<Login />} />
             <Route path="/register"   element={<Register />} />
@@ -133,12 +132,13 @@ export default function App() {
               <Route path="/mis-pendientes" element={<MisPendientes />} />
               <Route path="/auditor"        element={<Auditor />} />
               {/* Catch-all for pages still in development */}
-              <Route path="/:slug"          element={<Suspense fallback={<PageFallback />}><Placeholder /></Suspense>} />
+              <Route path="/:slug"          element={<Placeholder />} />
             </Route>
-                  <Route path="/forgot-password" element={<ForgotPassword />} />
-        <Route path="/reset-password" element={<ResetPassword />} />
-        <Route path="/request-access" element={<RequestAccess />} />
-      </Routes>
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="/request-access" element={<RequestAccess />} />
+          </Routes>
+          </Suspense>
         </BrowserRouter>
       </AuthProvider>
     </QueryClientProvider>

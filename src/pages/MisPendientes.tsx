@@ -17,7 +17,7 @@ interface Task {
   title: string;
   description?: string;
   status: 'pendiente' | 'en_curso' | 'completada' | 'cancelada';
-  priority: 'alta' | 'media' | 'baja';
+  priority: 'alta' | 'media' | 'baja' | 'urgente';
   due_date?: string;
   source_module: string;
   origin_type?: string;
@@ -39,6 +39,7 @@ const SOURCE_LABEL: Record<string, { label: string; icon: any; color: string }> 
 };
 
 const PRIORITY_COLOR: Record<string, string> = {
+  urgente: 'bg-red-200 text-red-800 border-red-400',
   alta:  'bg-red-100 text-red-700 border-red-300',
   media: 'bg-amber-100 text-amber-700 border-amber-300',
   baja:  'bg-gray-100 text-gray-600 border-gray-300',
@@ -54,6 +55,15 @@ function colorForUser(name: string) {
   return colors[idx];
 }
 
+// Clasifica una tarea por proximidad de vencimiento (para el seguimiento semanal)
+function dueBucket(t: { overdue?: boolean; due_date?: string }) {
+  if (t.overdue) return { key: 'venc', label: 'Vencidas', order: 0 };
+  if (!t.due_date) return { key: 'sinfecha', label: 'Sin fecha', order: 3 };
+  const days = Math.ceil((new Date(t.due_date).getTime() - Date.now()) / 86400000);
+  if (days <= 7) return { key: 'semana', label: 'Esta semana', order: 1 };
+  return { key: 'adelante', label: 'Más adelante', order: 2 };
+}
+
 export default function MisPendientes() {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -61,6 +71,7 @@ export default function MisPendientes() {
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<'all' | 'pendiente' | 'en_curso' | 'overdue'>('all');
   const [sourceFilter, setSourceFilter] = useState<string>('all');
+  const [groupBy, setGroupBy] = useState<'none' | 'estado' | 'origen' | 'vencimiento'>('vencimiento');
   const [completing, setCompleting] = useState<string | null>(null);
   const [selected, setSelected] = useState<Task | null>(null);
   const [comments, setComments] = useState<any[]>([]);
@@ -118,6 +129,22 @@ export default function MisPendientes() {
     }
   }
 
+  async function setTaskStatus(id: string, status: Task['status']) {
+    try {
+      await api.patch(`/tasks/mine/${id}`, { status });
+      setTasks(t => t.map(x => x.id === id ? { ...x, status } : x));
+      setSelected(s => s && s.id === id ? { ...s, status } : s);
+    } catch (e: any) { alert('Error: ' + e.message); }
+  }
+
+  async function changePriority(id: string, priority: Task['priority']) {
+    try {
+      await api.patch(`/tasks/mine/${id}`, { priority });
+      setTasks(t => t.map(x => x.id === id ? { ...x, priority } : x));
+      setSelected(s => s && s.id === id ? { ...s, priority } : s);
+    } catch (e: any) { alert('Error: ' + e.message); }
+  }
+
   const filtered = useMemo(() => {
     return tasks.filter(t => {
       if (statusFilter === 'overdue' && !t.overdue) return false;
@@ -127,6 +154,30 @@ export default function MisPendientes() {
       return true;
     });
   }, [tasks, statusFilter, sourceFilter]);
+
+  const groups = useMemo(() => {
+    if (groupBy === 'none') return [{ key: 'all', label: '', order: 0, tasks: filtered }];
+    const map = new Map<string, { label: string; order: number; tasks: Task[] }>();
+    const add = (key: string, label: string, order: number, t: Task) => {
+      if (!map.has(key)) map.set(key, { label, order, tasks: [] });
+      map.get(key)!.tasks.push(t);
+    };
+    for (const t of filtered) {
+      if (groupBy === 'estado') {
+        if (t.overdue) add('venc', 'Vencidas', 0, t);
+        else if (t.status === 'en_curso') add('curso', 'En curso', 1, t);
+        else add('pend', 'Pendientes', 2, t);
+      } else if (groupBy === 'origen') {
+        add(t.source_module, SOURCE_LABEL[t.source_module]?.label || t.source_module, 0, t);
+      } else {
+        const b = dueBucket(t);
+        add(b.key, b.label, b.order, t);
+      }
+    }
+    return Array.from(map.entries())
+      .map(([key, v]) => ({ key, label: v.label, order: v.order, tasks: v.tasks }))
+      .sort((a, b) => a.order - b.order || a.label.localeCompare(b.label));
+  }, [filtered, groupBy]);
 
   const stats = useMemo(() => ({
     total: tasks.length,
@@ -200,6 +251,17 @@ export default function MisPendientes() {
               <option key={s} value={s}>{SOURCE_LABEL[s]?.label || s}</option>
             ))}
           </select>
+          <div className="w-px h-6 bg-gray-300" />
+          <span className="text-sm text-gray-600">Agrupar:</span>
+          <select
+            value={groupBy}
+            onChange={e => setGroupBy(e.target.value as any)}
+            className="text-sm border border-gray-300 rounded-lg px-2 py-1.5 bg-white">
+            <option value="vencimiento">Por vencimiento</option>
+            <option value="estado">Por estado</option>
+            <option value="origen">Por origen</option>
+            <option value="none">Sin agrupar</option>
+          </select>
           <span className="ml-auto text-sm text-gray-500">{filtered.length} resultados</span>
         </div>
 
@@ -213,8 +275,17 @@ export default function MisPendientes() {
             <p className="text-gray-600 mt-1">No hay tareas pendientes con esos filtros.</p>
           </div>
         ) : (
-          <div className="space-y-3">
-            {filtered.map(t => {
+          <div className="space-y-5">
+            {groups.map(g => (
+              <div key={g.key}>
+                {g.label && (
+                  <div className="flex items-center gap-2 mb-2">
+                    <h3 className="text-sm font-bold text-gray-700">{g.label}</h3>
+                    <span className="text-xs font-bold text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">{g.tasks.length}</span>
+                  </div>
+                )}
+                <div className="space-y-3">
+            {g.tasks.map(t => {
               const src = SOURCE_LABEL[t.source_module] || SOURCE_LABEL.general;
               const SrcIcon = src.icon;
               const others = t.assignees.filter(a => a.id !== user.id);
@@ -290,6 +361,9 @@ export default function MisPendientes() {
                 </div>
               );
             })}
+                </div>
+              </div>
+            ))}
           </div>
         )}
       </div>
@@ -321,7 +395,15 @@ export default function MisPendientes() {
                 </div>
                 <div>
                   <h4 className="font-bold text-gray-700 mb-1">Prioridad</h4>
-                  <p className="text-gray-600">{selected.priority}</p>
+                  <select
+                    value={selected.priority}
+                    onChange={e => changePriority(selected.id, e.target.value as Task['priority'])}
+                    className="text-sm border border-gray-200 rounded px-2 py-1 bg-white">
+                    <option value="baja">baja</option>
+                    <option value="media">media</option>
+                    <option value="alta">alta</option>
+                    <option value="urgente">urgente</option>
+                  </select>
                 </div>
                 {selected.due_date && (
                   <div>
@@ -400,6 +482,13 @@ export default function MisPendientes() {
 
               {/* Observación de cierre + completar */}
               <div className="border-t border-gray-100 pt-4">
+                {selected.status === 'pendiente' && (
+                  <button
+                    onClick={() => setTaskStatus(selected.id, 'en_curso')}
+                    className="w-full mb-2 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 rounded-lg flex items-center justify-center gap-2">
+                    <Loader2 className="w-4 h-4" /> Marcar en curso
+                  </button>
+                )}
                 <textarea
                   value={closeNote}
                   onChange={e => setCloseNote(e.target.value)}

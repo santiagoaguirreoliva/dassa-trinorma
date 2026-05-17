@@ -83,6 +83,51 @@ router.get('/', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+// GET /api/trainings/competency-matrix — cruce competencias-puesto vs capacitaciones
+// Para cada empleado con puesto: qué capacitaciones requiere su ficha (ISO 7.2 a/b)
+// y cuáles tiene cubiertas según las capacitaciones a las que asistió.
+router.get('/competency-matrix', async (_req, res) => {
+  try {
+    const emp = await query(`
+      SELECT u.id, u.full_name, jp.role_label, jp.training_required
+        FROM job_profile_employees jpe
+        JOIN job_profiles jp ON jp.id = jpe.profile_id
+        JOIN users u        ON u.id  = jpe.employee_id
+       WHERE u.is_active = true AND jp.is_active = true
+         AND COALESCE(jpe.is_primary, true) = true
+       ORDER BY u.full_name`);
+    const att = await query(`
+      SELECT tp.user_id, lower(t.title) AS title
+        FROM training_participants tp
+        JOIN trainings t ON t.id = tp.training_id
+       WHERE tp.attended = true AND tp.user_id IS NOT NULL`);
+
+    const byUser = {};
+    for (const a of att.rows) { (byUser[a.user_id] ||= []).push(a.title); }
+    const norm = s => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+
+    const matrix = emp.rows.map(e => {
+      const titles = (byUser[e.id] || []).map(norm);
+      const required = (e.training_required || []).map(r => {
+        const nr = norm(r);
+        const covered = titles.some(tt => {
+          if (!tt || !nr) return false;
+          if (tt.includes(nr) || nr.includes(tt)) return true;
+          // coincidencia por palabra significativa (≥ 5 letras)
+          return nr.split(/\s+/).filter(w => w.length >= 5).some(w => tt.includes(w));
+        });
+        return { label: r, covered };
+      });
+      const done = required.filter(x => x.covered).length;
+      return {
+        id: e.id, name: e.full_name, role: e.role_label,
+        required, coverage: required.length ? Math.round((done / required.length) * 100) : null,
+      };
+    });
+    res.json(matrix);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
 // POST /api/trainings/reminders/run — corre los recordatorios manualmente
 router.post('/reminders/run', requireRole(...MGMT), async (req, res) => {
   try {

@@ -3,12 +3,13 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   BookOpen, Plus, Calendar, ChevronLeft, ChevronRight,
   X, Loader2, CheckCircle2, Users, Bell,
-  Paperclip, Trash2, Upload, Shield, Pencil
+  Paperclip, Trash2, Upload, Shield, Pencil, Target
 } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { Header } from '@/components/layout/Header';
 import { Avatar, Spinner, PageContent, KPICard } from '@/components/ui';
+import CompetencyMatrix from '@/components/trainings/CompetencyMatrix';
 
 // ─── Tipos ──────────────────────────────────────────────────
 interface Training {
@@ -869,7 +870,7 @@ function CalendarView({ trainings, onSelect, onNewOnDay }: {
 // ─── MAIN PAGE ────────────────────────────────────────────────
 export default function Trainings() {
   const { isAdmin } = useAuth();
-  const [view, setView] = useState<'list' | 'calendar'>('list');
+  const [view, setView] = useState<'list' | 'calendar' | 'competencias'>('list');
   const [selected, setSelected] = useState<string | null>(null);
   const [showNew, setShowNew] = useState(false);
   const [newDate, setNewDate] = useState('');
@@ -918,6 +919,10 @@ export default function Trainings() {
                 className={`p-1.5 rounded-md transition-colors ${view === 'calendar' ? 'bg-white shadow-sm text-dassa-red' : 'text-gray-400'}`}>
                 <Calendar size={15} />
               </button>
+              <button onClick={() => setView('competencias')} title="Competencias por puesto"
+                className={`p-1.5 rounded-md transition-colors ${view === 'competencias' ? 'bg-white shadow-sm text-dassa-red' : 'text-gray-400'}`}>
+                <Target size={15} />
+              </button>
             </div>
             {isAdmin && (
               <button onClick={() => setShowNew(true)}
@@ -963,7 +968,9 @@ export default function Trainings() {
               <span className="ml-auto text-xs text-gray-400">{filtered.length} capacitaciones</span>
             </div>
 
-            {view === 'calendar' ? (
+            {view === 'competencias' ? (
+              <CompetencyMatrix />
+            ) : view === 'calendar' ? (
               <CalendarView trainings={filtered} onSelect={setSelected}
                 onNewOnDay={isAdmin ? (iso => { setNewDate(iso); setShowNew(true); }) : undefined} />
             ) : (

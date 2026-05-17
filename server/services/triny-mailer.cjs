@@ -199,7 +199,7 @@ async function jobResumenViernes(opts = {}) {
       (SELECT COUNT(*)::int FROM tasks WHERE status='pendiente')               AS tareas_pendientes,
       (SELECT COUNT(*)::int FROM tasks WHERE status='completada' AND completed_at > NOW() - INTERVAL '7 days') AS tareas_completadas,
       (SELECT COUNT(*)::int FROM tasks WHERE status='pendiente' AND due_date < CURRENT_DATE) AS tareas_vencidas,
-      (SELECT COUNT(*)::int FROM trainings WHERE planned_date > NOW() - INTERVAL '7 days') AS capacitaciones_semana,
+      (SELECT COUNT(*)::int FROM trainings WHERE scheduled_date > NOW() - INTERVAL '7 days') AS capacitaciones_semana,
       (SELECT COUNT(*)::int FROM incidents WHERE created_at > NOW() - INTERVAL '7 days')   AS incidentes_semana,
       (SELECT COUNT(*)::int FROM committee_meetings WHERE meeting_date > NOW() - INTERVAL '7 days') AS reuniones_semana
   `).catch(() => ({ rows: [{}] }));
@@ -267,7 +267,7 @@ async function jobInformeMensual(opts = {}) {
       (SELECT COUNT(*)::int FROM findings WHERE status='cerrada' AND updated_at > NOW() - INTERVAL '30 days') AS ncs_cerradas_mes,
       (SELECT COUNT(*)::int FROM tasks WHERE completed_at > NOW() - INTERVAL '30 days') AS tasks_done_mes,
       (SELECT COUNT(*)::int FROM tasks WHERE status='pendiente') AS tasks_pendientes,
-      (SELECT COUNT(*)::int FROM trainings WHERE planned_date > NOW() - INTERVAL '30 days') AS caps_mes,
+      (SELECT COUNT(*)::int FROM trainings WHERE scheduled_date > NOW() - INTERVAL '30 days') AS caps_mes,
       (SELECT COUNT(*)::int FROM incidents WHERE created_at > NOW() - INTERVAL '30 days') AS incidentes_mes,
       (SELECT COUNT(*)::int FROM committee_meetings WHERE meeting_date > NOW() - INTERVAL '30 days') AS reuniones_mes,
       (SELECT COUNT(*)::int FROM risks WHERE created_at > NOW() - INTERVAL '30 days') AS riesgos_nuevos_mes

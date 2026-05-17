@@ -1,28 +1,20 @@
 import { Router } from 'express';
 import { query } from '../db/db.js';
-import { authenticate } from '../middleware/auth.js';
-import { writeFileSync, mkdirSync } from 'fs';
-import { join, dirname } from 'path';
+import { authenticate, requireRole } from '../middleware/auth.js';
+import { saveBase64File } from '../services/uploads.js';
+import { unlinkSync } from 'fs';
+import { join, dirname, basename } from 'path';
 import { fileURLToPath } from 'url';
 import nodemailer from 'nodemailer';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const UPLOADS_DIR = join(__dirname, '../../uploads');
-try { mkdirSync(UPLOADS_DIR, { recursive: true }); } catch {}
+
+// Roles con permiso de gestión sobre capacitaciones
+const MGMT = ['master_admin', 'director', 'sgi_leader'];
 
 const router = Router();
 router.use(authenticate);
-
-// ─── Helpers ───────────────────────────────────────────────
-function saveBase64(base64, name) {
-  if (!base64) return null;
-  const matches = base64.match(/^data:(.+);base64,(.+)$/);
-  if (!matches) return null;
-  const ext = matches[1].split('/')[1]?.split('+')[0] || 'bin';
-  const fname = `${Date.now()}-${name}.${ext}`;
-  writeFileSync(join(UPLOADS_DIR, fname), Buffer.from(matches[2], 'base64'));
-  return `/uploads/${fname}`;
-}
 
 async function sendReminderEmail(to, subject, html) {
   if (!process.env.SMTP_HOST) return;
@@ -54,22 +46,7 @@ async function getNotificationEmails() {
   }
 }
 
-// ─── Ensure notification_emails table exists ───────────────
-(async () => {
-  try {
-    await query(`
-      CREATE TABLE IF NOT EXISTS training_notification_emails (
-        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        email VARCHAR(255) NOT NULL UNIQUE,
-        name VARCHAR(255),
-        active BOOLEAN DEFAULT true,
-        created_at TIMESTAMPTZ DEFAULT NOW()
-      )
-    `);
-  } catch (err) {
-    console.error('Table creation error:', err.message);
-  }
-})();
+// La tabla training_notification_emails la crea la migración 034.
 
 // ═══════════════════════════════════════════════════════════
 // TRAININGS CRUD
@@ -156,8 +133,8 @@ router.get('/:id', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// POST /api/trainings — crear capacitación (todos los usuarios autenticados)
-router.post('/', async (req, res) => {
+// POST /api/trainings — crear capacitación (roles de gestión)
+router.post('/', requireRole(...MGMT), async (req, res) => {
   const {
     title, description, objective, legal_framework, training_type,
     category, scheduled_date, location, instructor, duration_hours,
@@ -168,6 +145,9 @@ router.post('/', async (req, res) => {
 
   if (!title) {
     return res.status(400).json({ error: 'Título es requerido' });
+  }
+  if (!scheduled_date) {
+    return res.status(400).json({ error: 'La fecha de la capacitación es requerida' });
   }
 
   try {
@@ -254,7 +234,7 @@ router.post('/', async (req, res) => {
 });
 
 // PATCH /api/trainings/:id — editar capacitación
-router.patch('/:id', async (req, res) => {
+router.patch('/:id', requireRole(...MGMT), async (req, res) => {
   const FIELDS = ['title','description','objective','legal_framework','training_type',
     'category','scheduled_date','location','instructor','duration_hours',
     'max_participants','is_mandatory','reminder_days','status','recurrence_days',
@@ -297,7 +277,7 @@ router.patch('/:id', async (req, res) => {
 });
 
 // DELETE /api/trainings/:id — eliminar capacitación
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', requireRole(...MGMT), async (req, res) => {
   try {
     // Eliminar dependencias primero
     await query('DELETE FROM training_evidence WHERE training_id=$1', [req.params.id]);
@@ -312,7 +292,7 @@ router.delete('/:id', async (req, res) => {
 // PARTICIPANTS
 // ═══════════════════════════════════════════════════════════
 
-router.post('/:id/participants', async (req, res) => {
+router.post('/:id/participants', requireRole(...MGMT), async (req, res) => {
   const { user_id, external_name, external_position, external_sector } = req.body;
   if (!user_id && !external_name) {
     return res.status(400).json({ error: 'user_id o external_name requerido' });
@@ -331,7 +311,7 @@ router.post('/:id/participants', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-router.patch('/:id/participants/:pid', async (req, res) => {
+router.patch('/:id/participants/:pid', requireRole(...MGMT), async (req, res) => {
   const { attended, score, dni } = req.body;
   try {
     const { rows } = await query(
@@ -347,7 +327,7 @@ router.patch('/:id/participants/:pid', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-router.delete('/:id/participants/:pid', async (req, res) => {
+router.delete('/:id/participants/:pid', requireRole(...MGMT), async (req, res) => {
   try {
     await query('DELETE FROM training_participants WHERE id=$1', [req.params.pid]);
     res.json({ message: 'Eliminado' });
@@ -358,11 +338,12 @@ router.delete('/:id/participants/:pid', async (req, res) => {
 // EVIDENCE
 // ═══════════════════════════════════════════════════════════
 
-router.post('/:id/evidence', async (req, res) => {
+router.post('/:id/evidence', requireRole(...MGMT), async (req, res) => {
   const { file_base64, file_name, file_type, description } = req.body;
   if (!file_base64) return res.status(400).json({ error: 'Archivo requerido' });
   try {
-    const url = saveBase64(file_base64, file_name || 'evidencia');
+    const url = saveBase64File(file_base64, 'training-evidencia');
+    if (!url) return res.status(400).json({ error: 'Tipo de archivo no permitido (jpg, png, webp, pdf)' });
     const { rows } = await query(
       `INSERT INTO training_evidence
          (training_id, file_url, file_name, file_type, description, uploaded_by)
@@ -374,8 +355,13 @@ router.post('/:id/evidence', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-router.delete('/:id/evidence/:eid', async (req, res) => {
+router.delete('/:id/evidence/:eid', requireRole(...MGMT), async (req, res) => {
   try {
+    const { rows } = await query('SELECT file_url FROM training_evidence WHERE id=$1', [req.params.eid]);
+    if (rows[0]?.file_url) {
+      try { unlinkSync(join(UPLOADS_DIR, basename(rows[0].file_url))); }
+      catch { /* el archivo ya no está — seguimos */ }
+    }
     await query('DELETE FROM training_evidence WHERE id=$1', [req.params.eid]);
     res.json({ message: 'Eliminado' });
   } catch (err) { res.status(500).json({ error: err.message }); }
@@ -385,7 +371,7 @@ router.delete('/:id/evidence/:eid', async (req, res) => {
 // SEND REMINDER
 // ═══════════════════════════════════════════════════════════
 
-router.post('/:id/send-reminder', async (req, res) => {
+router.post('/:id/send-reminder', requireRole(...MGMT), async (req, res) => {
   try {
     const { rows } = await query(
       `SELECT t.*, array_agg(DISTINCT u.email) FILTER (WHERE u.email IS NOT NULL) AS emails
@@ -458,7 +444,7 @@ router.get('/config/notification-emails', async (req, res) => {
 });
 
 // POST /api/trainings-config/notification-emails — agregar email
-router.post('/config/notification-emails', async (req, res) => {
+router.post('/config/notification-emails', requireRole(...MGMT), async (req, res) => {
   const { email, name } = req.body;
   if (!email) return res.status(400).json({ error: 'Email requerido' });
   try {
@@ -474,7 +460,7 @@ router.post('/config/notification-emails', async (req, res) => {
 });
 
 // DELETE /api/trainings-config/notification-emails/:id
-router.delete('/config/notification-emails/:id', async (req, res) => {
+router.delete('/config/notification-emails/:id', requireRole(...MGMT), async (req, res) => {
   try {
     await query('DELETE FROM training_notification_emails WHERE id=$1', [req.params.id]);
     res.json({ message: 'Eliminado' });

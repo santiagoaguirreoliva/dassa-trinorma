@@ -58,6 +58,20 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/), versionado [S
 
 **Fase T8 — Cierre por responsable + IA**: cada responsable cierra su parte (`task_assignees.completed_at`); la tarea se cierra cuando todos terminan. El resumen semanal del viernes abre con un análisis ejecutivo generado por Triny.
 
+### Módulo de Capacitaciones — ISO 9001 §7.2 · 2026-05-17
+
+**Fase C1 — Saneamiento y seguridad** (migración 034): versiona el schema real (drift de columnas), `requireRole` en toda la gestión (antes cualquier usuario borraba capacitaciones), validación de `scheduled_date`, upload endurecido (`saveBase64File`), el DELETE de evidencia borra el archivo físico, fix del bug `planned_date` en los mails de Triny.
+
+**Fase C2 — Editar, borrar y agenda**: el modal crea o edita; botón Editar (cablea el PATCH completo) y Eliminar en el detalle; alta de capacitación desde el calendario con fecha precargada.
+
+**Fase C3 — Material y evidencia** (migración 035): `kind` en `training_evidence` — material previo (temario, PDF) separado de la evidencia del dictado (fotos, planilla firmada, acta).
+
+**Fase C4 — Conformidad y eficacia ISO** (migración 036): nota de evaluación y conformidad por participante; evaluación de eficacia a nivel capacitación (resultado, método, evaluador) — el acta F-TRI-36 muestra el resultado real (antes hardcodeado, incumplía ISO §7.2 d).
+
+**Fase C5 — Recordatorios automáticos y plan** (migración 037): cron diario 07:00 AR que avisa de capacitaciones próximas según `reminder_days` (antes el aviso era 100% manual); KPIs de asistencia promedio y eficacia.
+
+**Fase C6 — Competencias por puesto**: matriz que cruza las capacitaciones requeridas de cada ficha de puesto con las capacitaciones a las que el empleado asistió — cobertura de competencias por persona (ISO §7.2 a/b).
+
 ### Pre-entrega · auditoría 2026-05-14
 - **Fix crítico de auth**: `auditor.cjs`, `profiles.cjs` y `users-extra.cjs` ahora aplican `router.use(authenticate)` (antes `requireAdmin` chequeaba `req.user` sin middleware previo).
 - **Fix bug SQL** `dashboard.js` charts: `COALESCE(status::text, ...)` en findings y purchases (el enum no aceptaba el fallback como string).

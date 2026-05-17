@@ -72,6 +72,8 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/), versionado [S
 
 **Fase C6 — Competencias por puesto**: matriz que cruza las capacitaciones requeridas de cada ficha de puesto con las capacitaciones a las que el empleado asistió — cobertura de competencias por persona (ISO §7.2 a/b).
 
+**Fase C7 — Empleados y handoff a María** (migración 038): el módulo de Empleados estaba escrito sobre un schema inexistente (`first_name`, `employee_number`, `department`) y no permitía crear ni editar — reescrito sobre la tabla real (`full_name`, `sector`, `is_active`) + campo `whatsapp` para comunicaciones. Triny le deriva a María (correo programado + 5 tareas de adopción) la explicación de los cambios y lo que debe completar.
+
 ### Pre-entrega · auditoría 2026-05-14
 - **Fix crítico de auth**: `auditor.cjs`, `profiles.cjs` y `users-extra.cjs` ahora aplican `router.use(authenticate)` (antes `requireAdmin` chequeaba `req.user` sin middleware previo).
 - **Fix bug SQL** `dashboard.js` charts: `COALESCE(status::text, ...)` en findings y purchases (el enum no aceptaba el fallback como string).

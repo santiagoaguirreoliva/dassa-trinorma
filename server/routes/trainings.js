@@ -339,17 +339,18 @@ router.delete('/:id/participants/:pid', requireRole(...MGMT), async (req, res) =
 // ═══════════════════════════════════════════════════════════
 
 router.post('/:id/evidence', requireRole(...MGMT), async (req, res) => {
-  const { file_base64, file_name, file_type, description } = req.body;
+  const { file_base64, file_name, file_type, description, kind } = req.body;
   if (!file_base64) return res.status(400).json({ error: 'Archivo requerido' });
+  const fileKind = kind === 'material' ? 'material' : 'evidencia';
   try {
-    const url = saveBase64File(file_base64, 'training-evidencia');
+    const url = saveBase64File(file_base64, `training-${fileKind}`);
     if (!url) return res.status(400).json({ error: 'Tipo de archivo no permitido (jpg, png, webp, pdf)' });
     const { rows } = await query(
       `INSERT INTO training_evidence
-         (training_id, file_url, file_name, file_type, description, uploaded_by)
-       VALUES ($1,$2,$3,$4,$5,$6) RETURNING *`,
+         (training_id, file_url, file_name, file_type, description, uploaded_by, kind)
+       VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *`,
       [req.params.id, url, file_name || null, file_type || null,
-       description || null, req.user.id]
+       description || null, req.user.id, fileKind]
     );
     res.status(201).json(rows[0]);
   } catch (err) { res.status(500).json({ error: err.message }); }

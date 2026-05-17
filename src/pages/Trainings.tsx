@@ -27,6 +27,7 @@ interface Participant {
 interface Evidence {
   id: string; file_url: string; file_name?: string; file_type?: string;
   description?: string; uploaded_by_name?: string; created_at: string;
+  kind?: string;
 }
 
 // ─── Config ─────────────────────────────────────────────────
@@ -173,6 +174,7 @@ function TrainingDetail({ trainingId, onClose }: { trainingId: string; onClose: 
   const [newExt, setNewExt] = useState({ name: '', position: '', sector: '' });
   const [showAddExt, setShowAddExt] = useState(false);
   const [editing, setEditing] = useState(false);
+  const [uploadKind, setUploadKind] = useState<'material' | 'evidencia'>('evidencia');
   const fileRef = useRef<HTMLInputElement>(null);
 
   const { data, isLoading } = useQuery<any>({
@@ -219,9 +221,9 @@ function TrainingDetail({ trainingId, onClose }: { trainingId: string; onClose: 
   });
 
   const uploadEvidence = useMutation({
-    mutationFn: (file: { base64: string; name: string; type: string }) =>
+    mutationFn: (file: { base64: string; name: string; type: string; kind: string }) =>
       api.post(`/trainings/${trainingId}/evidence`, {
-        file_base64: file.base64, file_name: file.name, file_type: file.type
+        file_base64: file.base64, file_name: file.name, file_type: file.type, kind: file.kind
       }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['training', trainingId] }),
   });
@@ -316,7 +318,7 @@ function TrainingDetail({ trainingId, onClose }: { trainingId: string; onClose: 
           {[
             { key: 'info',          label: 'Información' },
             { key: 'participantes', label: `Participantes (${total})` },
-            { key: 'evidencia',     label: `Evidencia (${data.evidence?.length || 0})` },
+            { key: 'evidencia',     label: `Material/Evidencia (${data.evidence?.length || 0})` },
             { key: 'ftri36',        label: 'F-TRI-36 Acta' },
           ].map(t => (
             <button key={t.key} onClick={() => setTab(t.key as any)}
@@ -450,55 +452,39 @@ function TrainingDetail({ trainingId, onClose }: { trainingId: string; onClose: 
             </div>
           )}
 
-          {/* ─── EVIDENCIA ─── */}
+          {/* ─── MATERIAL Y EVIDENCIA ─── */}
           {tab === 'evidencia' && (
-            <div className="space-y-3">
-              <input ref={fileRef} type="file" accept="image/*,.pdf,.doc,.docx" className="hidden"
+            <div className="space-y-5">
+              <input ref={fileRef} type="file" accept="image/*,.pdf" className="hidden"
                 onChange={e => {
                   const file = e.target.files?.[0];
                   if (!file) return;
                   const reader = new FileReader();
                   reader.onload = () => uploadEvidence.mutate({
-                    base64: reader.result as string, name: file.name, type: file.type
+                    base64: reader.result as string, name: file.name, type: file.type, kind: uploadKind
                   });
                   reader.readAsDataURL(file);
+                  e.target.value = '';
                 }} />
 
-              {(data.evidence || []).map((ev: Evidence) => (
-                <div key={ev.id} className="flex items-center gap-3 p-3 bg-white rounded-xl border border-gray-200">
-                  <Paperclip size={16} className="text-gray-400 flex-shrink-0" />
-                  <div className="flex-1 min-w-0">
-                    <a href={ev.file_url} target="_blank" rel="noopener noreferrer"
-                      className="text-xs font-semibold text-dassa-red hover:underline truncate block">
-                      {ev.file_name || 'Archivo'}
-                    </a>
-                    {ev.description && <p className="text-[10px] text-gray-400">{ev.description}</p>}
-                    <p className="text-[10px] text-gray-400">
-                      {ev.uploaded_by_name} · {new Date(ev.created_at).toLocaleDateString('es-AR')}
-                    </p>
-                  </div>
-                  {isAdmin && (
-                    <button onClick={() => deleteEvidence.mutate(ev.id)} className="text-gray-300 hover:text-red-400 flex-shrink-0">
-                      <Trash2 size={13} />
-                    </button>
-                  )}
-                </div>
-              ))}
-
-              {(data.evidence || []).length === 0 && (
-                <div className="text-center py-8 text-gray-400">
-                  <Paperclip size={28} className="mx-auto mb-2 opacity-30" />
-                  <p className="text-sm">Sin evidencia adjunta</p>
-                </div>
-              )}
-
-              {isAdmin && (
-                <button onClick={() => fileRef.current?.click()} disabled={uploadEvidence.isPending}
-                  className="w-full flex items-center justify-center gap-2 py-3 border-2 border-dashed border-gray-300 rounded-xl text-sm text-gray-500 hover:border-blue-400 hover:bg-dassa-red-tint transition-colors">
-                  {uploadEvidence.isPending ? <Loader2 size={15} className="animate-spin" /> : <Upload size={15} />}
-                  Subir foto o documento
-                </button>
-              )}
+              <EvidenceSection
+                title="Material de la capacitación"
+                hint="Temario, presentación, PDF de soporte — material previo al dictado"
+                items={(data.evidence || []).filter((e: Evidence) => e.kind === 'material')}
+                isAdmin={isAdmin}
+                uploading={uploadEvidence.isPending}
+                onUpload={() => { setUploadKind('material'); fileRef.current?.click(); }}
+                onDelete={(id: string) => deleteEvidence.mutate(id)}
+              />
+              <EvidenceSection
+                title="Evidencia del dictado"
+                hint="Fotos, planilla de asistencia firmada, acta — registro de que ocurrió (ISO 7.2)"
+                items={(data.evidence || []).filter((e: Evidence) => e.kind !== 'material')}
+                isAdmin={isAdmin}
+                uploading={uploadEvidence.isPending}
+                onUpload={() => { setUploadKind('evidencia'); fileRef.current?.click(); }}
+                onDelete={(id: string) => deleteEvidence.mutate(id)}
+              />
             </div>
           )}
 
@@ -519,6 +505,50 @@ function TrainingDetail({ trainingId, onClose }: { trainingId: string; onClose: 
           <TrainingFormModal training={data} onClose={() => setEditing(false)} />
         )}
       </div>
+    </div>
+  );
+}
+
+function EvidenceSection({ title, hint, items, isAdmin, uploading, onUpload, onDelete }: {
+  title: string; hint: string; items: Evidence[]; isAdmin: boolean;
+  uploading: boolean; onUpload: () => void; onDelete: (id: string) => void;
+}) {
+  return (
+    <div>
+      <p className="text-xs font-bold text-gray-700">{title}</p>
+      <p className="text-[11px] text-gray-400 mb-2">{hint}</p>
+      <div className="space-y-1.5">
+        {items.map(ev => (
+          <div key={ev.id} className="flex items-center gap-3 p-3 bg-white rounded-xl border border-gray-200">
+            <Paperclip size={16} className="text-gray-400 flex-shrink-0" />
+            <div className="flex-1 min-w-0">
+              <a href={ev.file_url} target="_blank" rel="noopener noreferrer"
+                className="text-xs font-semibold text-dassa-red hover:underline truncate block">
+                {ev.file_name || 'Archivo'}
+              </a>
+              {ev.description && <p className="text-[10px] text-gray-400">{ev.description}</p>}
+              <p className="text-[10px] text-gray-400">
+                {ev.uploaded_by_name} · {new Date(ev.created_at).toLocaleDateString('es-AR')}
+              </p>
+            </div>
+            {isAdmin && (
+              <button onClick={() => onDelete(ev.id)} className="text-gray-300 hover:text-red-400 flex-shrink-0">
+                <Trash2 size={13} />
+              </button>
+            )}
+          </div>
+        ))}
+        {items.length === 0 && (
+          <p className="text-xs text-gray-400 py-2">Sin archivos.</p>
+        )}
+      </div>
+      {isAdmin && (
+        <button onClick={onUpload} disabled={uploading}
+          className="w-full mt-2 flex items-center justify-center gap-2 py-2.5 border-2 border-dashed border-gray-300 rounded-xl text-sm text-gray-500 hover:border-blue-400 hover:bg-dassa-red-tint transition-colors">
+          {uploading ? <Loader2 size={15} className="animate-spin" /> : <Upload size={15} />}
+          Subir archivo (jpg, png, pdf)
+        </button>
+      )}
     </div>
   );
 }

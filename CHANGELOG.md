@@ -30,6 +30,16 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/), versionado [S
 
 **Fase 4 — Informe mensual**: `findings-report.cjs` + cron día 1 08:00 AR — Triny arma el informe del tratamiento de NC del mes (KPIs, distribución, análisis de tendencias) y lo envía a `maria@` + `santiago@`. Endpoint `POST /findings/report/monthly` para generación on-demand.
 
+**Fase 5 — Vista de informes históricos** (migración 029): tabla `findings_reports`, endpoints lista/detalle, tercer modo de vista en el módulo de NC con los informes mensuales persistidos y su detalle en modal.
+
+**Fase 6 — Detección de recurrencia IA**: `analyzeFinding` compara cada NC con las anteriores del mismo sector/tipo y detecta recurrencia (acción correctiva previa no eficaz, ISO 10.2); banner de alerta en `FindingDetail`.
+
+**Fase 7 — Recordatorios de eficacia V30/V60** (migración 030): cron diario 09:00 AR que intima al responsable y avisa a calidad cuando una NC cumple 30/60 días sin verificar la eficacia.
+
+**Fase 8 — Gráficos y Pareto**: endpoint `/findings/analytics`; gráfico de tendencia mensual (creadas vs cerradas) y Pareto de NC por origen con % acumulado.
+
+**Fase 9 — Kanban interactivo**: drag & drop de tarjetas entre columnas para cambiar estado; filtros por estado y por responsable.
+
 ### Pre-entrega · auditoría 2026-05-14
 - **Fix crítico de auth**: `auditor.cjs`, `profiles.cjs` y `users-extra.cjs` ahora aplican `router.use(authenticate)` (antes `requireAdmin` chequeaba `req.user` sin middleware previo).
 - **Fix bug SQL** `dashboard.js` charts: `COALESCE(status::text, ...)` en findings y purchases (el enum no aceptaba el fallback como string).

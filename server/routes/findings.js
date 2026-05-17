@@ -110,6 +110,20 @@ router.get('/reports/:rid', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+// POST /api/findings/reminders/run — corre los recordatorios de eficacia
+// manualmente. ?dry_run=1 → cuenta los pendientes sin notificar ni enviar.
+router.post('/reminders/run', async (req, res) => {
+  if (!ADMIN_ROLES.includes(req.user.role)) {
+    return res.status(403).json({ error: 'Sin permiso' });
+  }
+  try {
+    const mod = await import('../services/findings-reminders.cjs');
+    const svc = mod.default || mod;
+    const dryRun = req.query.dry_run === '1' || req.query.dry_run === 'true';
+    res.json(await svc.runEfficacyReminders({ dryRun }));
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
 // POST /api/findings/report/monthly — genera el informe mensual de NC/desvíos.
 // Siempre lo persiste en el histórico. ?dry_run=1 → no envía el correo.
 router.post('/report/monthly', async (req, res) => {

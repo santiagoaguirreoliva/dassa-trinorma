@@ -74,6 +74,17 @@ cron.schedule('0 8 1 * *', async () => {
   } catch (e) { console.error('[findings informe mensual]', e.message); }
 }, { timezone: 'America/Argentina/Buenos_Aires' });
 
+// CRON · Recordatorios de verificación de eficacia de NC — diario, 09:00 AR
+cron.schedule('0 9 * * *', async () => {
+  try {
+    const { createRequire: cr } = await import('module');
+    const reqCjs = cr(import.meta.url);
+    const reminders = reqCjs('./services/findings-reminders.cjs');
+    const r = await reminders.runEfficacyReminders();
+    console.log('[findings] recordatorios de eficacia:', JSON.stringify(r));
+  } catch (e) { console.error('[findings recordatorios eficacia]', e.message); }
+}, { timezone: 'America/Argentina/Buenos_Aires' });
+
 // Cron OLA 5 · Wake-up notifications cada 6 horas
 cron.schedule('0 */6 * * *', async () => {
   try {

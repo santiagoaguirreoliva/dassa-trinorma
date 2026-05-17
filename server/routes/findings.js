@@ -84,6 +84,23 @@ router.get('/stats', async (_req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+// POST /api/findings/report/monthly — genera el informe mensual de NC/desvíos.
+// ?dry_run=1 → lo genera y lo devuelve sin enviar el correo.
+router.post('/report/monthly', async (req, res) => {
+  if (!ADMIN_ROLES.includes(req.user.role)) {
+    return res.status(403).json({ error: 'Sin permiso para generar el informe' });
+  }
+  try {
+    const mod = await import('../services/findings-report.cjs');
+    const svc = mod.default || mod;
+    const dryRun = req.query.dry_run === '1' || req.query.dry_run === 'true';
+    const result = await svc.sendMonthlyFindingsReport({ dryRun });
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // GET /api/findings/:id — detalle completo
 router.get('/:id', async (req, res) => {
   try {

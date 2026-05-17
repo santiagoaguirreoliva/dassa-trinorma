@@ -63,6 +63,17 @@ import cron from 'node-cron';
   } catch (e) { console.error('[triny cron setup]', e.message); }
 })();
 
+// CRON · Informe mensual de NC y desvíos (Triny) — día 1, 08:00 AR
+cron.schedule('0 8 1 * *', async () => {
+  try {
+    const { createRequire: cr } = await import('module');
+    const reqCjs = cr(import.meta.url);
+    const findingsReport = reqCjs('./services/findings-report.cjs');
+    const out = await findingsReport.sendMonthlyFindingsReport();
+    console.log('[findings] informe mensual de NC enviado:', out.recipients, '·', out.period);
+  } catch (e) { console.error('[findings informe mensual]', e.message); }
+}, { timezone: 'America/Argentina/Buenos_Aires' });
+
 // Cron OLA 5 · Wake-up notifications cada 6 horas
 cron.schedule('0 */6 * * *', async () => {
   try {

@@ -12,7 +12,7 @@ import {
   GraduationCap, ShoppingCart, FileText, X, MessageSquare,
 } from 'lucide-react';
 
-interface Assignee { id: string; name: string; email: string; role: 'principal' | 'colaborador'; }
+interface Assignee { id: string; name: string; email: string; role: 'principal' | 'colaborador'; done?: boolean; }
 interface Task {
   id: string;
   task_number: string | null;
@@ -150,6 +150,25 @@ export default function MisPendientes() {
       setTasks(t => t.map(x => x.id === id ? { ...x, priority } : x));
       setSelected(s => s && s.id === id ? { ...s, priority } : s);
     } catch (e: any) { alert('Error: ' + e.message); }
+  }
+
+  async function markMyPart(id: string) {
+    setCompleting(id);
+    try {
+      const r = await api.patch<any>(`/tasks/mine/${id}/my-part`, { done: true });
+      if (r.task_completed) {
+        setTasks(t => t.filter(x => x.id !== id));
+        setSelected(null);
+      } else {
+        setSelected(s => s && s.id === id
+          ? { ...s, assignees: s.assignees.map(a => a.id === user!.id ? { ...a, done: true } : a) }
+          : s);
+      }
+    } catch (e: any) {
+      alert('Error: ' + e.message);
+    } finally {
+      setCompleting(null);
+    }
   }
 
   const filtered = useMemo(() => {
@@ -480,7 +499,10 @@ export default function MisPendientes() {
                         {getInitials(a.name)}
                       </div>
                       <div className="flex-1">
-                        <div className="font-medium text-gray-900 text-sm">{a.name}</div>
+                        <div className="font-medium text-gray-900 text-sm flex items-center gap-1.5">
+                          {a.name}
+                          {a.done && <CheckCircle2 className="w-4 h-4 text-emerald-500" />}
+                        </div>
                         <div className="text-xs text-gray-500">{a.email}</div>
                       </div>
                       <span className={`text-xs px-2 py-1 rounded-full ${a.role === 'principal' ? 'bg-dassa-red text-white' : 'bg-gray-200 text-gray-700'}`}>
@@ -536,6 +558,15 @@ export default function MisPendientes() {
 
               {/* Observación de cierre + completar */}
               <div className="border-t border-gray-100 pt-4">
+                {selected.assignees.length > 1 && selected.assignees.some(a => a.id === user.id && !a.done) && (
+                  <button
+                    onClick={() => markMyPart(selected.id)}
+                    disabled={completing === selected.id}
+                    className="w-full mb-2 bg-violet-600 hover:bg-violet-700 disabled:bg-gray-300 text-white font-bold py-2.5 rounded-lg flex items-center justify-center gap-2">
+                    {completing === selected.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
+                    Marcar mi parte como completada
+                  </button>
+                )}
                 {selected.status === 'pendiente' && (
                   <button
                     onClick={() => setTaskStatus(selected.id, 'en_curso')}

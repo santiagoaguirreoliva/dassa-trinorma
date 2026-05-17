@@ -34,7 +34,8 @@ router.get('/mine', async (req, res) => {
               CASE WHEN t.due_date < CURRENT_DATE AND t.status NOT IN ('completada','cancelada') THEN TRUE ELSE FALSE END AS overdue,
               COALESCE(
                 (SELECT json_agg(json_build_object(
-                  'id', u.id, 'name', u.full_name, 'email', u.email, 'role', ta.role
+                  'id', u.id, 'name', u.full_name, 'email', u.email, 'role', ta.role,
+                  'done', ta.completed_at IS NOT NULL
                 ) ORDER BY ta.role) FROM task_assignees ta JOIN users u ON u.id=ta.user_id WHERE ta.task_id=t.id),
                 '[]'::json
               ) AS assignees,
@@ -113,6 +114,45 @@ router.patch('/mine/:id', async (req, res) => {
       );
     }
     res.json({ ok: true });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// PATCH /api/tasks/mine/:id/my-part — un responsable marca SU parte completada.
+// Cuando todos los responsables completaron, la tarea se cierra sola.
+router.patch('/mine/:id/my-part', async (req, res) => {
+  const { done, note } = req.body;
+  try {
+    const a = await pool.query(
+      'SELECT 1 FROM task_assignees WHERE task_id = $1 AND user_id = $2',
+      [req.params.id, req.user.id]
+    );
+    if (a.rowCount === 0) return res.status(403).json({ error: 'No sos responsable de esta tarea' });
+
+    await pool.query(
+      `UPDATE task_assignees
+          SET completed_at = $3, notes = COALESCE($4, notes)
+        WHERE task_id = $1 AND user_id = $2`,
+      [req.params.id, req.user.id, done ? new Date() : null, note || null]
+    );
+
+    // ¿Todos los responsables completaron su parte? → cerrar la tarea
+    const { rows } = await pool.query(
+      `SELECT COUNT(*)::int AS total, COUNT(completed_at)::int AS hechas
+         FROM task_assignees WHERE task_id = $1`,
+      [req.params.id]
+    );
+    let taskCompleted = false;
+    if (rows[0].total > 0 && rows[0].total === rows[0].hechas) {
+      await pool.query(
+        `UPDATE tasks SET status = 'completada', completed_at = COALESCE(completed_at, NOW()), updated_at = NOW()
+          WHERE id = $1 AND status NOT IN ('completada','cancelada')`,
+        [req.params.id]
+      );
+      taskCompleted = true;
+    }
+    res.json({ ok: true, task_completed: taskCompleted, total: rows[0].total, hechas: rows[0].hechas });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }

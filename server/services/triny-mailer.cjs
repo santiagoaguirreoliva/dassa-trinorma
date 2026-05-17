@@ -215,8 +215,13 @@ async function jobResumenViernes(opts = {}) {
     GROUP BY u.id, u.full_name ORDER BY COUNT(t.id) DESC LIMIT 5
   `).catch(() => ({ rows: [] }));
 
+  // Análisis ejecutivo generado por IA (best-effort)
+  let aiInsight = '';
+  try { aiInsight = await require('./task-ai.cjs').weeklyExecutiveInsight(k); } catch { /* opcional */ }
+
   const body = `<div style="padding:24px">
     <p><strong>Resumen ejecutivo de la semana</strong> que termina el ${new Date().toLocaleDateString('es-AR')}.</p>
+    ${aiInsight ? `<div style="background:#f4f2fb;border-left:4px solid #7c3aed;padding:12px 14px;margin:12px 0;line-height:1.6;font-size:14px;color:#374151">${aiInsight}</div>` : ''}
     ${kpiBox([
       { label: 'NCs abiertas', value: k.ncs_abiertas || 0, color: '#dc2626' },
       { label: 'NCs cerradas', value: k.ncs_cerradas || 0, color: '#10b981' },

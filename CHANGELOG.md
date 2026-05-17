@@ -8,6 +8,11 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/), versionado [S
 
 ## [Sin publicar]
 
+### Mejoras post-auditoría · 2026-05-17
+- **H-11 · Performance de carga inicial**: code-splitting por ruta. Las 44 páginas pasaron a `React.lazy()` (Login y el shell `AppLayout` quedan estáticos). `Suspense` global para rutas públicas + `Suspense` sobre el `<Outlet/>` de `AppLayout` (mantiene el sidebar mientras carga la página). El bundle inicial `index.js` cayó de **497 KB / 103 KB gzip → 38 KB / 12 KB gzip**; `recharts` (108 KB gzip) ya no se descarga en la pantalla de login.
+- **H-12 · Accesibilidad de páginas públicas** (`Login.tsx`, `PublicNC.tsx`, `PublicComm.tsx`): landmark `<main>` en todas las vistas; `aria-label` en botones-ícono (toggle contraseña, quitar foto, spinner) e inputs sin `<label>`; contraste corregido (`text-gray-400 → text-gray-500`, fallaba 4.5:1 AA); touch targets de íconos ampliados a 36–40 px.
+- **Deploy**: commit `b27cf24` (botón HOME al portal Smart DASSA Apps) buildeado y activo en producción.
+
 ### Pre-entrega · auditoría 2026-05-14
 - **Fix crítico de auth**: `auditor.cjs`, `profiles.cjs` y `users-extra.cjs` ahora aplican `router.use(authenticate)` (antes `requireAdmin` chequeaba `req.user` sin middleware previo).
 - **Fix bug SQL** `dashboard.js` charts: `COALESCE(status::text, ...)` en findings y purchases (el enum no aceptaba el fallback como string).

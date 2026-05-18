@@ -23,8 +23,6 @@ const Objetivos           = lazy(() => import('@/pages/Objetivos'));
 const Cambios             = lazy(() => import('@/pages/Cambios'));
 const Procedimientos      = lazy(() => import('@/pages/Procedimientos'));
 const RiesgosAMFE         = lazy(() => import('@/pages/RiesgosAMFE'));
-const Comunicaciones      = lazy(() => import('@/pages/Comunicaciones'));
-const PublicComm          = lazy(() => import('@/pages/PublicComm'));
 const NixaInbox           = lazy(() => import('@/pages/NixaInbox'));
 const BIOperativo         = lazy(() => import('@/pages/BIOperativo'));
 const CalendarioNixa      = lazy(() => import('@/pages/CalendarioNixa'));
@@ -89,7 +87,6 @@ export default function App() {
             <Route path="/register"   element={<Register />} />
             <Route path="/signup-empresa" element={<SignupEmpresa />} />
             <Route path="/reporte-nc" element={<PublicNC />} />
-            <Route path="/c/:token"   element={<PublicComm />} />
             <Route path="/"           element={<Navigate to="/login" replace />} />
             <Route path="/home"       element={<Navigate to="/bienvenida" replace />} />
             <Route path="/tasks"      element={<Navigate to="/mis-pendientes" replace />} />
@@ -116,7 +113,6 @@ export default function App() {
               <Route path="/cambios"        element={<Cambios />} />
               <Route path="/procedimientos" element={<Procedimientos />} />
               <Route path="/riesgos-amfe"   element={<RiesgosAMFE />} />
-              <Route path="/comunicaciones" element={<Comunicaciones />} />
               <Route path="/inbox-nixa"     element={<NixaInbox />} />
               <Route path="/bi-operativo"   element={<BIOperativo />} />
               <Route path="/calendario-nixa" element={<CalendarioNixa />} />

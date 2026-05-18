@@ -9,7 +9,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 
-interface NavItem  { path: string; label: string; icon: React.ReactNode; badge?: number; admin?: boolean; }
+interface NavItem  { path: string; label: string; icon: React.ReactNode; badge?: number; admin?: boolean; external?: boolean; }
 interface NavGroup { group: string; subtitle?: string; items: NavItem[]; emoji?: string; }
 
 function buildNav(openFindings: number, legalAlerts: number, role?: string): NavGroup[] {
@@ -86,7 +86,7 @@ function buildNav(openFindings: number, legalAlerts: number, role?: string): Nav
     {
       group: 'Comunicaciones',
       items: [
-        { path: '/comunicaciones', label: 'Comunicaciones', icon: <Megaphone size={15} /> },
+        { path: 'https://apps.dassa.com.ar/comunicaciones', label: 'Comunicaciones', icon: <Megaphone size={15} />, external: true },
       ],
     },
     ...(isAdmin ? [{
@@ -181,7 +181,11 @@ export default function Sidebar({ openFindings = 0, legalAlerts = 0, isOpen = fa
                 {group.items.map((item) => (
                   <button
                     key={item.path}
-                    onClick={() => { navigate(item.path); onClose?.(); }}
+                    onClick={() => {
+                      if (item.external) window.open(item.path, '_blank', 'noopener');
+                      else navigate(item.path);
+                      onClose?.();
+                    }}
                     className={`w-full flex items-center justify-between px-4 py-1.5 text-[12px] font-medium transition
                       ${isActive(item.path)
                         ? 'bg-dassa-celeste/20 text-dassa-celeste border-l-2 border-dassa-celeste'

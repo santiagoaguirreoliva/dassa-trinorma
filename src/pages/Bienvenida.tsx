@@ -31,7 +31,7 @@ const IMPORTANT_FOR_EVERYONE = [
   { icon: GraduationCap, color: 'bg-blue-600', href: '/trainings', title: 'Capacitaciones', desc: 'Registrar evidencia de cada capacitación: asistencia, material, evaluación. Lo que no está acá, en auditoría no existe.' },
   { icon: ShoppingCart, color: 'bg-emerald-600', href: '/purchases', title: 'Compras', desc: 'Pedidos de compra con flujo de aprobación. Toda compra relevante al SGI pasa por acá para dejar trazabilidad.' },
   { icon: ClipboardList, color: 'bg-purple-600', href: '/mis-pendientes', title: 'Revisiones obligatorias', desc: 'Cada rol tiene revisiones periódicas. Te aparecen en Mis Pendientes en su fecha.' },
-  { icon: FileText, color: 'bg-slate-700', href: '/comunicaciones', title: 'Actas, recorridos y auditorías', desc: 'Documentación formal: actas de comité, recorridos, auditorías internas. Asociadas a tu perfil cuando te toca firmar o participar.' },
+  { icon: FileText, color: 'bg-slate-700', href: 'https://apps.dassa.com.ar/comunicaciones', title: 'Actas, recorridos y auditorías', desc: 'Documentación formal: actas de comité, recorridos, auditorías internas. Asociadas a tu perfil cuando te toca firmar o participar.' },
 ];
 
 const RRHH_PROFILE: RoleProfile = {
@@ -103,7 +103,7 @@ const SGI_LEADER_PROFILE: RoleProfile = {
     { dia: 'Día 2', tarea: 'Auditá Hallazgos: NCs sin responsable.', href: '/findings' },
     { dia: 'Día 3', tarea: 'Revisión completa Ciclo 2026.', href: '/ciclo/2026' },
     { dia: 'Día 4', tarea: 'Procedimientos: vencimientos próximos.', href: '/procedimientos' },
-    { dia: 'Día 5', tarea: 'Reunión semanal con Santi.', href: '/comunicaciones' },
+    { dia: 'Día 5', tarea: 'Reunión semanal con Santi.', href: 'https://apps.dassa.com.ar/comunicaciones' },
     { dia: 'Día 6', tarea: 'Comité Mixto: agenda próxima fecha.', href: '/committee' },
     { dia: 'Día 7', tarea: 'Informe semanal al directorio.', href: '/sistema-gestion' },
   ],
@@ -191,7 +191,7 @@ const SH_PROFILE: RoleProfile = {
     { dia: 'Día 4', tarea: 'Capacitaciones próximas.', href: '/trainings' },
     { dia: 'Día 5', tarea: 'Req. Legales: vencimientos.', href: '/legal' },
     { dia: 'Día 6', tarea: 'Recorrido semanal inspección.', href: '/incidents' },
-    { dia: 'Día 7', tarea: 'Informe SySO al SGI Leader.', href: '/comunicaciones' },
+    { dia: 'Día 7', tarea: 'Informe SySO al SGI Leader.', href: 'https://apps.dassa.com.ar/comunicaciones' },
   ],
   expectativas: [
     'Login mínimo 4 veces por semana.',
@@ -220,7 +220,7 @@ const MASTER_ADMIN_PROFILE: RoleProfile = {
     { icon: Bot, label: 'Agente TRINY', href: '/agent-settings', descripcion: 'Configurar TRINY (IA).' },
     { icon: ClipboardList, label: 'Mis Pendientes', href: '/mis-pendientes', descripcion: 'Tus supervisiones.' },
     { icon: FolderTree, label: 'Organigrama', href: '/organigrama', descripcion: 'Estructura DASSA.' },
-    { icon: Megaphone, label: 'Comunicaciones', href: '/comunicaciones', descripcion: 'Comunicados oficiales.' },
+    { icon: Megaphone, label: 'Comunicaciones', href: 'https://apps.dassa.com.ar/comunicaciones', descripcion: 'Comunicados oficiales.' },
   ],
   responsabilidades: [
     'Visión estratégica del SGI y dirección general.',
@@ -232,9 +232,9 @@ const MASTER_ADMIN_PROFILE: RoleProfile = {
   ],
   primerSemana: [
     { dia: 'Lunes', tarea: 'Dashboard + Modo Espejo de 2 users.', href: '/dashboard' },
-    { dia: 'Martes', tarea: 'Reunión 1:1 con Manuel.', href: '/comunicaciones' },
+    { dia: 'Martes', tarea: 'Reunión 1:1 con Manuel.', href: 'https://apps.dassa.com.ar/comunicaciones' },
     { dia: 'Miércoles', tarea: 'Auditá Hallazgos: NCs estancadas.', href: '/findings' },
-    { dia: 'Jueves', tarea: 'Comunicaciones de la semana.', href: '/comunicaciones' },
+    { dia: 'Jueves', tarea: 'Comunicaciones de la semana.', href: 'https://apps.dassa.com.ar/comunicaciones' },
     { dia: 'Viernes', tarea: 'Cierre + agenda comité.', href: '/committee' },
   ],
   expectativas: [
@@ -279,7 +279,7 @@ const AUDITOR_EXTERNO_PROFILE: RoleProfile = {
     { dia: 'Día 2', tarea: 'Modo Espejo aleatorio (ej: Christian).', href: '/bienvenida?espejo=1' },
     { dia: 'Día 3', tarea: 'Procedimientos: vencimientos.', href: '/procedimientos' },
     { dia: 'Día 4', tarea: 'Documentos: control de versiones.', href: '/documents' },
-    { dia: 'Día 5', tarea: 'Reunión semanal con Manuel + Santi.', href: '/comunicaciones' },
+    { dia: 'Día 5', tarea: 'Reunión semanal con Manuel + Santi.', href: 'https://apps.dassa.com.ar/comunicaciones' },
     { dia: 'Día 6', tarea: 'Ciclo 2026: estado revisiones.', href: '/ciclo/2026' },
     { dia: 'Día 7', tarea: 'Informe semanal del SGI vs recertificación.', href: '/auditor' },
   ],
@@ -404,6 +404,13 @@ const CAN_MIRROR: AppRole[] = ['master_admin', 'auditor_externo'];
 export default function Bienvenida() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  // Navega interno, o abre en pestaña nueva si el href es una URL externa
+  // (ej. el Centro de Comunicaciones, que vive en la app madre).
+  const go = (href?: string) => {
+    if (!href) return;
+    if (/^https?:\/\//.test(href)) window.open(href, '_blank', 'noopener');
+    else navigate(href);
+  };
   const [pactChecked, setPactChecked] = useState(false);
   const [accepting, setAccepting] = useState(false);
   const [alreadyAccepted, setAlreadyAccepted] = useState(false);
@@ -531,7 +538,7 @@ export default function Bienvenida() {
             {IMPORTANT_FOR_EVERYONE.map((it, i) => {
               const Icon = it.icon;
               return (
-                <div key={i} onClick={() => navigate(it.href)} className="group bg-white rounded-xl border border-gray-200 p-5 hover:border-dassa-red hover:shadow-md transition cursor-pointer">
+                <div key={i} onClick={() => go(it.href)} className="group bg-white rounded-xl border border-gray-200 p-5 hover:border-dassa-red hover:shadow-md transition cursor-pointer">
                   <div className="flex items-start gap-4">
                     <div className={`${it.color} rounded-lg p-3 shrink-0`}><Icon className="w-6 h-6 text-white" /></div>
                     <div className="flex-1 min-w-0">
@@ -553,7 +560,7 @@ export default function Bienvenida() {
               {profile.pantallas.map((p, i) => {
                 const Icon = p.icon;
                 return (
-                  <div key={i} onClick={() => !isMirroring && navigate(p.href)} className={`bg-white/10 border border-white/20 rounded-xl p-4 transition group ${isMirroring ? 'opacity-80' : 'hover:bg-white/20 cursor-pointer'}`}>
+                  <div key={i} onClick={() => !isMirroring && go(p.href)} className={`bg-white/10 border border-white/20 rounded-xl p-4 transition group ${isMirroring ? 'opacity-80' : 'hover:bg-white/20 cursor-pointer'}`}>
                     <Icon className="w-6 h-6 text-yellow-300 mb-2" />
                     <div className="font-bold text-white text-sm mb-1">{p.label}</div>
                     <div className="text-white/70 text-xs leading-snug">{p.descripcion}</div>
@@ -586,7 +593,7 @@ export default function Bienvenida() {
           <div className="mb-6"><h2 className="text-2xl font-bold text-gray-900 mb-2">Tu primera semana</h2><p className="text-gray-600">Mini plan para no perderte.</p></div>
           <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
             {profile.primerSemana.map((d, i) => (
-              <div key={i} onClick={() => d.href && !isMirroring && navigate(d.href)} className={`flex items-center gap-4 p-4 ${d.href && !isMirroring ? 'cursor-pointer hover:bg-gray-50' : ''} ${i < profile.primerSemana.length - 1 ? 'border-b border-gray-100' : ''}`}>
+              <div key={i} onClick={() => d.href && !isMirroring && go(d.href)} className={`flex items-center gap-4 p-4 ${d.href && !isMirroring ? 'cursor-pointer hover:bg-gray-50' : ''} ${i < profile.primerSemana.length - 1 ? 'border-b border-gray-100' : ''}`}>
                 <div className="bg-dassa-red text-white rounded-lg w-20 text-center py-2 font-bold text-sm shrink-0">{d.dia}</div>
                 <div className="flex-1 text-gray-700">{d.tarea}</div>
                 {d.href && <ChevronRight className="w-5 h-5 text-gray-400" />}

@@ -15,7 +15,7 @@ const LABELS: Record<string,string> = {
 export default function NixaInbox() {
   const { data, isLoading } = useQuery<any>({
     queryKey: ['nixa-inbox'],
-    queryFn: () => api.get('/comunicaciones/nixa-inbox'),
+    queryFn: () => api.get('/nixa-inbox'),
   });
   if (isLoading || !data) return <PageContent><Spinner/></PageContent>;
 

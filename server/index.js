@@ -32,6 +32,7 @@ import trainingsRouter      from './routes/trainings.js';
 import accessRequestsRouter from './routes/accessRequests.js';
 import { risksRouter, legalRouter } from './routes/misc.js';
 import tasksRouter from './routes/tasks.js';
+import { busRouter } from './agent-bus.js';
 import { checkOverdueTasks, sendBimonthlyDigest } from './services/email.js';
 import { query as dbQuery } from './db/db.js';
 import cron from 'node-cron';
@@ -166,6 +167,7 @@ app.use(cors({
 }));
 
 // Body parsers (CRITICO: antes de cualquier router que lea req.body)
+app.use(busRouter()); // Bus de Agentes — antes del JSON parser (HMAC sobre el body crudo)
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 

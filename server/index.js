@@ -32,6 +32,7 @@ import trainingsRouter      from './routes/trainings.js';
 import accessRequestsRouter from './routes/accessRequests.js';
 import { risksRouter, legalRouter } from './routes/misc.js';
 import tasksRouter from './routes/tasks.js';
+import inspectionsRouter from './routes/inspections.js';  // Módulo Ronda de Inspecciones
 import { busRouter } from './agent-bus.js';
 import { checkOverdueTasks, sendBimonthlyDigest } from './services/email.js';
 import { query as dbQuery } from './db/db.js';
@@ -275,6 +276,7 @@ app.post('/api/tasks/send-digest', async (req, res) => {
 
 app.use('/api/tasks',           tasksMineRouter);  // primero, para /mine antes que /:id
 app.use('/api/tasks',           tasksRouter);
+app.use('/api/inspections',     inspectionsRouter);  // Módulo Ronda de Inspecciones
 app.use('/api/purchases',       purchasesRouter);
 app.use('/api/committee',       committeeRouter);
 app.use('/api/trainings',       trainingsRouter);

@@ -7,6 +7,7 @@ import QRCode from 'qrcode';
 import { query, getClient } from '../db/db.js';
 import { authenticate, requireRole, ADMIN_ROLES } from '../middleware/auth.js';
 import { saveBase64File } from '../services/uploads.js';
+import { generateDueInspections, markOverdueInspections } from '../services/inspections-generator.js';
 
 const router = Router();
 router.use(authenticate);
@@ -89,6 +90,15 @@ router.get('/analytics', async (_req, res) => {
         GROUP BY t.id, t.code, t.name ORDER BY t.code`),
     ]);
     res.json({ trend: trend.rows, by_template: byTemplate.rows });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// Generación manual del período actual (admin) — sembrar o forzar el cron
+router.post('/generate', requireRole(...ADMIN_ROLES), async (_req, res) => {
+  try {
+    const created = await generateDueInspections();
+    const overdue = await markOverdueInspections();
+    res.json({ created, overdue });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 

@@ -33,6 +33,7 @@ import accessRequestsRouter from './routes/accessRequests.js';
 import { risksRouter, legalRouter } from './routes/misc.js';
 import tasksRouter from './routes/tasks.js';
 import inspectionsRouter from './routes/inspections.js';  // Módulo Ronda de Inspecciones
+import { runInspectionsDaily } from './services/inspections-generator.js';
 import { busRouter } from './agent-bus.js';
 import { checkOverdueTasks, sendBimonthlyDigest } from './services/email.js';
 import { query as dbQuery } from './db/db.js';
@@ -64,6 +65,15 @@ import cron from 'node-cron';
     console.log('[triny] 4 cron jobs registrados (recordatorios L 8h · resumen V 16h · informe 1d 9h · intim diario 10h)');
   } catch (e) { console.error('[triny cron setup]', e.message); }
 })();
+
+// CRON · Ronda de Inspecciones — genera instancias del período + marca vencidas (diario 06:00 AR)
+if (process.env.CRON_DISABLED !== '1') {
+  cron.schedule('0 6 * * *', async () => {
+    try { await runInspectionsDaily(); }
+    catch (e) { console.error('[rondas-cron]', e.message); }
+  }, { timezone: 'America/Argentina/Buenos_Aires' });
+  console.log('[rondas] cron registrado (generación de inspecciones + vencidas · diario 06h)');
+}
 
 // CRON · Informe mensual de NC y desvíos (Triny) — día 1, 08:00 AR
 cron.schedule('0 8 1 * *', async () => {

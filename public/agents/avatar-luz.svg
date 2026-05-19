@@ -1,0 +1,80 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 440 440" width="440" height="440" role="img" aria-label="LUZ — agente de IA Directora de Marketing y Contenidos">
+  <defs>
+    <radialGradient id="lz-bg" cx="50%" cy="34%" r="84%">
+      <stop offset="0%" stop-color="#F2705E"/>
+      <stop offset="50%" stop-color="#C8202C"/>
+      <stop offset="100%" stop-color="#6E0E16"/>
+    </radialGradient>
+    <linearGradient id="lz-head" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#F8D9BE"/>
+      <stop offset="100%" stop-color="#E7B591"/>
+    </linearGradient>
+    <linearGradient id="lz-suit" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#241015"/>
+      <stop offset="100%" stop-color="#120709"/>
+    </linearGradient>
+    <clipPath id="lz-clip"><circle cx="220" cy="220" r="208"/></clipPath>
+  </defs>
+
+  <circle cx="220" cy="220" r="218" fill="#6E0E16"/>
+  <g clip-path="url(#lz-clip)">
+    <rect width="440" height="440" fill="url(#lz-bg)"/>
+
+    <!-- broadcast / signal arcs — el mensaje que se difunde -->
+    <g fill="none" stroke="#FFFFFF" stroke-opacity="0.12" stroke-width="2">
+      <circle cx="352" cy="92" r="40"/>
+      <circle cx="352" cy="92" r="66"/>
+      <circle cx="352" cy="92" r="94"/>
+    </g>
+    <!-- destellos / ideas -->
+    <g fill="#5BBDC9" fill-opacity="0.7">
+      <path d="M64 304 l6 16 16 6 -16 6 -6 16 -6 -16 -16 -6 16 -6 Z"/>
+      <path d="M98 122 l4 11 11 4 -11 4 -4 11 -4 -11 -11 -4 11 -4 Z"/>
+    </g>
+    <g fill="#FFFFFF" fill-opacity="0.5" font-family="Mulish, sans-serif" font-weight="800" font-size="24">
+      <text x="352" y="101" text-anchor="middle">&#9733;</text>
+    </g>
+
+    <!-- hombros / blazer -->
+    <path d="M72 440 C84 350 142 314 220 314 C298 314 356 350 368 440 Z" fill="url(#lz-suit)"/>
+    <path d="M220 314 L178 358 L212 440 L220 392 Z" fill="#1A0B0E"/>
+    <path d="M220 314 L262 358 L228 440 L220 392 Z" fill="#1A0B0E"/>
+    <!-- pañuelo aqua — acento de marca -->
+    <path d="M196 320 L220 352 L244 320 L244 334 L220 368 L196 334 Z" fill="#2BB8BE"/>
+    <path d="M200 316 L220 346 L240 316 Z" fill="#F4F4F4"/>
+
+    <!-- cuello -->
+    <path d="M202 288 q18 20 36 0 l0 30 q-18 13 -36 0 Z" fill="#E7B591"/>
+
+    <!-- pelo largo atrás -->
+    <path d="M148 200 C148 120 180 84 220 84 C260 84 292 120 292 200 C292 282 282 322 270 350 L262 300 C272 256 270 210 264 188 L176 188 C170 210 168 256 178 300 L170 350 C158 322 148 282 148 200 Z" fill="#2A1810"/>
+
+    <!-- cabeza -->
+    <path d="M164 196 C164 134 188 102 220 102 C252 102 276 134 276 196 C276 222 268 246 252 262 L252 286 L188 286 L188 262 C172 246 164 222 164 196 Z" fill="url(#lz-head)"/>
+    <!-- flequillo / pelo frontal -->
+    <path d="M162 202 C156 130 188 92 220 92 C254 92 288 130 280 204 L266 172 C266 152 250 134 220 134 C206 134 198 144 194 156 C190 170 178 180 162 202 Z" fill="#2A1810"/>
+    <path d="M276 196 L286 252 L268 250 C273 232 276 214 276 196 Z" fill="#2A1810"/>
+    <path d="M164 196 C162 214 165 232 170 250 L154 252 Z" fill="#2A1810"/>
+
+    <!-- cejas -->
+    <path d="M184 184 q16 -8 32 -2" fill="none" stroke="#3A2418" stroke-width="4.5" stroke-linecap="round"/>
+    <path d="M256 184 q-16 -8 -32 -2" fill="none" stroke="#3A2418" stroke-width="4.5" stroke-linecap="round"/>
+    <!-- ojos — cálidos, atentos -->
+    <ellipse cx="200" cy="202" rx="8.5" ry="7.5" fill="#fff"/>
+    <ellipse cx="240" cy="202" rx="8.5" ry="7.5" fill="#fff"/>
+    <circle cx="201" cy="203" r="4.6" fill="#3A2A1C"/>
+    <circle cx="241" cy="203" r="4.6" fill="#3A2A1C"/>
+    <circle cx="202.6" cy="201" r="1.6" fill="#fff"/>
+    <circle cx="242.6" cy="201" r="1.6" fill="#fff"/>
+    <path d="M191 200 l-5 -3 M249 200 l5 -3" stroke="#3A2418" stroke-width="2.4" stroke-linecap="round"/>
+    <!-- mejillas -->
+    <circle cx="186" cy="226" r="7" fill="#E8896F" fill-opacity="0.4"/>
+    <circle cx="254" cy="226" r="7" fill="#E8896F" fill-opacity="0.4"/>
+    <!-- sonrisa segura -->
+    <path d="M204 250 q16 14 32 0" fill="none" stroke="#B05A42" stroke-width="4.6" stroke-linecap="round"/>
+    <!-- aros aqua -->
+    <circle cx="174" cy="242" r="5" fill="#2BB8BE"/>
+    <circle cx="266" cy="242" r="5" fill="#2BB8BE"/>
+  </g>
+  <circle cx="220" cy="220" r="206" fill="none" stroke="#FFFFFF" stroke-opacity="0.55" stroke-width="3"/>
+</svg>

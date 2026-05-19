@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 440 440" width="440" height="440" role="img" aria-label="Agente del CEO — cabeza del equipo RR.AI de DASSA">
+  <defs>
+    <radialGradient id="ceo-bg" cx="50%" cy="34%" r="86%">
+      <stop offset="0%" stop-color="#3A3A3C"/>
+      <stop offset="56%" stop-color="#1A1A1A"/>
+      <stop offset="100%" stop-color="#050505"/>
+    </radialGradient>
+    <linearGradient id="ceo-node" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#F5EFE3"/>
+      <stop offset="100%" stop-color="#D8CFBC"/>
+    </linearGradient>
+    <radialGradient id="ceo-core" cx="50%" cy="40%" r="70%">
+      <stop offset="0%" stop-color="#5FE6EC"/>
+      <stop offset="60%" stop-color="#2BB8BE"/>
+      <stop offset="100%" stop-color="#15727A"/>
+    </radialGradient>
+  </defs>
+  <circle cx="220" cy="220" r="220" fill="url(#ceo-bg)"/>
+  <circle cx="220" cy="220" r="206" fill="none" stroke="#2BB8BE" stroke-opacity="0.22" stroke-width="2"/>
+  <!-- Radios de coordinación hacia los 5 directores -->
+  <g stroke="#2BB8BE" stroke-opacity="0.55" stroke-width="3" stroke-linecap="round">
+    <line x1="220" y1="220" x2="220" y2="108"/>
+    <line x1="220" y1="220" x2="326" y2="170"/>
+    <line x1="220" y1="220" x2="300" y2="312"/>
+    <line x1="220" y1="220" x2="140" y2="312"/>
+    <line x1="220" y1="220" x2="114" y2="170"/>
+  </g>
+  <!-- Nodos del equipo -->
+  <g fill="url(#ceo-node)">
+    <circle cx="220" cy="108" r="22"/>
+    <circle cx="326" cy="170" r="22"/>
+    <circle cx="300" cy="312" r="22"/>
+    <circle cx="140" cy="312" r="22"/>
+    <circle cx="114" cy="170" r="22"/>
+  </g>
+  <!-- Núcleo: el Agente del CEO -->
+  <circle cx="220" cy="220" r="62" fill="#0B0B0B" stroke="#2BB8BE" stroke-opacity="0.4" stroke-width="3"/>
+  <circle cx="220" cy="220" r="46" fill="url(#ceo-core)"/>
+  <text x="220" y="234" font-family="Mulish, Segoe UI, sans-serif" font-size="40" font-weight="800"
+        fill="#0B0B0B" text-anchor="middle">AE</text>
+</svg>

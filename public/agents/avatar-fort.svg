@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 440 440" width="440" height="440" role="img" aria-label="FORT — agente de IA de Confiabilidad y Seguridad">
+  <defs>
+    <radialGradient id="ft-bg" cx="50%" cy="34%" r="84%">
+      <stop offset="0%" stop-color="#E84252"/>
+      <stop offset="54%" stop-color="#C8202C"/>
+      <stop offset="100%" stop-color="#5C0B12"/>
+    </radialGradient>
+    <linearGradient id="ft-shield" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#FBF6EC"/>
+      <stop offset="100%" stop-color="#E7DCC4"/>
+    </linearGradient>
+    <linearGradient id="ft-core" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#34D0D6"/>
+      <stop offset="100%" stop-color="#2BB8BE"/>
+    </linearGradient>
+    <clipPath id="ft-clip"><circle cx="220" cy="220" r="208"/></clipPath>
+  </defs>
+
+  <circle cx="220" cy="220" r="218" fill="#5C0B12"/>
+  <g clip-path="url(#ft-clip)">
+    <rect width="440" height="440" fill="url(#ft-bg)"/>
+
+    <!-- franjas de seguridad diagonales -->
+    <g transform="rotate(-45 220 220)">
+      <g fill="#F5EFE3" fill-opacity="0.10">
+        <rect x="-260" y="-150" width="46" height="900"/>
+        <rect x="-148" y="-150" width="46" height="900"/>
+        <rect x="-36"  y="-150" width="46" height="900"/>
+        <rect x="76"   y="-150" width="46" height="900"/>
+        <rect x="188"  y="-150" width="46" height="900"/>
+        <rect x="300"  y="-150" width="46" height="900"/>
+        <rect x="412"  y="-150" width="46" height="900"/>
+      </g>
+    </g>
+
+    <!-- anillo de vigilancia -->
+    <circle cx="220" cy="220" r="186" fill="none" stroke="#F5EFE3" stroke-opacity="0.16" stroke-width="2"/>
+    <circle cx="220" cy="220" r="186" fill="none" stroke="#F5EFE3" stroke-opacity="0.22" stroke-width="3"
+      stroke-dasharray="2 26" stroke-linecap="round"/>
+
+    <!-- escudo-fortaleza: borde superior almenado, base en punta -->
+    <path d="M132 116 h26 v22 h26 v-22 h26 v22 h26 v-22 h26 v22 h26 v-22 h26
+             V250 C308 312 268 344 220 366 C172 344 132 312 132 250 Z"
+      fill="url(#ft-shield)" stroke="#5C0B12" stroke-width="6" stroke-linejoin="round"/>
+    <path d="M132 116 h26 v22 h26 v-22 h26 v22 h26 v-22 h26 v22 h26 v-22 h26
+             V250 C308 312 268 344 220 366 C172 344 132 312 132 250 Z"
+      fill="none" stroke="#C8202C" stroke-width="2.5" stroke-linejoin="round"
+      transform="scale(0.9) translate(24.4 24.4)"/>
+
+    <!-- check de "todo en orden / vigilado" -->
+    <path d="M178 236 l30 30 l58 -70" fill="none" stroke="url(#ft-core)"
+      stroke-width="26" stroke-linecap="round" stroke-linejoin="round"/>
+
+    <!-- destello de vigilancia -->
+    <circle cx="220" cy="200" r="5" fill="#F5EFE3" fill-opacity="0.85"/>
+  </g>
+
+  <circle cx="220" cy="220" r="208" fill="none" stroke="#F5EFE3" stroke-opacity="0.5" stroke-width="2"/>
+</svg>

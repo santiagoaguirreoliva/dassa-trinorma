@@ -1,0 +1,82 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 440 440" width="440" height="440" role="img" aria-label="CORTEX — agente de IA Comercial y de Comercio Exterior">
+  <defs>
+    <radialGradient id="cx-bg" cx="50%" cy="36%" r="82%">
+      <stop offset="0%" stop-color="#E84252"/>
+      <stop offset="52%" stop-color="#C8202C"/>
+      <stop offset="100%" stop-color="#6E0E16"/>
+    </radialGradient>
+    <linearGradient id="cx-head" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#F6D3B3"/>
+      <stop offset="100%" stop-color="#E3AE86"/>
+    </linearGradient>
+    <linearGradient id="cx-suit" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#241015"/>
+      <stop offset="100%" stop-color="#120709"/>
+    </linearGradient>
+    <clipPath id="cx-clip"><circle cx="220" cy="220" r="208"/></clipPath>
+  </defs>
+
+  <circle cx="220" cy="220" r="218" fill="#6E0E16"/>
+  <g clip-path="url(#cx-clip)">
+    <rect width="440" height="440" fill="url(#cx-bg)"/>
+
+    <!-- market grid -->
+    <g fill="none" stroke="#FFFFFF" stroke-opacity="0.1" stroke-width="1.4">
+      <line x1="0" y1="120" x2="440" y2="120"/>
+      <line x1="0" y1="240" x2="440" y2="240"/>
+      <line x1="0" y1="360" x2="440" y2="360"/>
+      <line x1="120" y1="0" x2="120" y2="440"/>
+      <line x1="320" y1="0" x2="320" y2="440"/>
+    </g>
+    <!-- rising trend line — el cierre siempre arriba -->
+    <polyline points="20,372 86,344 150,300 214,250 286,180 360,108 420,52" fill="none"
+      stroke="#5BBDC9" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M420 52 l-22 4 12 -19 Z" fill="#5BBDC9"/>
+    <!-- floating figures -->
+    <g fill="#FFFFFF" fill-opacity="0.5" font-family="Montserrat, sans-serif" font-weight="800" font-size="22">
+      <text x="58" y="96">%</text>
+      <text x="356" y="320">$</text>
+      <text x="60" y="240">+</text>
+    </g>
+
+    <!-- shoulders / sharp suit -->
+    <path d="M72 440 C84 352 142 316 220 316 C298 316 356 352 368 440 Z" fill="url(#cx-suit)"/>
+    <!-- lapels -->
+    <path d="M220 316 L176 360 L210 440 L220 392 Z" fill="#1A0B0E"/>
+    <path d="M220 316 L264 360 L230 440 L220 392 Z" fill="#1A0B0E"/>
+    <!-- red power tie -->
+    <path d="M220 320 L210 340 L220 430 L230 340 Z" fill="#C8202C"/>
+    <path d="M210 340 L220 354 L230 340 L220 332 Z" fill="#E84252"/>
+    <!-- collar -->
+    <path d="M196 318 L220 350 L244 318 Z" fill="#F4F4F4"/>
+
+    <!-- neck -->
+    <path d="M200 290 q20 22 40 0 l0 32 q-20 14 -40 0 Z" fill="#E3AE86"/>
+
+    <!-- head — angular, determined -->
+    <path d="M158 192 C158 128 184 96 220 96 C256 96 282 128 282 192 C282 218 274 244 256 262 L256 286 L184 286 L184 262 C166 244 158 218 158 192 Z" fill="url(#cx-head)"/>
+    <!-- sharp side hair -->
+    <path d="M156 196 C150 124 186 86 220 86 C258 86 292 124 286 198 L268 168 L268 140 C268 140 232 118 196 132 C170 142 160 174 156 196 Z" fill="#21140C"/>
+    <path d="M156 196 L168 246 L168 192 Z" fill="#21140C"/>
+    <path d="M284 196 L272 246 L272 192 Z" fill="#21140C"/>
+
+    <!-- intense brows -->
+    <path d="M178 180 l30 6" fill="none" stroke="#2A1A10" stroke-width="5" stroke-linecap="round"/>
+    <path d="M262 180 l-30 6" fill="none" stroke="#2A1A10" stroke-width="5" stroke-linecap="round"/>
+    <!-- analytic eyes -->
+    <ellipse cx="194" cy="200" rx="8" ry="7" fill="#fff"/>
+    <ellipse cx="246" cy="200" rx="8" ry="7" fill="#fff"/>
+    <circle cx="196" cy="201" r="4.4" fill="#1C1C1C"/>
+    <circle cx="248" cy="201" r="4.4" fill="#1C1C1C"/>
+    <circle cx="197.4" cy="199" r="1.5" fill="#fff"/>
+    <circle cx="249.4" cy="199" r="1.5" fill="#fff"/>
+    <!-- firm jaw line -->
+    <path d="M196 240 q24 12 48 0" fill="none" stroke="#C98A63" stroke-width="3" stroke-linecap="round"/>
+    <!-- straight, decided mouth -->
+    <line x1="202" y1="256" x2="238" y2="256" stroke="#8A4B36" stroke-width="4.4" stroke-linecap="round"/>
+    <!-- celeste data monocle -->
+    <circle cx="246" cy="200" r="15" fill="none" stroke="#5BBDC9" stroke-width="3"/>
+    <path d="M261 200 l16 8" stroke="#5BBDC9" stroke-width="3" stroke-linecap="round"/>
+  </g>
+  <circle cx="220" cy="220" r="206" fill="none" stroke="#FFFFFF" stroke-opacity="0.55" stroke-width="3"/>
+</svg>

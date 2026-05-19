@@ -1,0 +1,68 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 440 440" width="440" height="440" role="img" aria-label="TRINY — agente de IA del Sistema de Gestión Integrado">
+  <defs>
+    <radialGradient id="tr-bg" cx="50%" cy="38%" r="78%">
+      <stop offset="0%" stop-color="#7FD3DC"/>
+      <stop offset="55%" stop-color="#2BB8BE"/>
+      <stop offset="100%" stop-color="#16707A"/>
+    </radialGradient>
+    <linearGradient id="tr-hair" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#123E45"/>
+      <stop offset="100%" stop-color="#0B2A2F"/>
+    </linearGradient>
+    <linearGradient id="tr-dress" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#FFFFFF"/>
+      <stop offset="100%" stop-color="#DCF1F2"/>
+    </linearGradient>
+    <clipPath id="tr-clip"><circle cx="220" cy="220" r="208"/></clipPath>
+  </defs>
+
+  <circle cx="220" cy="220" r="218" fill="#0B2A2F"/>
+  <g clip-path="url(#tr-clip)">
+    <rect width="440" height="440" fill="url(#tr-bg)"/>
+
+    <!-- orbit rings — las tres normas ISO -->
+    <g fill="none" stroke="#FFFFFF" stroke-opacity="0.16" stroke-width="2">
+      <ellipse cx="220" cy="206" rx="186" ry="186"/>
+      <ellipse cx="220" cy="206" rx="150" ry="150"/>
+    </g>
+    <g fill="#FFFFFF" fill-opacity="0.7">
+      <circle cx="220" cy="20" r="4"/>
+      <circle cx="406" cy="206" r="4"/>
+      <circle cx="34" cy="206" r="4"/>
+    </g>
+
+    <!-- shoulders / blazer -->
+    <path d="M70 440 C82 350 140 312 220 312 C300 312 358 350 370 440 Z" fill="url(#tr-dress)"/>
+    <path d="M220 312 L220 440" stroke="#BFE3E4" stroke-width="3"/>
+    <path d="M220 318 L198 372 L220 396 L242 372 Z" fill="#2BB8BE"/>
+    <!-- quality seal pin -->
+    <circle cx="287" cy="356" r="17" fill="#C8202C"/>
+    <path d="M279 356 l5 6 11 -12" fill="none" stroke="#fff" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/>
+
+    <!-- neck -->
+    <path d="M196 286 q24 26 48 0 l0 34 q-24 16 -48 0 Z" fill="#F0C9A8"/>
+
+    <!-- hair back -->
+    <path d="M132 196 C132 110 168 70 220 70 C272 70 308 110 308 196 C308 250 296 286 296 286 L286 224 C286 224 270 210 220 210 C170 210 154 224 154 224 L144 286 C144 286 132 250 132 196 Z" fill="url(#tr-hair)"/>
+
+    <!-- face -->
+    <path d="M158 188 C158 128 184 100 220 100 C256 100 282 128 282 188 C282 240 254 274 220 274 C186 274 158 240 158 188 Z" fill="#F6D3B3"/>
+
+    <!-- hair front sweep -->
+    <path d="M158 190 C150 132 182 84 220 84 C262 84 296 122 300 192 C300 192 290 150 256 138 C262 150 262 164 262 164 C262 164 240 132 196 140 C166 146 160 178 158 190 Z" fill="url(#tr-hair)"/>
+
+    <!-- brows + eyes (calm, attentive) -->
+    <path d="M180 182 q14 -8 28 0" fill="none" stroke="#5A3C2A" stroke-width="3.4" stroke-linecap="round"/>
+    <path d="M232 182 q14 -8 28 0" fill="none" stroke="#5A3C2A" stroke-width="3.4" stroke-linecap="round"/>
+    <ellipse cx="194" cy="200" rx="7" ry="8" fill="#123E45"/>
+    <ellipse cx="246" cy="200" rx="7" ry="8" fill="#123E45"/>
+    <circle cx="196" cy="197" r="2.2" fill="#fff"/>
+    <circle cx="248" cy="197" r="2.2" fill="#fff"/>
+    <!-- elegant smile -->
+    <path d="M204 234 q16 14 32 0" fill="none" stroke="#B5705A" stroke-width="3.6" stroke-linecap="round"/>
+    <!-- earring -->
+    <circle cx="160" cy="216" r="5" fill="#2BB8BE" stroke="#fff" stroke-width="1.5"/>
+    <circle cx="280" cy="216" r="5" fill="#2BB8BE" stroke="#fff" stroke-width="1.5"/>
+  </g>
+  <circle cx="220" cy="220" r="206" fill="none" stroke="#FFFFFF" stroke-opacity="0.55" stroke-width="3"/>
+</svg>

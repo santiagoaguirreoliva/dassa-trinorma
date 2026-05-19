@@ -110,6 +110,7 @@ import http from 'http';
 
 import documentsRouter      from './routes/documents.js';
 import employeesRouter      from './routes/employees.js';
+import agentsRouter         from './routes/agents.js';
 import environmentalRouter  from './routes/environmental.js';
 import incidentsRouter      from './routes/incidents.js';
 // satisfactionRouter removed — unified into surveys module
@@ -278,6 +279,7 @@ app.use('/api/trainings',       trainingsRouter);
 app.use('/api/access-requests', accessRequestsRouter);
 app.use('/api/documents',       documentsRouter);
 app.use('/api/employees',       employeesRouter);
+app.use('/api/agents',          agentsRouter);
 app.use('/api/environmental',   environmentalRouter);
 app.use('/api/incidents',       incidentsRouter);
 // /api/satisfaction removed — unified into /api/surveys

@@ -1,6 +1,6 @@
 # ESTADO — Módulo "Ronda de Inspecciones" (Trinorma SGI)
 
-> Última actualización: **2026-05-19** · Rama: `feature/sgi-ronda-inspecciones`
+> Última actualización: **2026-05-20** · Rama: `feature/sgi-ronda-inspecciones`
 > Spec completo: `docs/SPEC-RONDA-INSPECCIONES.md`
 
 ## Qué es
@@ -35,10 +35,10 @@ por plantillas. Optimizado mobile vertical, con fotos, geofence y firma digital.
 | **F0** Schema + seed | ✅ HECHO | Migraciones 039/040 aplicadas. 9 tablas `insp_*`, 4 plantillas, 91 ítems, responsables, 3 autoelevadores, geofence. |
 | **F1** Backend `/api/inspections` | ✅ HECHO | `server/routes/inspections.js` montado. CRUD plantillas/máquinas/operadores, listado, stats, analytics, start/complete/cosign/finding. Probado. |
 | **F2** Motor de recurrencia + cron | ✅ HECHO | `server/services/inspections-generator.js`, migración 041, cron diario 06:00, endpoint `POST /generate`. Probado: genera 6 instancias, idempotente. |
-| **F3** UI rondines (mobile) | ⬜ PENDIENTE | Dashboard `/rondas`, ejecución `/rondas/:id`, co-firma, fotos, geo, firma. |
-| **F4** Checklist maquinaria público | ⬜ PENDIENTE | Router público `/api/public/checklist`, página `/checklist-maquina` (QR+PIN+form), histórico `/rondas/maquinaria`. |
-| **F5** Integración Triny | ⬜ PENDIENTE | Herramienta `consultar_rondas` en `sgi-agent.cjs` + sección en resumen semanal. |
-| **F6** Indicadores + hardening + deploy | ⬜ PENDIENTE | KPIs ISO, pruebas mobile, deploy a producción. |
+| **F3** UI rondines (mobile) | ✅ HECHO | `Rondas.tsx` (dashboard) + `RondaDetalle.tsx` (paso a paso, fotos/geo/firma/co-firma) + `RondasConfig.tsx` (plantillas/máquinas/PINs/geofence) + `RondasMaquinaria.tsx` (grilla 14 días) + `SignaturePad.tsx`. Endpoints GET `/inspections/config` y PUT `/inspections/config/geofence`. Montado en Sidebar + App.tsx. |
+| **F4** Checklist maquinaria público | ✅ HECHO | `server/routes/public-checklist.js` con GET `/machine`, POST `/verify-pin` (HMAC efímero 5min, bcrypt), POST `/` (alta del checklist, alerta in-app si críticos). Rate-limit 30/min/10/5min/6/10min. `PublicChecklist.tsx` SPA en `/checklist-maquina`. |
+| **F5** Integración Triny | ✅ HECHO | Herramienta `consultar_rondas` en `sgi-agent.cjs` (resumen, máquinas con alerta, items críticos en falla, vencidos) + sección "Rondas de Inspección" en `triny-mailer.cjs` resumen semanal viernes 16h. |
+| **F6** Indicadores + hardening + deploy | 🟡 EN CURSO | Hardening listo (rate-limits, validación UUID, HMAC, bcrypt). Pendiente: deploy a producción + calibración real del geofence + revisión ítems SSHH por FER. |
 
 ## Estado de la base de datos
 
@@ -75,12 +75,28 @@ datos reales — limpiarlos después si es solo prueba.
 ## Archivos del módulo
 
 ```
-docs/SPEC-RONDA-INSPECCIONES.md            spec completo (10 bloques)
-docs/ESTADO-RONDA-INSPECCIONES.md          este archivo
-server/db/migrations/039_ronda_inspecciones.sql           schema
-server/db/migrations/040_ronda_inspecciones_seed.sql      seed
+docs/SPEC-RONDA-INSPECCIONES.md                              spec completo
+docs/ESTADO-RONDA-INSPECCIONES.md                            este archivo
+server/db/migrations/039_ronda_inspecciones.sql              schema
+server/db/migrations/040_ronda_inspecciones_seed.sql         seed
 server/db/migrations/041_ronda_inspecciones_recurrencia.sql  índice + ajuste
-server/routes/inspections.js               router autenticado (F1)
-server/services/inspections-generator.js   motor de recurrencia (F2)
-server/index.js                            router montado + cron registrado
+server/routes/inspections.js                                 router autenticado (F1 + config F3)
+server/routes/public-checklist.js                            router público QR+PIN (F4)
+server/services/inspections-generator.js                     motor de recurrencia (F2)
+server/services/sgi-agent.cjs                                tool consultar_rondas (F5)
+server/services/triny-mailer.cjs                             sección rondas en resumen (F5)
+server/index.js                                              routers montados + cron registrado
+src/components/SignaturePad.tsx                              firma canvas reutilizable (F3)
+src/pages/Rondas.tsx                                         dashboard mobile (F3)
+src/pages/RondaDetalle.tsx                                   ejecución paso a paso (F3)
+src/pages/RondasConfig.tsx                                   config admin (F3)
+src/pages/RondasMaquinaria.tsx                               grilla histórica (F3)
+src/pages/PublicChecklist.tsx                                SPA pública /checklist-maquina (F4)
+src/App.tsx · src/components/layout/Sidebar.tsx              rutas + nav
 ```
+
+## Variables de entorno
+
+- `PUBLIC_CHECKLIST_HMAC_SECRET` — secreto para firmar los tokens de sesión
+  efímeros del checklist público. Si no está, cae a `JWT_SECRET`. **Setear
+  uno propio en producción** (`openssl rand -hex 32`).

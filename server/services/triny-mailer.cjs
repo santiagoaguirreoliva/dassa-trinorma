@@ -205,30 +205,6 @@ async function jobResumenViernes(opts = {}) {
   `).catch(() => ({ rows: [{}] }));
   const k = week.rows[0] || {};
 
-  // KPIs Rondas de Inspección (semana)
-  const rondas = await pool.query(`
-    SELECT
-      COUNT(*) FILTER (WHERE scheduled_date > NOW() - INTERVAL '7 days')::int AS total,
-      COUNT(*) FILTER (WHERE scheduled_date > NOW() - INTERVAL '7 days' AND status='completada')::int AS completadas,
-      COUNT(*) FILTER (WHERE (due_date < CURRENT_DATE AND status NOT IN ('completada','anulada')) OR status='vencida')::int AS vencidas,
-      COUNT(*) FILTER (WHERE scheduled_date > NOW() - INTERVAL '7 days' AND family='maquinaria')::int AS maquinaria,
-      COALESCE(SUM(findings_count) FILTER (WHERE scheduled_date > NOW() - INTERVAL '7 days'), 0)::int AS hallazgos
-    FROM insp_inspections WHERE deleted_at IS NULL
-  `).catch(() => ({ rows: [{}] }));
-  const r = rondas.rows[0] || {};
-  const cumplRondas = r.total ? Math.round((r.completadas / r.total) * 100) : null;
-
-  const maquinasAlerta = await pool.query(`
-    SELECT m.code, m.name,
-           COALESCE(SUM(i.findings_count) FILTER (WHERE i.scheduled_date > NOW() - INTERVAL '7 days'), 0)::int AS hallazgos
-    FROM insp_machines m
-    LEFT JOIN insp_inspections i ON i.machine_id=m.id AND i.deleted_at IS NULL
-    WHERE m.active=true
-    GROUP BY m.id, m.code, m.name
-    HAVING COALESCE(SUM(i.findings_count) FILTER (WHERE i.scheduled_date > NOW() - INTERVAL '7 days'), 0) > 0
-    ORDER BY hallazgos DESC LIMIT 5
-  `).catch(() => ({ rows: [] }));
-
   // Top users con tareas vencidas
   const top = await pool.query(`
     SELECT u.full_name, COUNT(t.id)::int AS vencidas
@@ -259,15 +235,6 @@ async function jobResumenViernes(opts = {}) {
       <li>Incidentes registrados: <strong>${k.incidentes_semana || 0}</strong></li>
       <li>Reuniones de comité: <strong>${k.reuniones_semana || 0}</strong></li>
     </ul>
-    <h3 style="margin:24px 0 8px">🛡️ Rondas de Inspección</h3>
-    <ul>
-      <li>Rondines de la semana: <strong>${r.total || 0}</strong>${cumplRondas != null ? ` · cumplimiento <strong>${cumplRondas}%</strong>` : ''}</li>
-      <li>Checklists de maquinaria: <strong>${r.maquinaria || 0}</strong></li>
-      <li>Rondas vencidas: <strong style="color:${(r.vencidas||0) > 0 ? '#dc2626' : '#374151'}">${r.vencidas || 0}</strong></li>
-      <li>Hallazgos generados desde rondas: <strong>${r.hallazgos || 0}</strong></li>
-    </ul>
-    ${maquinasAlerta.rows.length ? `<p style="margin-top:8px;color:#dc2626;font-weight:600">⚠️ Máquinas con hallazgos en la semana:</p>
-      <ul>${maquinasAlerta.rows.map(m => `<li><strong>${m.code}</strong> — ${m.name} (${m.hallazgos} hallazgo${m.hallazgos !== 1 ? 's' : ''})</li>`).join('')}</ul>` : ''}
     ${top.rows.length ? `<h3 style="margin:24px 0 8px">⚠️ Top users con tareas vencidas</h3>
       <table style="width:100%;border-collapse:collapse">${top.rows.map(r => `<tr><td style="padding:8px;border-bottom:1px solid #e5e7eb"><strong>${r.full_name}</strong></td><td style="padding:8px;border-bottom:1px solid #e5e7eb;text-align:right;color:#dc2626;font-weight:700">${r.vencidas} vencidas</td></tr>`).join('')}</table>` : ''}
     <p style="margin-top:24px"><a href="https://trinorma.dassa.com.ar/dashboard" style="background:#7c3aed;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:700">Ver Dashboard ejecutivo</a></p>
@@ -307,6 +274,50 @@ async function jobInformeMensual(opts = {}) {
   `).catch(() => ({ rows: [{}] }));
   const k = m.rows[0] || {};
 
+  // Rondas de Inspección — agrega los 4 rollups semanales del mes pasado
+  // (los pobló el cron `inspections-rollup.js` cada lunes 06:30).
+  const monthRef = new Date(); monthRef.setDate(0); // último día del mes pasado
+  const rollups = await pool.query(`
+    SELECT iso_year, iso_week, week_start, week_end, total, completadas, vencidas,
+           cumplimiento, rondines_total, rondines_completados, maquinaria_total,
+           maquinaria_completados, maquinaria_dias_faltantes, hallazgos,
+           items_no_cumple, items_criticos, detail
+      FROM insp_weekly_rollup
+     WHERE week_end >= date_trunc('month', $1::date)
+       AND week_start <= (date_trunc('month', $1::date) + INTERVAL '1 month - 1 day')::date
+     ORDER BY week_start
+  `, [monthRef.toISOString().slice(0,10)]).catch(() => ({ rows: [] }));
+
+  const rondasAgg = rollups.rows.reduce((a, r) => ({
+    total: a.total + r.total,
+    completadas: a.completadas + r.completadas,
+    vencidas: a.vencidas + r.vencidas,
+    rondines: a.rondines + r.rondines_total,
+    rondines_ok: a.rondines_ok + r.rondines_completados,
+    maquinaria: a.maquinaria + r.maquinaria_total,
+    maquinaria_ok: a.maquinaria_ok + r.maquinaria_completados,
+    maquinaria_faltantes: a.maquinaria_faltantes + r.maquinaria_dias_faltantes,
+    hallazgos: a.hallazgos + r.hallazgos,
+    items_no_cumple: a.items_no_cumple + r.items_no_cumple,
+    items_criticos: a.items_criticos + r.items_criticos,
+  }), { total:0, completadas:0, vencidas:0, rondines:0, rondines_ok:0,
+        maquinaria:0, maquinaria_ok:0, maquinaria_faltantes:0,
+        hallazgos:0, items_no_cumple:0, items_criticos:0 });
+  const cumplRondas = rondasAgg.total ? Math.round((rondasAgg.completadas / rondasAgg.total) * 100) : null;
+
+  // Máquinas con mayor cantidad de hallazgos en el mes (de los snapshots)
+  const maquinasTop = {};
+  for (const row of rollups.rows) {
+    const det = typeof row.detail === 'string' ? JSON.parse(row.detail) : (row.detail || {});
+    for (const m of (det.por_maquina || [])) {
+      if (!maquinasTop[m.code]) maquinasTop[m.code] = { code: m.code, name: m.name, hallazgos: 0, dias_completos: 0, dias_con_hallazgos: 0 };
+      maquinasTop[m.code].hallazgos += m.hallazgos || 0;
+      maquinasTop[m.code].dias_completos += m.dias_completos || 0;
+      maquinasTop[m.code].dias_con_hallazgos += m.dias_con_hallazgos || 0;
+    }
+  }
+  const maquinasFlag = Object.values(maquinasTop).filter(m => m.hallazgos > 0).sort((a,b) => b.hallazgos - a.hallazgos).slice(0, 8);
+
   const fechaMes = new Date(Date.now() - 30*86400000).toLocaleDateString('es-AR', { month: 'long', year: 'numeric' });
 
   const body = `<div style="padding:24px">
@@ -324,6 +335,23 @@ async function jobInformeMensual(opts = {}) {
       <li>Reuniones de comité mixto: <strong>${k.reuniones_mes || 0}</strong> (objetivo: 1/mes)</li>
       <li>Riesgos nuevos identificados (AMFE): <strong>${k.riesgos_nuevos_mes || 0}</strong></li>
     </ul>
+    <h3 style="margin:24px 0 8px">🛡️ Rondas de Inspección · ${rollups.rows.length} semana${rollups.rows.length !== 1 ? 's' : ''} consolidada${rollups.rows.length !== 1 ? 's' : ''}</h3>
+    ${rondasAgg.total === 0 ? `<p style="color:#6b7280">Sin rondines ejecutados en el período. Verificar que el cron diario esté generando instancias y que los responsables las completen.</p>` : `
+    ${kpiBox([
+      { label: 'Cumplimiento global', value: cumplRondas != null ? `${cumplRondas}%` : '—', color: cumplRondas != null && cumplRondas >= 90 ? '#10b981' : '#f59e0b' },
+      { label: 'Rondines completados', value: `${rondasAgg.rondines_ok}/${rondasAgg.rondines}` },
+      { label: 'Maq. checks (días)', value: `${rondasAgg.maquinaria_ok}/${rondasAgg.maquinaria}` },
+      { label: 'Hallazgos', value: rondasAgg.hallazgos, color: rondasAgg.hallazgos > 0 ? '#dc2626' : '#10b981' },
+    ])}
+    <ul>
+      <li>Items críticos en falla en el mes: <strong style="color:${rondasAgg.items_criticos > 0 ? '#dc2626' : '#10b981'}">${rondasAgg.items_criticos}</strong>${rondasAgg.items_no_cumple > 0 ? ` (sobre ${rondasAgg.items_no_cumple} respuestas "no cumple" totales)` : ''}</li>
+      <li>Máquina-días sin checklist diario: <strong style="color:${rondasAgg.maquinaria_faltantes > 0 ? '#f59e0b' : '#10b981'}">${rondasAgg.maquinaria_faltantes}</strong></li>
+      <li>Rondas vencidas en el mes: <strong style="color:${rondasAgg.vencidas > 0 ? '#dc2626' : '#374151'}">${rondasAgg.vencidas}</strong></li>
+    </ul>
+    ${maquinasFlag.length ? `<p style="margin-top:8px;color:#dc2626;font-weight:600">⚠️ Máquinas con hallazgos en el mes:</p>
+      <table style="width:100%;border-collapse:collapse;font-size:13px">${maquinasFlag.map(x => `<tr><td style="padding:6px 8px;border-bottom:1px solid #e5e7eb"><strong>${x.code}</strong> ${x.name || ''}</td><td style="padding:6px 8px;border-bottom:1px solid #e5e7eb;text-align:right;color:#dc2626;font-weight:700">${x.hallazgos} hallazgo${x.hallazgos !== 1 ? 's' : ''}</td><td style="padding:6px 8px;border-bottom:1px solid #e5e7eb;text-align:right;color:#6b7280">${x.dias_completos} día${x.dias_completos !== 1 ? 's' : ''} OK</td></tr>`).join('')}</table>` : ''}
+    <p style="margin-top:8px;color:#6b7280;font-size:12px">Período cubierto: ${rollups.rows.length ? rollups.rows[0].week_start.toISOString().slice(0,10) + ' a ' + rollups.rows[rollups.rows.length-1].week_end.toISOString().slice(0,10) : '—'}.</p>
+    `}
     <h3 style="margin:24px 0 8px">Estado por norma</h3>
     <table style="width:100%;border-collapse:collapse;font-size:14px">
       <tr style="background:#f3f4f6"><td style="padding:8px;border:1px solid #e5e7eb"><strong>ISO 9001</strong> Calidad</td><td style="padding:8px;border:1px solid #e5e7eb">Procedimientos vigentes · NCs gestionadas · auditorías internas en agenda</td></tr>

@@ -35,6 +35,7 @@ import { risksRouter, legalRouter } from './routes/misc.js';
 import tasksRouter from './routes/tasks.js';
 import inspectionsRouter from './routes/inspections.js';  // Módulo Ronda de Inspecciones
 import { runInspectionsDaily } from './services/inspections-generator.js';
+import { buildWeeklyRollup } from './services/inspections-rollup.js';
 import { busRouter } from './agent-bus.js';
 import { checkOverdueTasks, sendBimonthlyDigest } from './services/email.js';
 import { query as dbQuery } from './db/db.js';
@@ -73,7 +74,17 @@ if (process.env.CRON_DISABLED !== '1') {
     try { await runInspectionsDaily(); }
     catch (e) { console.error('[rondas-cron]', e.message); }
   }, { timezone: 'America/Argentina/Buenos_Aires' });
-  console.log('[rondas] cron registrado (generación de inspecciones + vencidas · diario 06h)');
+
+  // Rollup semanal: lunes 06:30 procesa los checks de la semana anterior.
+  // Alimenta el informe mensual de Triny (jobInformeMensual).
+  cron.schedule('30 6 * * 1', async () => {
+    try {
+      const ref = new Date(); ref.setDate(ref.getDate() - 7);
+      await buildWeeklyRollup(ref);
+    } catch (e) { console.error('[rondas-rollup]', e.message); }
+  }, { timezone: 'America/Argentina/Buenos_Aires' });
+
+  console.log('[rondas] crons registrados (instancias diario 06h · rollup semanal L 06:30)');
 }
 
 // CRON · Informe mensual de NC y desvíos (Triny) — día 1, 08:00 AR

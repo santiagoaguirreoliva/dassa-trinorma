@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 440 440" width="440" height="440" role="img" aria-label="Nova — agente de operaciones del depósito fiscal DASSA">
+  <defs>
+    <radialGradient id="n-bg" cx="50%" cy="34%" r="86%">
+      <stop offset="0%" stop-color="#1B3052"/>
+      <stop offset="56%" stop-color="#0D1A2D"/>
+      <stop offset="100%" stop-color="#040810"/>
+    </radialGradient>
+    <radialGradient id="n-core" cx="50%" cy="40%" r="70%">
+      <stop offset="0%" stop-color="#7FE6EA"/>
+      <stop offset="55%" stop-color="#2BB8BE"/>
+      <stop offset="100%" stop-color="#125C61"/>
+    </radialGradient>
+  </defs>
+  <circle cx="220" cy="220" r="220" fill="url(#n-bg)"/>
+  <circle cx="220" cy="220" r="206" fill="none" stroke="#2BB8BE" stroke-opacity="0.28" stroke-width="2"/>
+  <!-- Grid de "pallets" / depósito -->
+  <g stroke="#2BB8BE" stroke-opacity="0.45" stroke-width="2.5" fill="none">
+    <rect x="125" y="110" width="50" height="30" rx="2"/>
+    <rect x="195" y="110" width="50" height="30" rx="2"/>
+    <rect x="265" y="110" width="50" height="30" rx="2"/>
+    <rect x="125" y="160" width="50" height="30" rx="2"/>
+    <rect x="265" y="160" width="50" height="30" rx="2"/>
+    <rect x="125" y="290" width="50" height="30" rx="2"/>
+    <rect x="195" y="290" width="50" height="30" rx="2"/>
+    <rect x="265" y="290" width="50" height="30" rx="2"/>
+  </g>
+  <!-- Núcleo Nova -->
+  <circle cx="220" cy="220" r="62" fill="#0B0B0B" stroke="#2BB8BE" stroke-opacity="0.5" stroke-width="3"/>
+  <circle cx="220" cy="220" r="46" fill="url(#n-core)"/>
+  <text x="220" y="234" font-family="Mulish, Segoe UI, sans-serif" font-size="36" font-weight="800"
+        fill="#0B0B0B" text-anchor="middle">NV</text>
+</svg>

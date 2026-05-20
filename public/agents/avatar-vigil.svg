@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 440 440" width="440" height="440" role="img" aria-label="Vigil — auditor del ecosistema RR.AI de DASSA">
+  <defs>
+    <radialGradient id="v-bg" cx="50%" cy="34%" r="86%">
+      <stop offset="0%" stop-color="#3D2A0A"/>
+      <stop offset="56%" stop-color="#1F1605"/>
+      <stop offset="100%" stop-color="#0A0700"/>
+    </radialGradient>
+    <radialGradient id="v-iris" cx="50%" cy="50%" r="55%">
+      <stop offset="0%" stop-color="#FFD24A"/>
+      <stop offset="55%" stop-color="#E0A726"/>
+      <stop offset="100%" stop-color="#7A570D"/>
+    </radialGradient>
+  </defs>
+  <circle cx="220" cy="220" r="220" fill="url(#v-bg)"/>
+  <circle cx="220" cy="220" r="206" fill="none" stroke="#E0A726" stroke-opacity="0.30" stroke-width="2"/>
+  <!-- Forma de ojo -->
+  <path d="M 80 220 Q 220 80 360 220 Q 220 360 80 220 Z"
+        fill="#F5EFE3" stroke="#E0A726" stroke-width="3" opacity="0.95"/>
+  <!-- Iris -->
+  <circle cx="220" cy="220" r="58" fill="url(#v-iris)"/>
+  <!-- Pupila -->
+  <circle cx="220" cy="220" r="26" fill="#0A0700"/>
+  <!-- Reflejo -->
+  <circle cx="208" cy="208" r="8" fill="#FFFFFF" opacity="0.85"/>
+  <text x="220" y="380" font-family="Mulish, Segoe UI, sans-serif" font-size="22" font-weight="800"
+        fill="#E0A726" text-anchor="middle" letter-spacing="3">VIGIL</text>
+</svg>

@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 440 440" width="440" height="440" role="img" aria-label="Memo — memoria institucional del ecosistema DASSA">
+  <defs>
+    <radialGradient id="m-bg" cx="50%" cy="34%" r="86%">
+      <stop offset="0%" stop-color="#3A3A3C"/>
+      <stop offset="56%" stop-color="#1F1F22"/>
+      <stop offset="100%" stop-color="#0A0A0B"/>
+    </radialGradient>
+    <linearGradient id="m-page" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#F5EFE3"/>
+      <stop offset="100%" stop-color="#D8CFBC"/>
+    </linearGradient>
+  </defs>
+  <circle cx="220" cy="220" r="220" fill="url(#m-bg)"/>
+  <circle cx="220" cy="220" r="206" fill="none" stroke="#F5EFE3" stroke-opacity="0.22" stroke-width="2"/>
+  <!-- Pila de páginas -->
+  <g>
+    <rect x="148" y="148" width="160" height="180" rx="6" fill="url(#m-page)" opacity="0.55"/>
+    <rect x="138" y="138" width="160" height="180" rx="6" fill="url(#m-page)" opacity="0.75"/>
+    <rect x="128" y="128" width="170" height="190" rx="8" fill="url(#m-page)"/>
+    <!-- Líneas de texto -->
+    <g stroke="#3A3A3C" stroke-width="3" stroke-linecap="round" opacity="0.55">
+      <line x1="148" y1="165" x2="278" y2="165"/>
+      <line x1="148" y1="190" x2="278" y2="190"/>
+      <line x1="148" y1="215" x2="248" y2="215"/>
+      <line x1="148" y1="240" x2="278" y2="240"/>
+      <line x1="148" y1="265" x2="218" y2="265"/>
+      <line x1="148" y1="290" x2="278" y2="290"/>
+    </g>
+  </g>
+  <!-- Texto MEMO -->
+  <text x="220" y="370" font-family="Mulish, Segoe UI, sans-serif" font-size="28" font-weight="800"
+        fill="#F5EFE3" text-anchor="middle" letter-spacing="3">MEMO</text>
+</svg>

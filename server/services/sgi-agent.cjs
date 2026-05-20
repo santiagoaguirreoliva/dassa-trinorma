@@ -30,6 +30,7 @@ const DEFAULTS = {
     'consultar_documentos','crear_hallazgo','historial_compras',
     'consultar_estado_ciclo','iniciar_revision','validar_revision',
     'consultar_objetivos','consultar_cambios','consultar_procedimientos','consultar_organigrama',
+    'consultar_rondas',
   ],
   assistant_system_prompt_extra: '',
 };
@@ -270,6 +271,15 @@ const ALL_TOOLS = [
     name: 'consultar_organigrama',
     description: 'Devuelve el organigrama de DASSA: nodos, áreas y puestos con empleados asignados.',
     input_schema: { type: 'object', properties: {} },
+  },
+  {
+    name: 'consultar_rondas',
+    description: 'Consulta el módulo Ronda de Inspecciones del SGI: estado de rondines (limpieza, mantenimiento, SSHH) y checklists diarios de maquinaria (autoelevadores). Devuelve resumen del período, % de cumplimiento, vencidas, máquinas con alerta, ítems críticos en falla y hallazgos generados.',
+    input_schema: { type: 'object', properties: {
+      familia: { type: 'string', enum: ['rondin', 'maquinaria', 'todas'], description: 'rondin = supervisión humana; maquinaria = checklist diario de autoelevadores' },
+      ultimos_dias: { type: 'integer', description: 'Ventana en días (default 7)' },
+      template_code: { type: 'string', description: 'Filtrar por código de plantilla (F-TRI-19/20/23/SSHH)' },
+    }},
   }
 ];
 
@@ -540,6 +550,78 @@ async function h_consultar_organigrama() {
 }
 
 
+async function h_consultar_rondas({ familia, ultimos_dias = 7, template_code } = {}) {
+  const days = Math.max(1, Math.min(parseInt(ultimos_dias) || 7, 90));
+  const famFilter = familia && familia !== 'todas' ? `AND i.family=$2` : '';
+  const tmplFilter = template_code ? `AND t.code=$${famFilter ? 3 : 2}` : '';
+  const params = [days];
+  if (famFilter) params.push(familia);
+  if (template_code) params.push(template_code);
+
+  const summary = (await pool.query(
+    `SELECT
+        COUNT(*) FILTER (WHERE i.scheduled_date >= CURRENT_DATE - $1::int)::int AS total,
+        COUNT(*) FILTER (WHERE i.scheduled_date >= CURRENT_DATE - $1::int AND i.status='completada')::int AS completadas,
+        COUNT(*) FILTER (WHERE i.scheduled_date >= CURRENT_DATE - $1::int AND i.status='pendiente')::int AS pendientes,
+        COUNT(*) FILTER (WHERE i.scheduled_date >= CURRENT_DATE - $1::int AND i.status='en_cofirma')::int AS en_cofirma,
+        COUNT(*) FILTER (WHERE (i.due_date < CURRENT_DATE AND i.status NOT IN ('completada','anulada'))
+                          OR i.status='vencida')::int AS vencidas,
+        COALESCE(SUM(i.findings_count) FILTER (WHERE i.scheduled_date >= CURRENT_DATE - $1::int), 0)::int AS hallazgos
+       FROM insp_inspections i
+       JOIN insp_templates t ON t.id=i.template_id
+      WHERE i.deleted_at IS NULL ${famFilter} ${tmplFilter}`, params)).rows[0];
+
+  const cumplimiento = summary.total
+    ? Math.round((summary.completadas / summary.total) * 100)
+    : null;
+
+  const machinesAlert = (await pool.query(
+    `SELECT m.code, m.name,
+            MAX(i.scheduled_date) FILTER (WHERE i.status='completada')::text AS ultimo_checklist,
+            BOOL_OR(i.findings_count > 0 AND i.scheduled_date >= CURRENT_DATE - $1::int) AS con_hallazgos
+       FROM insp_machines m
+       LEFT JOIN insp_inspections i ON i.machine_id=m.id AND i.deleted_at IS NULL
+      WHERE m.active=true
+      GROUP BY m.id, m.code, m.name
+      HAVING BOOL_OR(i.findings_count > 0 AND i.scheduled_date >= CURRENT_DATE - $1::int)
+          OR MAX(i.scheduled_date) FILTER (WHERE i.status='completada') < CURRENT_DATE - 1
+          OR MAX(i.scheduled_date) FILTER (WHERE i.status='completada') IS NULL
+      ORDER BY con_hallazgos DESC, m.code`, [days])).rows;
+
+  const criticalFails = (await pool.query(
+    `SELECT i.code AS inspeccion, t.code AS plantilla, m.code AS maquina,
+            it.label AS item, r.observations, i.scheduled_date::text,
+            r.finding_id IS NOT NULL AS tiene_nc
+       FROM insp_responses r
+       JOIN insp_template_items it ON it.id=r.item_id
+       JOIN insp_inspections i ON i.id=r.inspection_id
+       JOIN insp_templates t ON t.id=i.template_id
+       LEFT JOIN insp_machines m ON m.id=i.machine_id
+      WHERE r.answer IN ('no','no_cumple')
+        AND it.is_critical=true
+        AND i.scheduled_date >= CURRENT_DATE - $1::int
+        AND i.deleted_at IS NULL
+      ORDER BY i.scheduled_date DESC LIMIT 10`, [days])).rows;
+
+  const upcomingOverdue = (await pool.query(
+    `SELECT i.code, t.code AS plantilla, t.name AS plantilla_nombre,
+            i.due_date::text, i.status, i.period_label
+       FROM insp_inspections i
+       JOIN insp_templates t ON t.id=i.template_id
+      WHERE i.deleted_at IS NULL
+        AND ((i.due_date < CURRENT_DATE AND i.status NOT IN ('completada','anulada'))
+             OR i.status='vencida')
+      ORDER BY i.due_date ASC LIMIT 10`)).rows;
+
+  return {
+    ventana_dias: days,
+    resumen: { ...summary, cumplimiento_pct: cumplimiento },
+    maquinas_con_alerta: machinesAlert,
+    items_criticos_en_falla: criticalFails,
+    rondines_vencidos: upcomingOverdue,
+  };
+}
+
 const HANDLERS = {
   consultar_tareas: h_consultar_tareas,
   consultar_hallazgos: h_consultar_hallazgos,
@@ -558,6 +640,7 @@ const HANDLERS = {
   consultar_cambios: h_consultar_cambios,
   consultar_procedimientos: h_consultar_procedimientos,
   consultar_organigrama: h_consultar_organigrama,
+  consultar_rondas: h_consultar_rondas,
 };
 
 // ───────────────────────────────────────────────────────────────

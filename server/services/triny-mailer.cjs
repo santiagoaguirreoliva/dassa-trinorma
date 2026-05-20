@@ -205,6 +205,30 @@ async function jobResumenViernes(opts = {}) {
   `).catch(() => ({ rows: [{}] }));
   const k = week.rows[0] || {};
 
+  // KPIs Rondas de Inspección (semana)
+  const rondas = await pool.query(`
+    SELECT
+      COUNT(*) FILTER (WHERE scheduled_date > NOW() - INTERVAL '7 days')::int AS total,
+      COUNT(*) FILTER (WHERE scheduled_date > NOW() - INTERVAL '7 days' AND status='completada')::int AS completadas,
+      COUNT(*) FILTER (WHERE (due_date < CURRENT_DATE AND status NOT IN ('completada','anulada')) OR status='vencida')::int AS vencidas,
+      COUNT(*) FILTER (WHERE scheduled_date > NOW() - INTERVAL '7 days' AND family='maquinaria')::int AS maquinaria,
+      COALESCE(SUM(findings_count) FILTER (WHERE scheduled_date > NOW() - INTERVAL '7 days'), 0)::int AS hallazgos
+    FROM insp_inspections WHERE deleted_at IS NULL
+  `).catch(() => ({ rows: [{}] }));
+  const r = rondas.rows[0] || {};
+  const cumplRondas = r.total ? Math.round((r.completadas / r.total) * 100) : null;
+
+  const maquinasAlerta = await pool.query(`
+    SELECT m.code, m.name,
+           COALESCE(SUM(i.findings_count) FILTER (WHERE i.scheduled_date > NOW() - INTERVAL '7 days'), 0)::int AS hallazgos
+    FROM insp_machines m
+    LEFT JOIN insp_inspections i ON i.machine_id=m.id AND i.deleted_at IS NULL
+    WHERE m.active=true
+    GROUP BY m.id, m.code, m.name
+    HAVING COALESCE(SUM(i.findings_count) FILTER (WHERE i.scheduled_date > NOW() - INTERVAL '7 days'), 0) > 0
+    ORDER BY hallazgos DESC LIMIT 5
+  `).catch(() => ({ rows: [] }));
+
   // Top users con tareas vencidas
   const top = await pool.query(`
     SELECT u.full_name, COUNT(t.id)::int AS vencidas
@@ -235,6 +259,15 @@ async function jobResumenViernes(opts = {}) {
       <li>Incidentes registrados: <strong>${k.incidentes_semana || 0}</strong></li>
       <li>Reuniones de comité: <strong>${k.reuniones_semana || 0}</strong></li>
     </ul>
+    <h3 style="margin:24px 0 8px">🛡️ Rondas de Inspección</h3>
+    <ul>
+      <li>Rondines de la semana: <strong>${r.total || 0}</strong>${cumplRondas != null ? ` · cumplimiento <strong>${cumplRondas}%</strong>` : ''}</li>
+      <li>Checklists de maquinaria: <strong>${r.maquinaria || 0}</strong></li>
+      <li>Rondas vencidas: <strong style="color:${(r.vencidas||0) > 0 ? '#dc2626' : '#374151'}">${r.vencidas || 0}</strong></li>
+      <li>Hallazgos generados desde rondas: <strong>${r.hallazgos || 0}</strong></li>
+    </ul>
+    ${maquinasAlerta.rows.length ? `<p style="margin-top:8px;color:#dc2626;font-weight:600">⚠️ Máquinas con hallazgos en la semana:</p>
+      <ul>${maquinasAlerta.rows.map(m => `<li><strong>${m.code}</strong> — ${m.name} (${m.hallazgos} hallazgo${m.hallazgos !== 1 ? 's' : ''})</li>`).join('')}</ul>` : ''}
     ${top.rows.length ? `<h3 style="margin:24px 0 8px">⚠️ Top users con tareas vencidas</h3>
       <table style="width:100%;border-collapse:collapse">${top.rows.map(r => `<tr><td style="padding:8px;border-bottom:1px solid #e5e7eb"><strong>${r.full_name}</strong></td><td style="padding:8px;border-bottom:1px solid #e5e7eb;text-align:right;color:#dc2626;font-weight:700">${r.vencidas} vencidas</td></tr>`).join('')}</table>` : ''}
     <p style="margin-top:24px"><a href="https://trinorma.dassa.com.ar/dashboard" style="background:#7c3aed;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:700">Ver Dashboard ejecutivo</a></p>

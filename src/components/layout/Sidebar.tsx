@@ -83,6 +83,7 @@ function buildNav(openFindings: number, legalAlerts: number, role?: string): Nav
         { path: '/organigrama', label: 'Organigrama',    icon: <FolderTree size={15} /> },
         { path: '/puestos',     label: 'Puestos / Fichas', icon: <Briefcase size={15} /> },
         { path: '/employees',   label: 'Empleados',      icon: <Users size={15} /> },
+        { path: '/contactos-externos', label: 'Contactos externos', icon: <Users size={15} /> },
       ],
     },
     {

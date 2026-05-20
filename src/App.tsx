@@ -57,6 +57,7 @@ const RondaDetalle        = lazy(() => import('@/pages/RondaDetalle'));
 const RondasConfig        = lazy(() => import('@/pages/RondasConfig'));
 const RondasMaquinaria    = lazy(() => import('@/pages/RondasMaquinaria'));
 const PublicChecklist     = lazy(() => import('@/pages/PublicChecklist'));
+const ContactosExternos   = lazy(() => import('@/pages/ContactosExternos'));
 const Placeholder         = lazy(() => import('@/pages/Placeholder'));
 
 const qc = new QueryClient({
@@ -124,6 +125,7 @@ export default function App() {
               <Route path="/calendario-nixa" element={<CalendarioNixa />} />
               <Route path="/profile"        element={<Profile />} />
               <Route path="/employees"      element={<Employees />} />
+              <Route path="/contactos-externos" element={<ContactosExternos />} />
               <Route path="/incidents"      element={<Incidents />} />
               <Route path="/environmental"  element={<Environmental />} />
               <Route path="/documents"      element={<Documents />} />

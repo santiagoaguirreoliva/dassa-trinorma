@@ -31,6 +31,8 @@ const DEFAULTS = {
     'consultar_estado_ciclo','iniciar_revision','validar_revision',
     'consultar_objetivos','consultar_cambios','consultar_procedimientos','consultar_organigrama',
     'consultar_rondas',
+    'consultar_empleado','consultar_puesto','consultar_organigrama_detalle',
+    'buscar_contacto_externo',
   ],
   assistant_system_prompt_extra: '',
 };
@@ -280,6 +282,32 @@ const ALL_TOOLS = [
       ultimos_dias: { type: 'integer', description: 'Ventana en días (default 7)' },
       template_code: { type: 'string', description: 'Filtrar por código de plantilla (F-TRI-19/20/23/SSHH)' },
     }},
+  },
+  {
+    name: 'consultar_empleado',
+    description: 'PRIORITARIA para consultas SOBRE UNA PERSONA específica de DASSA por nombre o email. Devuelve la ficha personal completa: contacto (email, teléfono, WhatsApp, dirección), datos laborales (CUIL, ingreso, modalidad, jornada), supervisor jerárquico, puestos asignados (titular y cobertura) y habilitaciones/certificaciones con vencimientos. USAR SIEMPRE que la pregunta sea "quién es X", "qué teléfono tiene Y", "cuándo entró Z", "quién supervisa a W", "qué puesto tiene X", "habilitaciones de Y". NO usar consultar_organigrama para esto.',
+    input_schema: { type: 'object', properties: {
+      query: { type: 'string', description: 'Nombre, apellido o email (matching parcial, case-insensitive)' },
+    }, required: ['query'] },
+  },
+  {
+    name: 'consultar_puesto',
+    description: 'Busca una ficha de puesto por nombre o área. Devuelve misión, responsabilidades principales y secundarias, competencias, capacitaciones requeridas, empleados asignados (titular + cobertura) y nodo del organigrama. Útil para "¿qué hace un Apuntador?", "¿quién cubre el puesto de Maquinista?".',
+    input_schema: { type: 'object', properties: {
+      query: { type: 'string', description: 'Nombre del puesto o área' },
+    }, required: ['query'] },
+  },
+  {
+    name: 'consultar_organigrama_detalle',
+    description: 'Devuelve el organigrama completo de DASSA: triunvirato + áreas + sectores + puestos + empleados + contactos externos. Útil para preguntas estructurales tipo "¿cómo está organizado el depósito?", "¿cuántas personas reportan a Manuel?", "¿qué incluye Coordinación?".',
+    input_schema: { type: 'object', properties: {} },
+  },
+  {
+    name: 'buscar_contacto_externo',
+    description: 'Busca un proveedor estratégico o consultor externo (no empleado) que figura en el organigrama. Ej.: Nixa Méndez (Consultora SGI), Toti (Mantenimiento). Devuelve rol, organización, contactos y supervisor en DASSA.',
+    input_schema: { type: 'object', properties: {
+      query: { type: 'string', description: 'Nombre, rol u organización (matching parcial)' },
+    }, required: ['query'] },
   }
 ];
 
@@ -622,6 +650,108 @@ async function h_consultar_rondas({ familia, ultimos_dias = 7, template_code } =
   };
 }
 
+async function h_consultar_empleado({ query }) {
+  if (!query) return { error: 'Indicá nombre o email' };
+  const pattern = `%${query}%`;
+  const { rows } = await pool.query(`
+    SELECT e.id, e.full_name, e.email, e.phone, e.whatsapp, e.address,
+           e.cuil, e.birth_date, e.hire_date, e.contract_type, e.work_schedule,
+           e.position, e.sector, e.is_active,
+           sup.full_name AS supervisor_name, sup.email AS supervisor_email,
+           sup.phone AS supervisor_phone,
+           COALESCE((SELECT json_agg(json_build_object(
+             'role_label', jp.role_label,
+             'area', jp.area,
+             'seniority', jp.seniority,
+             'is_primary', jpe.is_primary,
+             'since', jpe.since
+           ) ORDER BY jpe.is_primary DESC)
+             FROM job_profile_employees jpe
+             JOIN job_profiles jp ON jp.id = jpe.profile_id
+             WHERE jpe.employee_id = e.id AND jpe.until IS NULL AND jp.is_active = TRUE), '[]'::json) AS puestos,
+           COALESCE((SELECT json_agg(json_build_object(
+             'cert_name', cert_name,
+             'issued_by', issued_by,
+             'expiry_date', expiry_date,
+             'status', status,
+             'dias_para_vencer',
+               CASE WHEN expiry_date IS NULL THEN NULL
+                    ELSE (expiry_date - CURRENT_DATE)::int END
+           ))
+             FROM employee_certifications WHERE employee_id = e.id), '[]'::json) AS habilitaciones
+      FROM employees e
+      LEFT JOIN employees sup ON sup.id = e.supervisor_id
+     WHERE e.full_name ILIKE $1 OR e.email ILIKE $1
+     ORDER BY (e.is_active = false), e.full_name
+     LIMIT 5`, [pattern]);
+  return { found: rows.length, empleados: rows };
+}
+
+async function h_consultar_puesto({ query }) {
+  if (!query) return { error: 'Indicá nombre del puesto o área' };
+  const pattern = `%${query}%`;
+  const { rows } = await pool.query(`
+    SELECT jp.id, jp.role_label, jp.area, jp.seniority, jp.mission,
+           jp.responsibilities, jp.key_results, jp.competencies, jp.training_required,
+           n.name AS nodo_organigrama,
+           COALESCE((SELECT json_agg(json_build_object(
+             'full_name', e.full_name,
+             'is_primary', jpe.is_primary,
+             'phone', e.phone,
+             'email', e.email,
+             'since', jpe.since
+           ) ORDER BY jpe.is_primary DESC)
+             FROM job_profile_employees jpe
+             JOIN employees e ON e.id = jpe.employee_id
+             WHERE jpe.profile_id = jp.id AND jpe.until IS NULL AND e.is_active = TRUE), '[]'::json) AS empleados
+      FROM job_profiles jp
+      LEFT JOIN org_chart_nodes n ON n.id = jp.org_node_id
+     WHERE jp.is_active = TRUE
+       AND (jp.role_label ILIKE $1 OR jp.area ILIKE $1 OR jp.mission ILIKE $1)
+     ORDER BY jp.role_label
+     LIMIT 8`, [pattern]);
+  return { found: rows.length, puestos: rows };
+}
+
+async function h_consultar_organigrama_detalle() {
+  const nodes = (await pool.query(`
+    SELECT n.id, n.name, n.parent_id, n.type, n.level, n.area, n.description, n.sort_order,
+           (SELECT COUNT(*) FROM job_profiles WHERE org_node_id=n.id AND is_active=TRUE) AS puestos_count,
+           (SELECT COUNT(DISTINCT jpe.employee_id)
+              FROM job_profiles jp
+              JOIN job_profile_employees jpe ON jpe.profile_id = jp.id
+             WHERE jp.org_node_id = n.id AND jp.is_active = TRUE AND jpe.until IS NULL) AS empleados_count
+      FROM org_chart_nodes n
+     WHERE n.is_active = TRUE
+     ORDER BY n.level, n.sort_order`)).rows;
+  const summary = (await pool.query(`
+    SELECT
+      (SELECT COUNT(*) FROM employees WHERE is_active) AS empleados_total,
+      (SELECT COUNT(*) FROM job_profiles WHERE is_active) AS puestos_total,
+      (SELECT COUNT(*) FROM external_contacts WHERE is_active) AS externos_total,
+      (SELECT COUNT(*) FROM job_profiles WHERE is_active AND id NOT IN
+         (SELECT profile_id FROM job_profile_employees WHERE until IS NULL)) AS puestos_vacantes
+  `)).rows[0];
+  return { nodos: nodes, resumen: summary };
+}
+
+async function h_buscar_contacto_externo({ query }) {
+  if (!query) return { error: 'Indicá nombre, rol u organización' };
+  const pattern = `%${query}%`;
+  const { rows } = await pool.query(`
+    SELECT ec.full_name, ec.role, ec.organization, ec.email, ec.phone, ec.whatsapp,
+           ec.address, ec.notes,
+           sup.full_name AS supervisor_dassa,
+           n.name AS org_node_name
+      FROM external_contacts ec
+      LEFT JOIN employees sup ON sup.id = ec.supervisor_in_dassa_id
+      LEFT JOIN org_chart_nodes n ON n.id = ec.org_node_id
+     WHERE ec.is_active = TRUE
+       AND (ec.full_name ILIKE $1 OR ec.role ILIKE $1 OR ec.organization ILIKE $1)
+     ORDER BY ec.full_name LIMIT 5`, [pattern]);
+  return { found: rows.length, externos: rows };
+}
+
 const HANDLERS = {
   consultar_tareas: h_consultar_tareas,
   consultar_hallazgos: h_consultar_hallazgos,
@@ -641,6 +771,10 @@ const HANDLERS = {
   consultar_procedimientos: h_consultar_procedimientos,
   consultar_organigrama: h_consultar_organigrama,
   consultar_rondas: h_consultar_rondas,
+  consultar_empleado: h_consultar_empleado,
+  consultar_puesto: h_consultar_puesto,
+  consultar_organigrama_detalle: h_consultar_organigrama_detalle,
+  buscar_contacto_externo: h_buscar_contacto_externo,
 };
 
 // ───────────────────────────────────────────────────────────────

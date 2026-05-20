@@ -52,6 +52,10 @@ const ResetPassword       = lazy(() => import('@/pages/ResetPassword'));
 const RequestAccess       = lazy(() => import('@/pages/RequestAccess'));
 const Auditor             = lazy(() => import('@/pages/Auditor'));
 const MisPendientes       = lazy(() => import('@/pages/MisPendientes'));
+const Rondas              = lazy(() => import('@/pages/Rondas'));
+const RondaDetalle        = lazy(() => import('@/pages/RondaDetalle'));
+const RondasConfig        = lazy(() => import('@/pages/RondasConfig'));
+const RondasMaquinaria    = lazy(() => import('@/pages/RondasMaquinaria'));
 const Placeholder         = lazy(() => import('@/pages/Placeholder'));
 
 const qc = new QueryClient({
@@ -127,6 +131,10 @@ export default function App() {
               <Route path="/context"        element={<Context />} />
               <Route path="/calendar"       element={<Calendar />} />
               <Route path="/mis-pendientes" element={<MisPendientes />} />
+              <Route path="/rondas"            element={<Rondas />} />
+              <Route path="/rondas/config"     element={<RondasConfig />} />
+              <Route path="/rondas/maquinaria" element={<RondasMaquinaria />} />
+              <Route path="/rondas/:id"        element={<RondaDetalle />} />
               <Route path="/auditor"        element={<Auditor />} />
               {/* Catch-all for pages still in development */}
               <Route path="/:slug"          element={<Placeholder />} />

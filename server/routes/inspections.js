@@ -103,6 +103,39 @@ router.post('/generate', requireRole(...ADMIN_ROLES), async (_req, res) => {
 });
 
 // ════════════════════════════════════════════════════════════════
+// CONFIG (key/value: geofence DASSA, etc.)
+// ════════════════════════════════════════════════════════════════
+router.get('/config', async (_req, res) => {
+  try {
+    const { rows } = await query('SELECT key, value FROM insp_config');
+    res.json(Object.fromEntries(rows.map((r) => [r.key, r.value])));
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+router.put('/config/geofence', requireRole(...ADMIN_ROLES), async (req, res) => {
+  const { lat, lng, radius_m, calibrated } = req.body;
+  if (typeof lat !== 'number' || typeof lng !== 'number' || typeof radius_m !== 'number')
+    return res.status(400).json({ error: 'lat, lng y radius_m son numéricos requeridos' });
+  if (radius_m <= 0 || radius_m > 10000)
+    return res.status(400).json({ error: 'radius_m debe ser > 0 y ≤ 10000' });
+  try {
+    const entries = [
+      ['geofence_lat', String(lat)],
+      ['geofence_lng', String(lng)],
+      ['geofence_radius_m', String(radius_m)],
+      ['geofence_calibrated', calibrated ? 'true' : 'false'],
+    ];
+    for (const [k, v] of entries) {
+      await query(
+        `INSERT INTO insp_config (key, value) VALUES ($1, $2)
+         ON CONFLICT (key) DO UPDATE SET value=EXCLUDED.value`,
+        [k, v]);
+    }
+    res.json({ ok: true });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// ════════════════════════════════════════════════════════════════
 // PLANTILLAS
 // ════════════════════════════════════════════════════════════════
 router.get('/templates', async (_req, res) => {

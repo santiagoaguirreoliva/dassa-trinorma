@@ -6,6 +6,7 @@ import {
   CalendarDays, ChevronDown, ChevronRight, Star, Settings, X,
   Briefcase, Workflow, Target, GitMerge, BookOpen as BookOpen2,
   Megaphone, Inbox, Bot, ListChecks, FolderTree, Sparkles,
+  ClipboardCheck,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -70,6 +71,7 @@ function buildNav(openFindings: number, legalAlerts: number, role?: string): Nav
         { path: '/riesgos-amfe', label: 'Matriz AMFE',     icon: <Shield size={15} /> },
         { path: '/incidents',    label: 'Incidentes',      icon: <AlertTriangle size={15} /> },
         { path: '/trainings',    label: 'Capacitaciones',  icon: <BookOpen size={15} /> },
+        { path: '/rondas',       label: 'Rondas Insp.',    icon: <ClipboardCheck size={15} /> },
         { path: '/legal',        label: 'Req. Legales',    icon: <Scale size={15} />, badge: legalAlerts || 0 },
       ],
     },

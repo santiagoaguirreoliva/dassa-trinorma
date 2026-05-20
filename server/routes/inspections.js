@@ -4,6 +4,7 @@
 import { Router } from 'express';
 import bcrypt from 'bcryptjs';
 import QRCode from 'qrcode';
+import PDFDocument from 'pdfkit';
 import { query, getClient } from '../db/db.js';
 import { authenticate, requireRole, ADMIN_ROLES } from '../middleware/auth.js';
 import { saveBase64File } from '../services/uploads.js';
@@ -240,12 +241,13 @@ router.get('/machines', async (req, res) => {
 });
 
 router.post('/machines', requireRole(...ADMIN_ROLES), async (req, res) => {
-  const { code, name, type } = req.body;
+  const { code, name, type, daily_checklist } = req.body;
   if (!code || !name) return res.status(400).json({ error: 'code y name son requeridos' });
   try {
     const { rows } = await query(
-      `INSERT INTO insp_machines (code,name,type) VALUES ($1,$2,COALESCE($3,'autoelevador')) RETURNING *`,
-      [code, name, type]);
+      `INSERT INTO insp_machines (code,name,type,daily_checklist)
+       VALUES ($1,$2,COALESCE($3,'autoelevador'),COALESCE($4,true)) RETURNING *`,
+      [code, name, type, daily_checklist]);
     res.status(201).json(rows[0]);
   } catch (err) {
     if (err.code === '23505') return res.status(409).json({ error: 'Ya existe una máquina con ese código' });
@@ -255,7 +257,7 @@ router.post('/machines', requireRole(...ADMIN_ROLES), async (req, res) => {
 
 router.patch('/machines/:id', requireRole(...ADMIN_ROLES), async (req, res) => {
   try {
-    const allowed = ['code','name','type','active'];
+    const allowed = ['code','name','type','active','daily_checklist'];
     const sets = [], params = [];
     for (const k of allowed)
       if (k in req.body) sets.push(`${k}=${p(params, req.body[k])}`);
@@ -275,6 +277,97 @@ router.post('/machines/:id/rotate-qr', requireRole(...ADMIN_ROLES), async (req, 
     if (!rows[0]) return res.status(404).json({ error: 'Máquina no encontrada' });
     res.json(rows[0]);
   } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// PDF imprimible con todos los QR de la flota (2 por página, A4)
+router.get('/machines/qrs.pdf', requireRole(...ADMIN_ROLES), async (req, res) => {
+  try {
+    const { rows: machines } = await query(
+      `SELECT id, code, name, type, qr_token, daily_checklist
+         FROM insp_machines WHERE active=true ORDER BY code`);
+    if (!machines.length) return res.status(404).json({ error: 'No hay máquinas activas' });
+
+    const base = process.env.APP_URL || `https://${req.get('host')}`;
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', 'inline; filename="qrs-maquinaria-dassa.pdf"');
+
+    const doc = new PDFDocument({ size: 'A4', margins: { top: 32, bottom: 32, left: 36, right: 36 } });
+    doc.pipe(res);
+
+    const PAGE_W = doc.page.width - 72;          // ancho útil
+    const CARD_H = 360;                          // alto por máquina
+    let y = 32;
+    let pageIdx = 0;
+
+    for (let i = 0; i < machines.length; i++) {
+      const m = machines[i];
+      const url = `${base}/checklist-maquina?m=${m.qr_token}`;
+
+      // 2 máquinas por página
+      if (i > 0 && i % 2 === 0) { doc.addPage(); pageIdx++; y = 32; }
+
+      // Encabezado de página
+      if (i % 2 === 0) {
+        doc.fontSize(10).fillColor('#9ca3af')
+           .text('DASSA — Trinorma · Checklist diario de maquinaria', 36, 36,
+                 { width: PAGE_W, align: 'left' });
+        doc.fontSize(8).fillColor('#9ca3af')
+           .text(`Página ${pageIdx + 1} de ${Math.ceil(machines.length / 2)}`,
+                 36, 36, { width: PAGE_W, align: 'right' });
+        y = 70;
+      }
+
+      const cardX = 36;
+      const cardY = y;
+
+      // Marco
+      doc.roundedRect(cardX, cardY, PAGE_W, CARD_H, 8)
+         .lineWidth(1).strokeColor('#e5e7eb').stroke();
+
+      // Banda DASSA arriba
+      doc.rect(cardX, cardY, PAGE_W, 4).fillColor('#C8202C').fill();
+
+      // Código gigante a la izq
+      doc.fillColor('#111827').font('Helvetica-Bold').fontSize(48)
+         .text(m.code, cardX + 20, cardY + 30, { width: 220 });
+      doc.fillColor('#6b7280').font('Helvetica').fontSize(11)
+         .text(m.name, cardX + 20, cardY + 90, { width: 220 });
+      doc.fillColor('#9ca3af').fontSize(9)
+         .text(m.daily_checklist ? 'CHECKLIST DIARIO OBLIGATORIO' : 'CHECKLIST ON-DEMAND',
+               cardX + 20, cardY + 115, { width: 220 });
+
+      // Instrucciones
+      const instX = cardX + 20;
+      let instY = cardY + 145;
+      doc.fillColor('#111827').font('Helvetica-Bold').fontSize(11)
+         .text('CÓMO USAR', instX, instY); instY += 16;
+      doc.fillColor('#374151').font('Helvetica').fontSize(10);
+      doc.text('1.  Escaneá el QR con la cámara del celular.', instX, instY, { width: 220 }); instY += 16;
+      doc.text('2.  Ingresá tu PIN de 4 dígitos.', instX, instY, { width: 220 }); instY += 16;
+      doc.text('3.  Completá el checklist antes de operar.', instX, instY, { width: 220 }); instY += 16;
+      doc.text('4.  Si algo no cumple, sacá foto y describí.', instX, instY, { width: 220 }); instY += 16;
+      doc.text('5.  Firmá y enviá.', instX, instY, { width: 220 });
+
+      // QR a la derecha
+      const qrPng = await QRCode.toDataURL(url, { width: 512, margin: 1, errorCorrectionLevel: 'M' });
+      const qrBuf = Buffer.from(qrPng.split(',')[1], 'base64');
+      const qrSize = 220;
+      const qrX = cardX + PAGE_W - qrSize - 30;
+      const qrY = cardY + 30;
+      doc.image(qrBuf, qrX, qrY, { width: qrSize, height: qrSize });
+
+      // URL debajo del QR
+      doc.fillColor('#6b7280').font('Helvetica').fontSize(7)
+         .text(url, qrX, qrY + qrSize + 6, { width: qrSize, align: 'center' });
+
+      y += CARD_H + 16;
+    }
+
+    doc.end();
+  } catch (err) {
+    console.error('qrs.pdf error:', err);
+    if (!res.headersSent) res.status(500).json({ error: err.message });
+  }
 });
 
 // QR imprimible: data-URL PNG + URL pública del checklist

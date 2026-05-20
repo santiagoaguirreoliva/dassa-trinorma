@@ -130,7 +130,12 @@ export async function generateDueInspections(now = new Date()) {
   for (const t of templates) {
     const period = periodFor(t, now);
     if (t.family === 'maquinaria') {
-      const machines = (await query('SELECT * FROM insp_machines WHERE active=true')).rows;
+      // Para checklists diarios respetamos el flag daily_checklist
+      // (Mitsubishi y otras máquinas on-demand quedan fuera del cron diario)
+      const where = t.frequency === 'diaria'
+        ? 'WHERE active=true AND daily_checklist=true'
+        : 'WHERE active=true';
+      const machines = (await query(`SELECT * FROM insp_machines ${where}`)).rows;
       for (const m of machines) {
         const r = await ensureInstance(t, period, m);
         if (r) created.push(r);

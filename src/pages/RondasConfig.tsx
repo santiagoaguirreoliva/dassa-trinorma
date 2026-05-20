@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { api } from '@/lib/api';
 import {
   ArrowLeft, Plus, Truck, KeyRound, FileText, MapPin, Loader2,
-  RefreshCw, Printer, Edit3, AlertTriangle, CheckCircle2,
+  RefreshCw, Printer, Edit3, AlertTriangle, CheckCircle2, Download, FileBox,
 } from 'lucide-react';
 
 type Tab = 'templates' | 'machines' | 'operators' | 'geofence';
@@ -16,7 +16,8 @@ interface Template {
   responsibles: { user_id: string; name: string; role: string }[];
 }
 interface Machine {
-  id: string; code: string; name: string; type: string; qr_token: string; active: boolean;
+  id: string; code: string; name: string; type: string; qr_token: string;
+  active: boolean; daily_checklist: boolean;
 }
 interface Operator {
   id: string; full_name: string; active: boolean;
@@ -125,8 +126,9 @@ function MachinesPanel() {
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState('');
   const [creating, setCreating] = useState(false);
-  const [form, setForm] = useState({ code: '', name: '', type: 'autoelevador' });
+  const [form, setForm] = useState({ code: '', name: '', type: 'autoelevador', daily_checklist: true });
   const [qr, setQr] = useState<{ machineCode: string; url: string; png: string } | null>(null);
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
 
   async function load() {
     setLoading(true); setErr('');
@@ -140,10 +142,42 @@ function MachinesPanel() {
     if (!form.code || !form.name) { setErr('Código y nombre requeridos'); return; }
     try {
       await api.post('/inspections/machines', form);
-      setForm({ code: '', name: '', type: 'autoelevador' });
+      setForm({ code: '', name: '', type: 'autoelevador', daily_checklist: true });
       setCreating(false);
       load();
     } catch (e: any) { setErr(e.message); }
+  }
+
+  async function toggleDaily(m: Machine) {
+    try {
+      await api.patch(`/inspections/machines/${m.id}`, { daily_checklist: !m.daily_checklist });
+      load();
+    } catch (e: any) { setErr(e.message); }
+  }
+
+  async function downloadQrsPdf() {
+    setDownloadingPdf(true);
+    try {
+      const token = localStorage.getItem('dassa_token');
+      const r = await fetch('/api/inspections/machines/qrs.pdf', {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (!r.ok) {
+        const err = await r.json().catch(() => ({ error: r.statusText }));
+        throw new Error(err.error || `HTTP ${r.status}`);
+      }
+      const blob = await r.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `qrs-maquinaria-dassa-${new Date().toISOString().slice(0,10)}.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (e: any) {
+      setErr(e.message);
+    } finally {
+      setDownloadingPdf(false);
+    }
   }
 
   async function viewQR(m: Machine) {
@@ -162,9 +196,23 @@ function MachinesPanel() {
 
   if (loading) return <div className="py-8 flex justify-center"><Loader2 className="animate-spin text-gray-400" /></div>;
 
+  const activas = list.filter(m => m.active);
+
   return (
     <div className="space-y-2">
       {err && <Err msg={err} />}
+
+      {activas.length > 0 && (
+        <button
+          onClick={downloadQrsPdf}
+          disabled={downloadingPdf}
+          className="w-full py-2.5 rounded-xl bg-gradient-to-r from-blue-700 to-blue-600 text-white text-xs font-bold flex items-center justify-center gap-2 disabled:opacity-60"
+        >
+          {downloadingPdf ? <Loader2 size={14} className="animate-spin" /> : <FileBox size={14} />}
+          Descargar PDF con todos los QRs ({activas.length} máquina{activas.length !== 1 ? 's' : ''})
+        </button>
+      )}
+
       {!creating ? (
         <button onClick={() => setCreating(true)}
           className="w-full py-2.5 rounded-xl border-2 border-dashed border-gray-300 text-xs font-bold text-gray-600 hover:border-blue-300 flex items-center justify-center gap-1">
@@ -173,14 +221,22 @@ function MachinesPanel() {
       ) : (
         <div className="bg-white rounded-xl border border-gray-200 p-3 space-y-2">
           <input value={form.code} onChange={e => setForm({ ...form, code: e.target.value.toUpperCase() })}
-                 placeholder="Código (ej: AE-04)" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
+                 placeholder="Código (ej: AE-15)" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
           <input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })}
-                 placeholder="Nombre (ej: Autoelevador 4)" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
+                 placeholder="Nombre (ej: TEU 3.0 TN #15 — Nafta/Gas)" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
           <select value={form.type} onChange={e => setForm({ ...form, type: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white">
             <option value="autoelevador">Autoelevador</option>
+            <option value="kalmar">Kalmar</option>
+            <option value="mitsubishi">Mitsubishi</option>
             <option value="montacargas">Montacargas</option>
           </select>
+          <label className="flex items-center gap-2 text-xs text-gray-700 cursor-pointer">
+            <input type="checkbox" checked={form.daily_checklist}
+                   onChange={e => setForm({ ...form, daily_checklist: e.target.checked })}
+                   className="w-4 h-4" />
+            Checklist diario obligatorio (desmarcar para on-demand)
+          </label>
           <div className="flex gap-2">
             <button onClick={() => setCreating(false)} className="flex-1 py-2 rounded-lg border border-gray-200 text-xs font-bold text-gray-600">Cancelar</button>
             <button onClick={create} className="flex-1 py-2 rounded-lg bg-blue-600 text-white text-xs font-bold">Crear</button>
@@ -189,19 +245,40 @@ function MachinesPanel() {
       )}
 
       {list.map(m => (
-        <div key={m.id} className="bg-white rounded-xl border border-gray-200 p-3 flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-orange-50 text-orange-600 flex items-center justify-center">
+        <div key={m.id} className={`bg-white rounded-xl border p-3 flex items-center gap-3
+          ${m.active ? 'border-gray-200' : 'border-gray-100 opacity-60'}`}>
+          <div className={`w-10 h-10 rounded-lg flex items-center justify-center
+            ${m.type === 'kalmar' ? 'bg-amber-50 text-amber-600' :
+              m.type === 'mitsubishi' ? 'bg-violet-50 text-violet-600' :
+              'bg-orange-50 text-orange-600'}`}>
             <Truck size={16} />
           </div>
           <div className="flex-1 min-w-0">
             <div className="text-xs font-bold text-gray-400">{m.code}</div>
             <div className="text-sm font-bold text-gray-900 truncate">{m.name}</div>
-            <div className="text-[10px] text-gray-500">{m.type}{!m.active && ' · inactiva'}</div>
+            <div className="text-[10px] text-gray-500 flex items-center gap-1.5 flex-wrap">
+              <span>{m.type}</span>
+              {m.active && (
+                <button onClick={() => toggleDaily(m)}
+                  className={`px-1.5 py-0.5 rounded font-bold text-[9px] uppercase tracking-wider
+                    ${m.daily_checklist
+                      ? 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
+                      : 'bg-amber-50 text-amber-700 hover:bg-amber-100'}`}
+                  title="Click para cambiar">
+                  {m.daily_checklist ? '✓ Check diario' : '⏸ On-demand'}
+                </button>
+              )}
+              {!m.active && <span className="text-gray-400">· inactiva</span>}
+            </div>
           </div>
-          <button onClick={() => viewQR(m)} title="Ver QR"
-                  className="p-2 rounded-lg hover:bg-gray-100 text-gray-600"><Printer size={15} /></button>
-          <button onClick={() => rotateQR(m)} title="Rotar QR"
-                  className="p-2 rounded-lg hover:bg-gray-100 text-gray-600"><RefreshCw size={15} /></button>
+          {m.active && (
+            <>
+              <button onClick={() => viewQR(m)} title="Ver QR"
+                      className="p-2 rounded-lg hover:bg-gray-100 text-gray-600"><Printer size={15} /></button>
+              <button onClick={() => rotateQR(m)} title="Rotar QR"
+                      className="p-2 rounded-lg hover:bg-gray-100 text-gray-600"><RefreshCw size={15} /></button>
+            </>
+          )}
         </div>
       ))}
 

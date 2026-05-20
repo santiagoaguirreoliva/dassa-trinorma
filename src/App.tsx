@@ -56,6 +56,7 @@ const Rondas              = lazy(() => import('@/pages/Rondas'));
 const RondaDetalle        = lazy(() => import('@/pages/RondaDetalle'));
 const RondasConfig        = lazy(() => import('@/pages/RondasConfig'));
 const RondasMaquinaria    = lazy(() => import('@/pages/RondasMaquinaria'));
+const PublicChecklist     = lazy(() => import('@/pages/PublicChecklist'));
 const Placeholder         = lazy(() => import('@/pages/Placeholder'));
 
 const qc = new QueryClient({
@@ -91,6 +92,7 @@ export default function App() {
             <Route path="/register"   element={<Register />} />
             <Route path="/signup-empresa" element={<SignupEmpresa />} />
             <Route path="/reporte-nc" element={<PublicNC />} />
+            <Route path="/checklist-maquina" element={<PublicChecklist />} />
             <Route path="/"           element={<Navigate to="/login" replace />} />
             <Route path="/home"       element={<Navigate to="/bienvenida" replace />} />
             <Route path="/tasks"      element={<Navigate to="/mis-pendientes" replace />} />

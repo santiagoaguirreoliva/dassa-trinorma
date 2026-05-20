@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Plus, X, Loader2, Users, Search, UserCheck, UserX, Phone, Mail, MessageCircle,
-  Bot, ExternalLink, Cpu,
+  Bot, ExternalLink, Cpu, MapPin, Calendar, Briefcase, Heart, Award, Trash2,
+  GraduationCap, AlertTriangle,
 } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
@@ -20,7 +21,33 @@ interface Employee {
   position?: string;
   is_active: boolean;
   evaluator_name?: string;
+  evaluator_id?: string;
+  secondary_evaluator_id?: string;
+  supervisor_id?: string;
+  supervisor_name?: string;
+  cuil?: string;
+  birth_date?: string;
+  address?: string;
+  emergency_contact_name?: string;
+  emergency_contact_phone?: string;
+  emergency_contact_relation?: string;
+  hire_date?: string;
+  contract_type?: string;
+  work_schedule?: string;
+  notes?: string;
   created_at: string;
+}
+interface EmployeeCertification {
+  id: string; cert_type?: string; cert_name: string; issued_by?: string;
+  issue_date?: string; expiry_date?: string; status?: string;
+  file_url?: string; notes?: string;
+}
+interface EmployeePosition {
+  id: string; profile_id: string; role_label: string; area?: string;
+  seniority?: string; is_primary: boolean; since?: string; until?: string; notes?: string;
+}
+interface JobProfileLite {
+  id: string; role_label: string; area?: string; seniority?: string;
 }
 
 // ─── Capa de Agentes IA — RR.AI ──────────────────────────────
@@ -275,9 +302,37 @@ function AgentsLayer() {
 }
 
 // ─── New / Edit Employee Modal ───────────────────────────────
+type ModalTab = 'general' | 'contacto' | 'laboral' | 'emergencia' | 'puestos' | 'certs';
+
+const TABS: { k: ModalTab; label: string; icon: any }[] = [
+  { k: 'general',    label: 'General',    icon: UserCheck },
+  { k: 'contacto',   label: 'Contacto',   icon: Phone },
+  { k: 'laboral',    label: 'Laboral',    icon: Briefcase },
+  { k: 'emergencia', label: 'Emergencia', icon: Heart },
+  { k: 'puestos',    label: 'Puestos',    icon: Users },
+  { k: 'certs',      label: 'Habilitaciones', icon: GraduationCap },
+];
+
+const CONTRACT_TYPES = [
+  { v: 'relacion_dependencia', l: 'Relación de dependencia' },
+  { v: 'monotributo',          l: 'Monotributo' },
+  { v: 'autonomo',             l: 'Autónomo' },
+  { v: 'eventual',             l: 'Eventual' },
+  { v: 'plazo_fijo',           l: 'Plazo fijo' },
+  { v: 'pasantia',             l: 'Pasantía' },
+];
+const WORK_SCHEDULES = [
+  { v: 'full_time',  l: 'Full-time' },
+  { v: 'part_time',  l: 'Part-time' },
+  { v: 'turnos',     l: 'Turnos rotativos' },
+  { v: 'guardias',   l: 'Guardias' },
+  { v: 'remoto',     l: 'Remoto' },
+];
+
 function EmployeeModal({ employee, onClose }: { employee?: Employee; onClose: () => void }) {
   const qc = useQueryClient();
   const isEdit = !!employee;
+  const [tab, setTab] = useState<ModalTab>('general');
   const [form, setForm] = useState({
     full_name: employee?.full_name ?? '',
     position: employee?.position ?? '',
@@ -285,81 +340,461 @@ function EmployeeModal({ employee, onClose }: { employee?: Employee; onClose: ()
     email: employee?.email ?? '',
     phone: employee?.phone ?? '',
     whatsapp: employee?.whatsapp ?? '',
+    address: employee?.address ?? '',
+    cuil: employee?.cuil ?? '',
+    birth_date: employee?.birth_date?.slice(0,10) ?? '',
+    hire_date: employee?.hire_date?.slice(0,10) ?? '',
+    contract_type: employee?.contract_type ?? '',
+    work_schedule: employee?.work_schedule ?? '',
+    supervisor_id: employee?.supervisor_id ?? '',
+    emergency_contact_name: employee?.emergency_contact_name ?? '',
+    emergency_contact_phone: employee?.emergency_contact_phone ?? '',
+    emergency_contact_relation: employee?.emergency_contact_relation ?? '',
+    notes: employee?.notes ?? '',
     is_active: employee?.is_active ?? true,
   });
   const [error, setError] = useState('');
   const set = (k: string, v: any) => setForm(p => ({ ...p, [k]: v }));
 
+  // Lista de empleados activos (para selector de supervisor)
+  const { data: peers = [] } = useQuery<Employee[]>({
+    queryKey: ['employees-peers'],
+    queryFn: () => api.get<Employee[]>('/employees?status=activo'),
+    staleTime: 60_000,
+  });
+
   const mutation = useMutation({
     mutationFn: () => isEdit
       ? api.patch(`/employees/${employee!.id}`, form)
-      : api.post('/employees', form),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['employees'] }); onClose(); },
+      : api.post<Employee>('/employees', form),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['employees'] });
+      if (isEdit) qc.invalidateQueries({ queryKey: ['employee', employee!.id] });
+      onClose();
+    },
     onError: (e: any) => setError(e.message),
   });
 
   return (
     <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg" onClick={e => e.stopPropagation()}>
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl flex flex-col" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between px-6 py-4 border-b">
-          <h3 className="text-[15px] font-extrabold text-gray-900">{isEdit ? 'Editar Empleado' : 'Nuevo Empleado'}</h3>
+          <div>
+            <h3 className="text-[15px] font-extrabold text-gray-900">
+              {isEdit ? `Ficha · ${employee!.full_name}` : 'Nuevo Empleado'}
+            </h3>
+            {isEdit && (
+              <p className="text-[11px] text-gray-500 mt-0.5">
+                {employee!.position || '—'} · {employee!.sector || '—'} · {employee!.is_active ? 'Activo' : 'Inactivo'}
+              </p>
+            )}
+          </div>
           <button onClick={onClose}><X size={18} className="text-gray-400" /></button>
         </div>
-        <div className="p-6 space-y-4 max-h-[75vh] overflow-y-auto">
-          <div>
-            <label className="label-field">Nombre completo <span className="text-red-500">*</span></label>
-            <input value={form.full_name} onChange={e => set('full_name', e.target.value)}
-              placeholder="Apellido y nombre" className="input-field" />
+
+        {/* Tabs */}
+        <div className="border-b bg-gray-50 px-2 overflow-x-auto">
+          <div className="flex gap-1 min-w-fit">
+            {TABS.map(t => {
+              // Las tabs Puestos / Certs sólo tienen sentido si ya existe el empleado
+              if (!isEdit && (t.k === 'puestos' || t.k === 'certs')) return null;
+              const Icon = t.icon;
+              return (
+                <button key={t.k} onClick={() => setTab(t.k)}
+                  className={`px-3 py-2 text-xs font-bold flex items-center gap-1.5 whitespace-nowrap border-b-2
+                    ${tab === t.k
+                      ? 'border-dassa-red text-dassa-red-deep'
+                      : 'border-transparent text-gray-500 hover:text-gray-800'}`}>
+                  <Icon size={13} /> {t.label}
+                </button>
+              );
+            })}
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="label-field">Puesto</label>
-              <input value={form.position} onChange={e => set('position', e.target.value)}
-                placeholder="Ej: Operario de playa" className="input-field" />
-            </div>
-            <div>
-              <label className="label-field">Sector</label>
-              <input value={form.sector} onChange={e => set('sector', e.target.value)}
-                placeholder="Ej: Depósito" className="input-field" />
-            </div>
-          </div>
-          <div>
-            <label className="label-field">Email</label>
-            <input type="email" value={form.email} onChange={e => set('email', e.target.value)}
-              placeholder="email@dassa.com.ar" className="input-field" />
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="label-field">Teléfono</label>
-              <input value={form.phone} onChange={e => set('phone', e.target.value)}
-                placeholder="+54 11 ..." className="input-field" inputMode="tel" />
-            </div>
-            <div>
-              <label className="label-field">WhatsApp</label>
-              <input value={form.whatsapp} onChange={e => set('whatsapp', e.target.value)}
-                placeholder="+54 9 11 ..." className="input-field" inputMode="tel" />
-            </div>
-          </div>
-          <div>
-            <label className="label-field">Estado</label>
-            <select value={form.is_active ? '1' : '0'} onChange={e => set('is_active', e.target.value === '1')}
-              className="input-field">
-              <option value="1">Activo</option>
-              <option value="0">Inactivo</option>
-            </select>
-          </div>
+        </div>
+
+        <div className="p-6 space-y-4 overflow-y-auto" style={{ minHeight: 400, maxHeight: '70vh' }}>
+          {/* ── TAB GENERAL ── */}
+          {tab === 'general' && (
+            <>
+              <div>
+                <label className="label-field">Nombre completo <span className="text-red-500">*</span></label>
+                <input value={form.full_name} onChange={e => set('full_name', e.target.value)}
+                  placeholder="Apellido y nombre" className="input-field" />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="label-field">Puesto (texto libre)</label>
+                  <input value={form.position} onChange={e => set('position', e.target.value)}
+                    placeholder="Ej: Operario de playa" className="input-field" />
+                  <p className="text-[10px] text-gray-400 mt-0.5">Para el puesto formal usá la tab "Puestos"</p>
+                </div>
+                <div>
+                  <label className="label-field">Sector / Área</label>
+                  <input value={form.sector} onChange={e => set('sector', e.target.value)}
+                    placeholder="Ej: Depósito" className="input-field" />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="label-field">CUIL</label>
+                  <input value={form.cuil} onChange={e => set('cuil', e.target.value)}
+                    placeholder="20-12345678-9" className="input-field" />
+                </div>
+                <div>
+                  <label className="label-field">Fecha de nacimiento</label>
+                  <input type="date" value={form.birth_date} onChange={e => set('birth_date', e.target.value)}
+                    className="input-field" />
+                </div>
+              </div>
+              <div>
+                <label className="label-field">Estado</label>
+                <select value={form.is_active ? '1' : '0'} onChange={e => set('is_active', e.target.value === '1')}
+                  className="input-field">
+                  <option value="1">Activo</option>
+                  <option value="0">Inactivo</option>
+                </select>
+              </div>
+              <div>
+                <label className="label-field">Notas internas</label>
+                <textarea value={form.notes} onChange={e => set('notes', e.target.value)}
+                  rows={2} placeholder="Observaciones..." className="input-field" />
+              </div>
+            </>
+          )}
+
+          {/* ── TAB CONTACTO ── */}
+          {tab === 'contacto' && (
+            <>
+              <div>
+                <label className="label-field"><Mail size={11} className="inline mr-1" />Email</label>
+                <input type="email" value={form.email} onChange={e => set('email', e.target.value)}
+                  placeholder="email@dassa.com.ar" className="input-field" />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="label-field"><Phone size={11} className="inline mr-1" />Teléfono</label>
+                  <input value={form.phone} onChange={e => set('phone', e.target.value)}
+                    placeholder="+54 11 ..." className="input-field" inputMode="tel" />
+                </div>
+                <div>
+                  <label className="label-field"><MessageCircle size={11} className="inline mr-1" />WhatsApp</label>
+                  <input value={form.whatsapp} onChange={e => set('whatsapp', e.target.value)}
+                    placeholder="+54 9 11 ..." className="input-field" inputMode="tel" />
+                </div>
+              </div>
+              <div>
+                <label className="label-field"><MapPin size={11} className="inline mr-1" />Dirección</label>
+                <input value={form.address} onChange={e => set('address', e.target.value)}
+                  placeholder="Calle, número, ciudad..." className="input-field" />
+              </div>
+            </>
+          )}
+
+          {/* ── TAB LABORAL ── */}
+          {tab === 'laboral' && (
+            <>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="label-field">Fecha de ingreso</label>
+                  <input type="date" value={form.hire_date} onChange={e => set('hire_date', e.target.value)}
+                    className="input-field" />
+                  {form.hire_date && (
+                    <p className="text-[10px] text-gray-500 mt-0.5">
+                      Antigüedad: {Math.floor((Date.now() - new Date(form.hire_date).getTime()) / (365.25 * 86400000))} años
+                    </p>
+                  )}
+                </div>
+                <div>
+                  <label className="label-field">Modalidad de contrato</label>
+                  <select value={form.contract_type} onChange={e => set('contract_type', e.target.value)}
+                    className="input-field">
+                    <option value="">— Sin definir —</option>
+                    {CONTRACT_TYPES.map(c => <option key={c.v} value={c.v}>{c.l}</option>)}
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label className="label-field">Jornada</label>
+                <select value={form.work_schedule} onChange={e => set('work_schedule', e.target.value)}
+                  className="input-field">
+                  <option value="">— Sin definir —</option>
+                  {WORK_SCHEDULES.map(w => <option key={w.v} value={w.v}>{w.l}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="label-field">Supervisor directo</label>
+                <select value={form.supervisor_id} onChange={e => set('supervisor_id', e.target.value)}
+                  className="input-field">
+                  <option value="">— Sin asignar —</option>
+                  {peers.filter(e => e.id !== employee?.id).map(e =>
+                    <option key={e.id} value={e.id}>{e.full_name}{e.position ? ` · ${e.position}` : ''}</option>
+                  )}
+                </select>
+                <p className="text-[10px] text-gray-400 mt-0.5">A quién le reporta jerárquicamente (no es lo mismo que el evaluador)</p>
+              </div>
+            </>
+          )}
+
+          {/* ── TAB EMERGENCIA ── */}
+          {tab === 'emergencia' && (
+            <>
+              <p className="text-xs text-gray-500 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 flex items-start gap-2">
+                <AlertTriangle size={13} className="text-amber-600 mt-0.5 flex-shrink-0" />
+                Información sensible. Solo se muestra a admins. Usar en caso de accidente o emergencia médica.
+              </p>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="label-field">Nombre de contacto</label>
+                  <input value={form.emergency_contact_name} onChange={e => set('emergency_contact_name', e.target.value)}
+                    placeholder="Ej: María Pérez" className="input-field" />
+                </div>
+                <div>
+                  <label className="label-field">Relación</label>
+                  <input value={form.emergency_contact_relation} onChange={e => set('emergency_contact_relation', e.target.value)}
+                    placeholder="Ej: cónyuge, padre, hermano" className="input-field" />
+                </div>
+              </div>
+              <div>
+                <label className="label-field">Teléfono de emergencia</label>
+                <input value={form.emergency_contact_phone} onChange={e => set('emergency_contact_phone', e.target.value)}
+                  placeholder="+54 9 11 ..." className="input-field" inputMode="tel" />
+              </div>
+            </>
+          )}
+
+          {/* ── TAB PUESTOS ── */}
+          {tab === 'puestos' && isEdit && (
+            <PositionsTab employeeId={employee!.id} />
+          )}
+
+          {/* ── TAB CERTS ── */}
+          {tab === 'certs' && isEdit && (
+            <CertificationsTab employeeId={employee!.id} />
+          )}
+
           {error && <p className="text-xs text-red-500 bg-red-50 px-3 py-2 rounded-lg">{error}</p>}
         </div>
-        <div className="px-6 pb-5 flex justify-end gap-2">
-          <button onClick={onClose} className="px-4 py-2 text-sm font-semibold text-gray-600 hover:bg-gray-100 rounded-lg">Cancelar</button>
-          <button onClick={() => !mutation.isPending && mutation.mutate()}
-            disabled={!form.full_name.trim() || mutation.isPending}
-            className="flex items-center gap-2 px-5 py-2 bg-dassa-red-deep text-white font-bold text-sm rounded-lg hover:bg-dassa-red disabled:opacity-50">
-            {mutation.isPending && <Loader2 size={14} className="animate-spin" />}
-            {isEdit ? 'Guardar Cambios' : 'Crear Empleado'}
+
+        {/* Footer — solo si la tab actual es editable por el form principal */}
+        {['general','contacto','laboral','emergencia'].includes(tab) && (
+          <div className="px-6 py-3 border-t flex justify-end gap-2 bg-gray-50">
+            <button onClick={onClose} className="px-4 py-2 text-sm font-semibold text-gray-600 hover:bg-gray-100 rounded-lg">Cancelar</button>
+            <button onClick={() => !mutation.isPending && mutation.mutate()}
+              disabled={!form.full_name.trim() || mutation.isPending}
+              className="flex items-center gap-2 px-5 py-2 bg-dassa-red-deep text-white font-bold text-sm rounded-lg hover:bg-dassa-red disabled:opacity-50">
+              {mutation.isPending && <Loader2 size={14} className="animate-spin" />}
+              {isEdit ? 'Guardar Cambios' : 'Crear Empleado'}
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── Sub-tab: Puestos asignados ──────────────────────────────────
+function PositionsTab({ employeeId }: { employeeId: string }) {
+  const qc = useQueryClient();
+  const [adding, setAdding] = useState(false);
+  const [form, setForm] = useState({ profile_id: '', is_primary: false, since: '', until: '', notes: '' });
+  const [err, setErr] = useState('');
+
+  const { data: positions = [], isLoading } = useQuery<EmployeePosition[]>({
+    queryKey: ['employee', employeeId, 'positions'],
+    queryFn: () => api.get<EmployeePosition[]>(`/employees/${employeeId}/positions`),
+  });
+  const { data: profiles = [] } = useQuery<JobProfileLite[]>({
+    queryKey: ['job-profiles-lite'],
+    queryFn: () => api.get<JobProfileLite[]>('/sgi-modules/job-profiles?active=true').catch(() => []),
+    staleTime: 60_000,
+  });
+
+  const addMut = useMutation({
+    mutationFn: () => api.post(`/employees/${employeeId}/positions`, form),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['employee', employeeId, 'positions'] });
+      setForm({ profile_id: '', is_primary: false, since: '', until: '', notes: '' });
+      setAdding(false);
+      setErr('');
+    },
+    onError: (e: any) => setErr(e.message),
+  });
+  const delMut = useMutation({
+    mutationFn: (id: string) => api.delete(`/employees/${employeeId}/positions/${id}`),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['employee', employeeId, 'positions'] }),
+  });
+
+  if (isLoading) return <div className="py-6 flex justify-center"><Loader2 className="animate-spin text-gray-400" size={18} /></div>;
+
+  return (
+    <div className="space-y-2">
+      {positions.length === 0 && !adding && (
+        <p className="text-xs text-gray-500 bg-gray-50 px-3 py-2 rounded-lg">Sin puestos asignados.</p>
+      )}
+      {positions.map(p => (
+        <div key={p.id} className="bg-white border border-gray-200 rounded-xl p-3 flex items-center gap-3">
+          <Briefcase size={16} className={p.is_primary ? 'text-dassa-red' : 'text-gray-400'} />
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-1.5 flex-wrap">
+              {p.is_primary && <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-dassa-red/10 text-dassa-red-deep">Principal</span>}
+              {p.seniority && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-gray-100 text-gray-700">{p.seniority}</span>}
+            </div>
+            <div className="text-sm font-bold text-gray-900">{p.role_label}</div>
+            <div className="text-[11px] text-gray-500">
+              {p.area || '—'}
+              {p.since && ` · desde ${p.since.slice(0,10)}`}
+              {p.until && ` · hasta ${p.until.slice(0,10)}`}
+            </div>
+          </div>
+          <button onClick={() => delMut.mutate(p.id)} className="p-2 rounded-lg hover:bg-red-50 text-red-500" title="Quitar">
+            <Trash2 size={14} />
           </button>
         </div>
-      </div>
+      ))}
+
+      {adding ? (
+        <div className="bg-white border border-gray-200 rounded-xl p-3 space-y-2">
+          <select value={form.profile_id} onChange={e => setForm({ ...form, profile_id: e.target.value })}
+            className="input-field">
+            <option value="">— Seleccionar puesto —</option>
+            {profiles.map(p => <option key={p.id} value={p.id}>{p.role_label}{p.area ? ` · ${p.area}` : ''}</option>)}
+          </select>
+          <div className="grid grid-cols-2 gap-2">
+            <input type="date" value={form.since} onChange={e => setForm({ ...form, since: e.target.value })}
+              className="input-field" placeholder="Desde" />
+            <input type="date" value={form.until} onChange={e => setForm({ ...form, until: e.target.value })}
+              className="input-field" placeholder="Hasta (opcional)" />
+          </div>
+          <label className="flex items-center gap-2 text-xs text-gray-700">
+            <input type="checkbox" checked={form.is_primary} onChange={e => setForm({ ...form, is_primary: e.target.checked })} />
+            Puesto principal
+          </label>
+          {err && <p className="text-xs text-red-500">{err}</p>}
+          <div className="flex gap-2">
+            <button onClick={() => { setAdding(false); setErr(''); }} className="flex-1 py-2 rounded-lg border border-gray-200 text-xs font-bold text-gray-600">Cancelar</button>
+            <button onClick={() => form.profile_id && addMut.mutate()} disabled={!form.profile_id}
+              className="flex-1 py-2 rounded-lg bg-blue-600 text-white text-xs font-bold disabled:opacity-50">Asignar</button>
+          </div>
+        </div>
+      ) : (
+        <button onClick={() => setAdding(true)}
+          className="w-full py-2.5 rounded-xl border-2 border-dashed border-gray-300 text-xs font-bold text-gray-600 hover:border-blue-300 flex items-center justify-center gap-1">
+          <Plus size={14} /> Asignar a un puesto
+        </button>
+      )}
+    </div>
+  );
+}
+
+// ─── Sub-tab: Certificaciones / habilitaciones ───────────────────
+function CertificationsTab({ employeeId }: { employeeId: string }) {
+  const qc = useQueryClient();
+  const [adding, setAdding] = useState(false);
+  const [form, setForm] = useState({
+    cert_name: '', cert_type: '', issued_by: '',
+    issue_date: '', expiry_date: '', status: 'vigente', notes: '',
+  });
+  const [err, setErr] = useState('');
+
+  const { data: certs = [], isLoading } = useQuery<EmployeeCertification[]>({
+    queryKey: ['employee', employeeId, 'certifications'],
+    queryFn: () => api.get<EmployeeCertification[]>(`/employees/${employeeId}/certifications`),
+  });
+
+  const addMut = useMutation({
+    mutationFn: () => api.post(`/employees/${employeeId}/certifications`, form),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['employee', employeeId, 'certifications'] });
+      setForm({ cert_name: '', cert_type: '', issued_by: '', issue_date: '', expiry_date: '', status: 'vigente', notes: '' });
+      setAdding(false);
+      setErr('');
+    },
+    onError: (e: any) => setErr(e.message),
+  });
+  const delMut = useMutation({
+    mutationFn: (id: string) => api.delete(`/employees/${employeeId}/certifications/${id}`),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['employee', employeeId, 'certifications'] }),
+  });
+
+  if (isLoading) return <div className="py-6 flex justify-center"><Loader2 className="animate-spin text-gray-400" size={18} /></div>;
+
+  function daysUntil(date?: string) {
+    if (!date) return null;
+    return Math.floor((new Date(date).getTime() - Date.now()) / 86400000);
+  }
+
+  return (
+    <div className="space-y-2">
+      {certs.length === 0 && !adding && (
+        <p className="text-xs text-gray-500 bg-gray-50 px-3 py-2 rounded-lg">Sin certificaciones / habilitaciones cargadas.</p>
+      )}
+      {certs.map(c => {
+        const days = daysUntil(c.expiry_date);
+        const expSoon = days != null && days >= 0 && days <= 30;
+        const expired = days != null && days < 0;
+        return (
+          <div key={c.id} className={`bg-white border rounded-xl p-3 flex items-start gap-3
+            ${expired ? 'border-red-300' : expSoon ? 'border-amber-300' : 'border-gray-200'}`}>
+            <Award size={16} className={expired ? 'text-red-500' : expSoon ? 'text-amber-500' : 'text-emerald-500'} />
+            <div className="flex-1 min-w-0">
+              <div className="text-sm font-bold text-gray-900">{c.cert_name}</div>
+              <div className="text-[11px] text-gray-500">
+                {c.cert_type && <>{c.cert_type} · </>}
+                {c.issued_by && <>Emitida por {c.issued_by}</>}
+              </div>
+              {c.expiry_date && (
+                <div className={`text-[11px] font-bold mt-0.5 ${expired ? 'text-red-600' : expSoon ? 'text-amber-700' : 'text-gray-600'}`}>
+                  Vence {c.expiry_date.slice(0,10)}
+                  {expired && ' · VENCIDA'}
+                  {expSoon && !expired && ` · vence en ${days}d`}
+                </div>
+              )}
+              {c.notes && <div className="text-[11px] text-gray-500 mt-1 italic">{c.notes}</div>}
+            </div>
+            <button onClick={() => delMut.mutate(c.id)} className="p-2 rounded-lg hover:bg-red-50 text-red-500" title="Eliminar">
+              <Trash2 size={14} />
+            </button>
+          </div>
+        );
+      })}
+
+      {adding ? (
+        <div className="bg-white border border-gray-200 rounded-xl p-3 space-y-2">
+          <input value={form.cert_name} onChange={e => setForm({ ...form, cert_name: e.target.value })}
+            placeholder="Nombre de la habilitación (ej: Carnet de autoelevadorista)" className="input-field" />
+          <div className="grid grid-cols-2 gap-2">
+            <input value={form.cert_type} onChange={e => setForm({ ...form, cert_type: e.target.value })}
+              placeholder="Tipo (ej: SySO, técnica, manejo)" className="input-field" />
+            <input value={form.issued_by} onChange={e => setForm({ ...form, issued_by: e.target.value })}
+              placeholder="Emitida por (org. emisor)" className="input-field" />
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className="label-field">Emisión</label>
+              <input type="date" value={form.issue_date} onChange={e => setForm({ ...form, issue_date: e.target.value })}
+                className="input-field" />
+            </div>
+            <div>
+              <label className="label-field">Vencimiento</label>
+              <input type="date" value={form.expiry_date} onChange={e => setForm({ ...form, expiry_date: e.target.value })}
+                className="input-field" />
+            </div>
+          </div>
+          <textarea value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })}
+            rows={2} placeholder="Notas / nº de certificado..." className="input-field" />
+          {err && <p className="text-xs text-red-500">{err}</p>}
+          <div className="flex gap-2">
+            <button onClick={() => { setAdding(false); setErr(''); }} className="flex-1 py-2 rounded-lg border border-gray-200 text-xs font-bold text-gray-600">Cancelar</button>
+            <button onClick={() => form.cert_name && addMut.mutate()} disabled={!form.cert_name}
+              className="flex-1 py-2 rounded-lg bg-blue-600 text-white text-xs font-bold disabled:opacity-50">Agregar</button>
+          </div>
+        </div>
+      ) : (
+        <button onClick={() => setAdding(true)}
+          className="w-full py-2.5 rounded-xl border-2 border-dashed border-gray-300 text-xs font-bold text-gray-600 hover:border-blue-300 flex items-center justify-center gap-1">
+          <Plus size={14} /> Agregar habilitación
+        </button>
+      )}
     </div>
   );
 }

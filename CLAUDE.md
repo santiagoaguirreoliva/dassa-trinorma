@@ -1,5 +1,7 @@
 # DASSA SGI — Trinorma
 > Sistema de Gestión Integrado ISO 9001 + 14001 + 45001 (TRINORMA): empleados, organigrama, NC, auditorías internas, rondas de inspección, capacitaciones, comité, agentes IA (Triny, Briefer, DT, NOVA, MEMO, VIGIL).
+>
+> ℹ️ **Consolidación 2026-05-23**: este repo (161 commits) es el único repo del SGI/Trinorma. El fork viejo `apps/trinorma/` (6 commits, primer intento con Railway) fue eliminado. Repo remoto: `dassa-trinorma.git`.
 
 ## Stack
 - Runtime: Node >=18 (ESM, `"type": "module"`)

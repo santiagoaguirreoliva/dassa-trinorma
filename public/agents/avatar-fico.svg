@@ -6,7 +6,6 @@
       <stop offset="100%" stop-color="#0A0D12"/>
     </radialGradient>
     <linearGradient id="fi-cont" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#F2B koš835A"/>
       <stop offset="0%" stop-color="#F2B85A"/>
       <stop offset="100%" stop-color="#E8A33D"/>
     </linearGradient>

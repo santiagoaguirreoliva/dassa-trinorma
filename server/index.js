@@ -42,31 +42,36 @@ import { query as dbQuery } from './db/db.js';
 import cron from 'node-cron';
 
 // CRON · TRINY mailer jobs (recordatorios lunes, resumen viernes, informe mensual, intimacion diaria)
-(async () => {
-  try {
-    const { createRequire: cr } = await import('module');
-    const reqCjs = cr(import.meta.url);
-    const trinyMailer = reqCjs('./services/triny-mailer.cjs');
+// Registro sincrónico (antes era IIFE async — fallaba silencioso si la promise rechazaba)
+const trinyMailer = require('./services/triny-mailer.cjs');
+const TZ_AR = 'America/Argentina/Buenos_Aires';
+const nowAR = () => new Date().toLocaleString('es-AR', { timeZone: TZ_AR, hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' });
 
-    cron.schedule('0 8 * * 1', async () => {
-      try { const r = await trinyMailer.jobRecordatoriosLunes(); console.log('[triny] recordatorios lunes:', r.users_processed); } catch (e) { console.error('[triny lunes]', e.message); }
-    }, { timezone: 'America/Argentina/Buenos_Aires' });
+cron.schedule('0 8 * * 1', async () => {
+  console.log(`[triny][${nowAR()}] FIRE recordatorios_lunes`);
+  try { const r = await trinyMailer.jobRecordatoriosLunes(); console.log(`[triny] recordatorios_lunes done · users=${r.users_processed} · dry_run=${r.dry_run}`); }
+  catch (e) { console.error('[triny lunes ERR]', e.message, e.stack); }
+}, { timezone: TZ_AR });
 
-    cron.schedule('0 16 * * 5', async () => {
-      try { const r = await trinyMailer.jobResumenViernes(); console.log('[triny] resumen viernes:', r.recipients); } catch (e) { console.error('[triny viernes]', e.message); }
-    }, { timezone: 'America/Argentina/Buenos_Aires' });
+cron.schedule('0 16 * * 5', async () => {
+  console.log(`[triny][${nowAR()}] FIRE resumen_viernes`);
+  try { const r = await trinyMailer.jobResumenViernes(); console.log(`[triny] resumen_viernes done · recipients=${r.recipients} · dry_run=${r.dry_run}`); }
+  catch (e) { console.error('[triny viernes ERR]', e.message, e.stack); }
+}, { timezone: TZ_AR });
 
-    cron.schedule('0 9 1 * *', async () => {
-      try { const r = await trinyMailer.jobInformeMensual(); console.log('[triny] informe mensual:', r.recipients); } catch (e) { console.error('[triny mensual]', e.message); }
-    }, { timezone: 'America/Argentina/Buenos_Aires' });
+cron.schedule('0 9 1 * *', async () => {
+  console.log(`[triny][${nowAR()}] FIRE informe_mensual`);
+  try { const r = await trinyMailer.jobInformeMensual(); console.log(`[triny] informe_mensual done · recipients=${r.recipients} · dry_run=${r.dry_run}`); }
+  catch (e) { console.error('[triny mensual ERR]', e.message, e.stack); }
+}, { timezone: TZ_AR });
 
-    cron.schedule('0 10 * * *', async () => {
-      try { const r = await trinyMailer.jobIntimacionVencidas(); console.log('[triny] intimacion:', r.users_with_overdue); } catch (e) { console.error('[triny intim]', e.message); }
-    }, { timezone: 'America/Argentina/Buenos_Aires' });
+cron.schedule('0 10 * * *', async () => {
+  console.log(`[triny][${nowAR()}] FIRE intimacion_vencidas`);
+  try { const r = await trinyMailer.jobIntimacionVencidas(); console.log(`[triny] intimacion_vencidas done · users=${r.users_with_overdue} · dry_run=${r.dry_run}`); }
+  catch (e) { console.error('[triny intim ERR]', e.message, e.stack); }
+}, { timezone: TZ_AR });
 
-    console.log('[triny] 4 cron jobs registrados (recordatorios L 8h · resumen V 16h · informe 1d 9h · intim diario 10h)');
-  } catch (e) { console.error('[triny cron setup]', e.message); }
-})();
+console.log('[triny] 4 cron jobs registrados (recordatorios L 8h · resumen V 16h · informe 1d 9h · intim diario 10h)');
 
 // CRON · Ronda de Inspecciones — genera instancias del período + marca vencidas (diario 06:00 AR)
 if (process.env.CRON_DISABLED !== '1') {
@@ -123,13 +128,11 @@ cron.schedule('0 9 * * *', async () => {
 // Cron OLA 5 · Wake-up notifications cada 6 horas
 cron.schedule('0 */6 * * *', async () => {
   try {
-    const { createRequire: cr } = await import('module');
-    const reqCjs = cr(import.meta.url);
-    const { generateWakeUpAlerts } = reqCjs('./services/ai-quality.cjs');
+    const { generateWakeUpAlerts } = require('./services/ai-quality.cjs');
     const stats = await generateWakeUpAlerts();
     console.log('[wake-up]', stats);
   } catch (e) { console.error('[wake-up] err:', e.message); }
-});
+}, { timezone: TZ_AR });
 import http from 'http';
 
 import documentsRouter      from './routes/documents.js';

@@ -123,6 +123,68 @@ router.post('/run-job/:key', async (req, res) => {
   }
 });
 
+// GET /api/triny/preview/:job · renderiza el HTML de un mail sin enviarlo
+// Lee los últimos `triny_comms_log` con job_type=:job en dry_run para mostrar el contenido tal cual saldría.
+// Si no hay dry-runs guardados, fuerza un dry-run nuevo y devuelve el primer mail generado.
+router.get('/preview/:job', async (req, res) => {
+  if (!['master_admin','sgi_leader'].includes(req.user.role)) {
+    return res.status(403).json({ error: 'No autorizado' });
+  }
+  const jobKey = req.params.job;
+  if (!['recordatorios_lunes','resumen_viernes','informe_mensual','intimacion_vencidas'].includes(jobKey)) {
+    return res.status(404).json({ error: 'job desconocido' });
+  }
+  try {
+    // 1) buscar el último dry-run de ese job; si no hay, forzar uno
+    let row = (await query(
+      `SELECT recipient_email, recipient_name, subject, body_html, body_text, sent_at
+         FROM triny_comms_log
+        WHERE job_type=$1 AND subject LIKE '[DRY_RUN]%'
+        ORDER BY sent_at DESC LIMIT 1`,
+      [jobKey]
+    )).rows[0];
+
+    if (!row) {
+      const { createRequire } = await import('module');
+      const reqCjs = createRequire(import.meta.url);
+      const mailer = reqCjs('../services/triny-mailer.cjs');
+      const fnMap = {
+        'recordatorios_lunes': mailer.jobRecordatoriosLunes,
+        'resumen_viernes':     mailer.jobResumenViernes,
+        'informe_mensual':     mailer.jobInformeMensual,
+        'intimacion_vencidas': mailer.jobIntimacionVencidas,
+      };
+      await fnMap[jobKey]({ force: true });
+      row = (await query(
+        `SELECT recipient_email, recipient_name, subject, body_html, body_text, sent_at
+           FROM triny_comms_log
+          WHERE job_type=$1 AND subject LIKE '[DRY_RUN]%'
+          ORDER BY sent_at DESC LIMIT 1`,
+        [jobKey]
+      )).rows[0];
+    }
+
+    if (!row) return res.status(404).json({ error: 'no se pudo generar preview' });
+
+    if (req.query.format === 'html') {
+      res.setHeader('Content-Type', 'text/html; charset=utf-8');
+      return res.send(row.body_html);
+    }
+    res.json({
+      job: jobKey,
+      sample_recipient: row.recipient_email,
+      sample_name: row.recipient_name,
+      subject: row.subject.replace(/^\[DRY_RUN\]\s*/, ''),
+      html: row.body_html,
+      text: row.body_text,
+      generated_at: row.sent_at,
+    });
+  } catch (e) {
+    console.error('[triny preview]', e);
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // GET /api/triny/policies-doc · sirve el markdown de políticas
 router.get('/policies-doc', async (req, res) => {
   try {

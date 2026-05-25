@@ -95,9 +95,27 @@ export default function RondaDetalle() {
   const [cosignMode, setCosignMode] = useState(false);
   const [savedAt, setSavedAt] = useState<number | null>(null);
   const [savedAgo, setSavedAgo] = useState<string>('');
+  const [serverSavedAt, setServerSavedAt] = useState<number | null>(null);
+  const [serverSaving, setServerSaving] = useState(false);
+  const [serverErr, setServerErr] = useState<string | null>(null);
   const skipPersistRef = useRef(true);
+  const dirtyRef = useRef(false);
 
   const draftKey = id ? `insp-draft-${id}` : '';
+
+  // Separa fotos: URLs ya guardadas (se conservan) vs base64 nuevas (a guardar)
+  const buildResponsePayload = (itemId: string, d: Draft | undefined) => {
+    const photos = d?.photos || [];
+    const photo_urls = photos.filter(p => typeof p === 'string' && !p.startsWith('data:'));
+    const new_photos = photos.filter(p => typeof p === 'string' && p.startsWith('data:'));
+    return {
+      item_id: itemId,
+      answer: d?.answer || null,
+      observations: d?.observations || null,
+      photo_urls,
+      new_photos,
+    };
+  };
 
   async function load() {
     setLoading(true);
@@ -156,12 +174,45 @@ export default function RondaDetalle() {
   useEffect(() => {
     if (skipPersistRef.current || !draftKey || !insp) return;
     if (!['pendiente', 'en_curso'].includes(insp.status)) return;
+    dirtyRef.current = true;
     try {
       const payload = { drafts, signature, notes, machineHours, savedAt: Date.now() };
       localStorage.setItem(draftKey, JSON.stringify(payload));
       setSavedAt(payload.savedAt);
     } catch { /* localStorage lleno o privacy mode */ }
   }, [drafts, signature, notes, machineHours, draftKey, insp]);
+
+  // Autosave al servidor cada 30s si hay cambios (mientras la ronda está editable)
+  async function saveDraftToServer(silent = false) {
+    if (!insp) return;
+    if (!['pendiente', 'en_curso'].includes(insp.status)) return;
+    if (serverSaving) return;
+    setServerSaving(true);
+    if (!silent) setServerErr(null);
+    try {
+      const responses = insp.items.map(it => buildResponsePayload(it.id, drafts[it.id]));
+      const body: any = {
+        responses,
+        notes: notes || null,
+        signature_base64: signature, // se incluye si ya firmó pero no envió todavía
+      };
+      if (insp.template_family === 'maquinaria' && machineHours) body.machine_hours = Number(machineHours);
+      await api.post(`/inspections/${insp.id}/draft`, body);
+      setServerSavedAt(Date.now());
+      dirtyRef.current = false;
+    } catch (e: any) {
+      if (!silent) setServerErr(e.message || 'No se pudo guardar borrador en servidor — quedó en este dispositivo');
+    } finally {
+      setServerSaving(false);
+    }
+  }
+
+  useEffect(() => {
+    if (!insp || !['pendiente', 'en_curso'].includes(insp.status)) return;
+    const t = setInterval(() => { if (dirtyRef.current) saveDraftToServer(true); }, 30_000);
+    return () => clearInterval(t);
+    /* eslint-disable-next-line */
+  }, [insp]);
 
   // Tick para mostrar "guardado hace Xs"
   useEffect(() => {
@@ -259,16 +310,7 @@ export default function RondaDetalle() {
     setSaving(true);
     setErr('');
     try {
-      const responses = insp.items.map(it => {
-        const d = drafts[it.id];
-        return {
-          item_id: it.id,
-          answer: d.answer,
-          observations: d.observations || null,
-          // Solo enviamos fotos nuevas (data:), las URLs ya guardadas no se reenvían
-          photos: (d.photos || []).filter(p => p.startsWith('data:')),
-        };
-      });
+      const responses = insp.items.map(it => buildResponsePayload(it.id, drafts[it.id]));
       const body: any = {
         responses,
         geo_lat: geo?.lat ?? null,
@@ -361,11 +403,24 @@ export default function RondaDetalle() {
               {insp.machine_code && <span className="text-gray-500 font-normal"> · {insp.machine_code}</span>}
             </div>
           </div>
-          {savedAgo && !readOnly && canFill && (
-            <div className="text-[10px] text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-md px-2 py-1 whitespace-nowrap flex items-center gap-1" title="Tus respuestas se guardan localmente en este navegador. Cuando completes la ronda y firmes, se envían al servidor.">
-              <CheckCircle2 size={11} />
-              {savedAgo}
-            </div>
+          {!readOnly && canFill && (
+            <button
+              type="button"
+              onClick={() => saveDraftToServer(false)}
+              disabled={serverSaving}
+              title={serverSavedAt ? `Último guardado al servidor: ${new Date(serverSavedAt).toLocaleTimeString('es-AR')}` : 'Guardar borrador en servidor (no requiere firma)'}
+              className={`text-[10px] rounded-md px-2 py-1 whitespace-nowrap flex items-center gap-1 border transition-colors
+                ${serverSaving ? 'bg-blue-50 text-blue-700 border-blue-200'
+                  : serverSavedAt ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
+                  : savedAgo ? 'bg-amber-50 text-amber-800 border-amber-200 hover:bg-amber-100'
+                  : 'bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100'}`}
+            >
+              {serverSaving ? <Loader2 size={11} className="animate-spin" /> : <CheckCircle2 size={11} />}
+              {serverSaving ? 'Guardando...'
+                : serverSavedAt ? `Guardado · ${savedAgo || 'recién'}`
+                : savedAgo ? `Solo local · ${savedAgo}`
+                : 'Guardar borrador'}
+            </button>
           )}
         </div>
 
@@ -541,6 +596,11 @@ export default function RondaDetalle() {
                     <AlertTriangle size={14} className="flex-shrink-0 mt-0.5" /> {err}
                   </div>
                 )}
+                {serverErr && (
+                  <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-800 flex items-start gap-2">
+                    <AlertTriangle size={14} className="flex-shrink-0 mt-0.5" /> {serverErr}
+                  </div>
+                )}
               </div>
             )}
           </>
@@ -560,7 +620,10 @@ export default function RondaDetalle() {
             </button>
             {!isLast ? (
               <button
-                onClick={() => setStep(s => Math.min(totalSteps - 1, s + 1))}
+                onClick={() => {
+                  setStep(s => Math.min(totalSteps - 1, s + 1));
+                  saveDraftToServer(true); // autosave al pasar de paso (silent)
+                }}
                 className="flex-1 py-3 rounded-xl bg-gradient-to-r from-blue-700 to-blue-600 text-white text-sm font-bold flex items-center justify-center gap-1"
               >
                 Siguiente <ChevronRight size={16} />

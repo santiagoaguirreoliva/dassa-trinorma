@@ -513,6 +513,70 @@ router.post('/:id/start', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+// Guardar borrador parcial — autosave en servidor mientras la ronda está en curso.
+// No exige todos los items ni firma. Conserva fotos ya guardadas (URLs) y suma las nuevas (base64).
+// Cambia status pendiente→en_curso. No marca completed_at.
+router.post('/:id/draft', async (req, res) => {
+  const { responses, notes, machine_hours, signature_base64 } = req.body;
+  if (!Array.isArray(responses))
+    return res.status(400).json({ error: 'responses debe ser un array' });
+  const client = await getClient();
+  try {
+    await client.query('BEGIN');
+    const insp = (await client.query(
+      `SELECT * FROM insp_inspections WHERE id=$1 AND deleted_at IS NULL FOR UPDATE`,
+      [req.params.id])).rows[0];
+    if (!insp) { await client.query('ROLLBACK'); return res.status(404).json({ error: 'Inspección no encontrada' }); }
+    if (!['pendiente','en_curso'].includes(insp.status)) {
+      await client.query('ROLLBACK');
+      return res.status(409).json({ error: `No editable en estado ${insp.status}` });
+    }
+    if (insp.family === 'rondin' && !ADMIN_ROLES.includes(req.user.role)) {
+      const isAssignee = (await client.query(
+        'SELECT 1 FROM insp_assignees WHERE inspection_id=$1 AND user_id=$2',
+        [req.params.id, req.user.id])).rowCount > 0;
+      if (!isAssignee) {
+        await client.query('ROLLBACK');
+        return res.status(403).json({ error: 'No sos responsable de este rondín' });
+      }
+    }
+    // Reemplazar respuestas pero conservar URLs de fotos ya guardadas + sumar nuevas base64
+    await client.query('DELETE FROM insp_responses WHERE inspection_id=$1', [req.params.id]);
+    let saved = 0;
+    for (const r of responses) {
+      if (!r.item_id) continue;
+      const keepUrls = Array.isArray(r.photo_urls) ? r.photo_urls.filter(u => typeof u === 'string' && !u.startsWith('data:')) : [];
+      const newPhotos = Array.isArray(r.new_photos) ? r.new_photos : (Array.isArray(r.photos) ? r.photos.filter(p => typeof p === 'string' && p.startsWith('data:')) : []);
+      const newUrls = savePhotos(newPhotos, `insp-${insp.code || 'x'}`);
+      const finalUrls = [...keepUrls, ...newUrls];
+      const hasContent = r.answer || r.observations || finalUrls.length > 0;
+      if (!hasContent) continue;
+      await client.query(
+        `INSERT INTO insp_responses (inspection_id,item_id,answer,observations,photo_urls)
+         VALUES ($1,$2,$3,$4,$5)`,
+        [req.params.id, r.item_id, r.answer || null, r.observations || null, finalUrls]);
+      saved++;
+    }
+    // Si trajo firma intermedia (común en mobile cuando hizo todo menos enviar), la guardamos
+    const sigUrl = signature_base64 ? saveBase64File(signature_base64, 'firma-insp-draft') : null;
+    const newStatus = insp.status === 'pendiente' ? 'en_curso' : insp.status;
+    await client.query(
+      `UPDATE insp_inspections SET
+         status=$2,
+         notes=COALESCE($3,notes),
+         machine_hours=COALESCE($4,machine_hours),
+         signature_url=COALESCE($5,signature_url),
+         updated_at=NOW()
+       WHERE id=$1`,
+      [req.params.id, newStatus, notes ?? null, machine_hours ?? null, sigUrl]);
+    await client.query('COMMIT');
+    res.json({ ok: true, status: newStatus, saved_items: saved, total_items_sent: responses.length });
+  } catch (err) {
+    await client.query('ROLLBACK');
+    res.status(500).json({ error: err.message });
+  } finally { client.release(); }
+});
+
 // Completar — guarda respuestas, geo, firma; co-firma si la plantilla lo exige
 router.post('/:id/complete', async (req, res) => {
   const { responses, geo_lat, geo_lng, signature_base64, machine_hours, notes } = req.body;
@@ -540,15 +604,18 @@ router.post('/:id/complete', async (req, res) => {
         return res.status(403).json({ error: 'No sos responsable de este rondín' });
       }
     }
-    // respuestas: reemplaza las previas
+    // respuestas: reemplaza las previas. Conserva URLs ya guardadas (de drafts previos) + suma base64 nuevas.
     await client.query('DELETE FROM insp_responses WHERE inspection_id=$1', [req.params.id]);
     for (const r of responses) {
       if (!r.item_id) continue;
-      const photos = savePhotos(r.photos, `insp-${insp.code || 'x'}`);
+      const keepUrls = Array.isArray(r.photo_urls) ? r.photo_urls.filter(u => typeof u === 'string' && !u.startsWith('data:')) : [];
+      const newPhotos = Array.isArray(r.new_photos) ? r.new_photos : (Array.isArray(r.photos) ? r.photos.filter(p => typeof p === 'string' && p.startsWith('data:')) : []);
+      const newUrls = savePhotos(newPhotos, `insp-${insp.code || 'x'}`);
+      const finalUrls = [...keepUrls, ...newUrls];
       await client.query(
         `INSERT INTO insp_responses (inspection_id,item_id,answer,observations,photo_urls)
          VALUES ($1,$2,$3,$4,$5)`,
-        [req.params.id, r.item_id, r.answer || null, r.observations || null, photos]);
+        [req.params.id, r.item_id, r.answer || null, r.observations || null, finalUrls]);
     }
     const sigUrl = signature_base64 ? saveBase64File(signature_base64, 'firma-insp') : null;
     const inside = await geoInside(geo_lat, geo_lng);

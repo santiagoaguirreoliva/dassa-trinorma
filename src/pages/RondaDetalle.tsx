@@ -93,6 +93,11 @@ export default function RondaDetalle() {
   const [machineHours, setMachineHours] = useState('');
   const [notes, setNotes] = useState('');
   const [cosignMode, setCosignMode] = useState(false);
+  const [savedAt, setSavedAt] = useState<number | null>(null);
+  const [savedAgo, setSavedAgo] = useState<string>('');
+  const skipPersistRef = useRef(true);
+
+  const draftKey = id ? `insp-draft-${id}` : '';
 
   async function load() {
     setLoading(true);
@@ -100,7 +105,7 @@ export default function RondaDetalle() {
     try {
       const data = await api.get<Inspection>(`/inspections/${id}`);
       setInsp(data);
-      // Cargar drafts desde respuestas existentes
+      // Cargar drafts desde respuestas existentes en BD
       const init: Record<string, Draft> = {};
       for (const it of data.items) {
         init[it.id] = {
@@ -109,13 +114,36 @@ export default function RondaDetalle() {
           photos: it.photo_urls || [],
         };
       }
+
+      // Restaurar borrador local si existe (solo si la inspección sigue editable y no hay datos en BD)
+      let local: { drafts?: Record<string, Draft>; signature?: string; notes?: string; machineHours?: string; savedAt?: number } | null = null;
+      const editable = ['pendiente', 'en_curso'].includes(data.status);
+      if (editable && draftKey) {
+        try {
+          const raw = localStorage.getItem(draftKey);
+          if (raw) local = JSON.parse(raw);
+        } catch { /* corrupto o sin acceso */ }
+      }
+
+      if (local?.drafts) {
+        // El borrador local pisa al de BD solo en items donde el local tenga respuesta
+        for (const itId in local.drafts) {
+          if (init[itId] && local.drafts[itId]?.answer) init[itId] = local.drafts[itId];
+        }
+      }
       setDrafts(init);
-      setMachineHours(data.machine_hours ? String(data.machine_hours) : '');
-      setNotes(data.notes || '');
+      setSignature(local?.signature ?? null);
+      setMachineHours(local?.machineHours ?? (data.machine_hours ? String(data.machine_hours) : ''));
+      setNotes(local?.notes ?? (data.notes || ''));
+      setSavedAt(local?.savedAt ?? null);
+
       // Si el rondín ya está en co-firma y el usuario no es quien completó, va a co-firma
       if (data.status === 'en_cofirma' && data.completed_by !== user?.id) {
         setCosignMode(true);
       }
+
+      // Habilitamos persistencia recién después del load
+      setTimeout(() => { skipPersistRef.current = false; }, 100);
     } catch (e: any) {
       setErr(e.message || 'Error al cargar la inspección');
     } finally {
@@ -123,6 +151,31 @@ export default function RondaDetalle() {
     }
   }
   useEffect(() => { load(); /* eslint-disable-next-line */ }, [id]);
+
+  // Autosave a localStorage cada vez que cambia algo editable
+  useEffect(() => {
+    if (skipPersistRef.current || !draftKey || !insp) return;
+    if (!['pendiente', 'en_curso'].includes(insp.status)) return;
+    try {
+      const payload = { drafts, signature, notes, machineHours, savedAt: Date.now() };
+      localStorage.setItem(draftKey, JSON.stringify(payload));
+      setSavedAt(payload.savedAt);
+    } catch { /* localStorage lleno o privacy mode */ }
+  }, [drafts, signature, notes, machineHours, draftKey, insp]);
+
+  // Tick para mostrar "guardado hace Xs"
+  useEffect(() => {
+    if (!savedAt) { setSavedAgo(''); return; }
+    const fmt = () => {
+      const s = Math.round((Date.now() - savedAt) / 1000);
+      if (s < 60) setSavedAgo(`Borrador guardado hace ${s}s`);
+      else if (s < 3600) setSavedAgo(`Borrador guardado hace ${Math.round(s / 60)} min`);
+      else setSavedAgo(`Borrador guardado hace ${Math.round(s / 3600)} h`);
+    };
+    fmt();
+    const t = setInterval(fmt, 15000);
+    return () => clearInterval(t);
+  }, [savedAt]);
 
   // Agrupar ítems por sección
   const sections = useMemo(() => {
@@ -227,6 +280,10 @@ export default function RondaDetalle() {
         body.machine_hours = Number(machineHours);
       }
       await api.post(`/inspections/${insp.id}/complete`, body);
+      // Limpiar borrador local solo si el envío fue exitoso
+      if (draftKey) {
+        try { localStorage.removeItem(draftKey); } catch { /* ignore */ }
+      }
       navigate('/rondas');
     } catch (e: any) {
       setErr(e.message || 'Error al guardar');
@@ -304,6 +361,12 @@ export default function RondaDetalle() {
               {insp.machine_code && <span className="text-gray-500 font-normal"> · {insp.machine_code}</span>}
             </div>
           </div>
+          {savedAgo && !readOnly && canFill && (
+            <div className="text-[10px] text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-md px-2 py-1 whitespace-nowrap flex items-center gap-1" title="Tus respuestas se guardan localmente en este navegador. Cuando completes la ronda y firmes, se envían al servidor.">
+              <CheckCircle2 size={11} />
+              {savedAgo}
+            </div>
+          )}
         </div>
 
         {/* Barra de progreso */}

@@ -162,24 +162,16 @@ router.post('/', submitLimiter, async (req, res) => {
         ORDER BY t.code LIMIT 1`, [machine.id])).rows[0];
     if (!tpl) { await client.query('ROLLBACK'); return res.status(409).json({ error: 'Sin plantilla activa' }); }
 
-    // Buscar / crear la inspección del día para esta máquina
+    // Modelo on-demand: cada escaneo QR+PIN crea una instancia nueva, sin buscar del día.
+    // Permite ejecutar varios checklists por máquina por día (cambio de turno, re-control, etc).
     const today = new Date().toISOString().slice(0, 10);
-    let insp = (await client.query(
-      `SELECT id, status FROM insp_inspections
-        WHERE machine_id=$1 AND template_id=$2 AND scheduled_date=$3 AND deleted_at IS NULL
-        FOR UPDATE`, [machine.id, tpl.id, today])).rows[0];
-    if (!insp) {
-      insp = (await client.query(
-        `INSERT INTO insp_inspections
-           (template_id, family, status, period_label, scheduled_date, due_date,
-            machine_id, operator_id)
-         VALUES ($1,'maquinaria','en_curso',$2,$3,$3,$4,$5)
-         RETURNING id, status`,
-        [tpl.id, today, today, machine.id, sess.oid])).rows[0];
-    } else if (['completada','anulada'].includes(insp.status)) {
-      await client.query('ROLLBACK');
-      return res.status(409).json({ error: 'Esta máquina ya tiene un checklist enviado hoy' });
-    }
+    const insp = (await client.query(
+      `INSERT INTO insp_inspections
+         (template_id, family, status, period_label, scheduled_date, due_date,
+          machine_id, operator_id)
+       VALUES ($1,'maquinaria','en_curso',$2,$3,$3,$4,$5)
+       RETURNING id, status`,
+      [tpl.id, today, today, machine.id, sess.oid])).rows[0];
 
     await client.query('DELETE FROM insp_responses WHERE inspection_id=$1', [insp.id]);
     let critFails = 0;

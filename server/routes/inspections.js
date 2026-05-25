@@ -562,7 +562,7 @@ router.post('/:id/draft', async (req, res) => {
     const newStatus = insp.status === 'pendiente' ? 'en_curso' : insp.status;
     await client.query(
       `UPDATE insp_inspections SET
-         status=$2,
+         status=$2::insp_status,
          notes=COALESCE($3,notes),
          machine_hours=COALESCE($4,machine_hours),
          signature_url=COALESCE($5,signature_url),
@@ -623,10 +623,10 @@ router.post('/:id/complete', async (req, res) => {
     const newStatus = cosign ? 'en_cofirma' : 'completada';
     const upd = (await client.query(
       `UPDATE insp_inspections SET
-         status=$2, completed_by=$3, signature_url=COALESCE($4,signature_url),
+         status=$2::insp_status, completed_by=$3, signature_url=COALESCE($4,signature_url),
          geo_lat=$5, geo_lng=$6, geo_inside=$7, machine_hours=COALESCE($8,machine_hours),
          notes=COALESCE($9,notes), submitted_ip=$10, submitted_ua=$11,
-         completed_at=CASE WHEN $2='completada' THEN NOW() ELSE completed_at END
+         completed_at=CASE WHEN $2::insp_status='completada' THEN NOW() ELSE completed_at END
        WHERE id=$1 RETURNING *`,
       [req.params.id, newStatus, req.user.id, sigUrl,
        geo_lat ?? null, geo_lng ?? null, inside, machine_hours ?? null,

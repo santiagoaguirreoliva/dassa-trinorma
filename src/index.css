@@ -5,8 +5,8 @@
 * { box-sizing: border-box; }
 
 body {
-  /* DASSA Marca 4.0 — Mulish (self-hosted vía ds/colors_and_type.css) */
-  font-family: 'Mulish', system-ui, 'Helvetica Neue', sans-serif;
+  /* DASSA Marca 4.0 — Montserrat (self-hosted vía ds/colors_and_type.css) */
+  font-family: 'Montserrat', system-ui, 'Helvetica Neue', sans-serif;
   background: var(--dassa-cream, #F5EFE3);
   color: var(--dassa-ink, #1A1A1A);
   -webkit-font-smoothing: antialiased;

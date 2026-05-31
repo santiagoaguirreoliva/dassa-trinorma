@@ -4,23 +4,23 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        /* DASSA Marca 4.0 — Mulish única tipografía de marca · JetBrains Mono para datos */
-        sans: ['Mulish', 'system-ui', 'Helvetica Neue', 'sans-serif'],
-        display: ['Mulish', 'system-ui', 'Helvetica Neue', 'sans-serif'],
-        wordmark: ['Mulish', 'system-ui', 'sans-serif'],
-        secondary: ['Mulish', 'system-ui', 'sans-serif'],
+        /* DASSA Marca 4.0 — Montserrat única tipografía de marca · JetBrains Mono para datos */
+        sans: ['Montserrat', 'system-ui', 'Helvetica Neue', 'sans-serif'],
+        display: ['Montserrat', 'system-ui', 'Helvetica Neue', 'sans-serif'],
+        wordmark: ['Montserrat', 'system-ui', 'sans-serif'],
+        secondary: ['Montserrat', 'system-ui', 'sans-serif'],
         mono: ['JetBrains Mono', 'ui-monospace', 'monospace'],
       },
       colors: {
         /* DASSA brand · Manual de Marca 4.0 (mayo 2026) */
-        'dassa-red':     { DEFAULT: '#C8202C', light: '#E0303E', deep: '#A8121E', bordo: '#A8121E', 'bordo-dark': '#7A0C14', tint: '#FBE5E6' },
-        'dassa-celeste': { DEFAULT: '#2BB8BE', deep: '#1F979C', tint: '#DDF2F3' },
-        'dassa-aqua':    { DEFAULT: '#2BB8BE', deep: '#1F979C', tint: '#DDF2F3' },
+        'dassa-red':     { DEFAULT: '#BF1E2E', light: '#E0303E', deep: '#A8121E', bordo: '#A8121E', 'bordo-dark': '#7A0C14', tint: '#FBE5E6' },
+        'dassa-celeste': { DEFAULT: '#5BBDC9', deep: '#1F979C', tint: '#DDF2F3' },
+        'dassa-aqua':    { DEFAULT: '#5BBDC9', deep: '#1F979C', tint: '#DDF2F3' },
         'dassa-navy':    { DEFAULT: '#2C5278', deep: '#1E3A57' },
         'dassa-cream':   '#F5EFE3',
         'dassa-ink':     '#1A1A1A',
         /* Sidebar 4.0 — tinta neutra, acento aqua */
-        sidebar: { DEFAULT: '#1A1A1A', border: '#2E2E2E', hover: '#262625', active: '#2BB8BE' },
+        sidebar: { DEFAULT: '#1A1A1A', border: '#2E2E2E', hover: '#262625', active: '#5BBDC9' },
         /* Severity tokens — alertas y prioridades semánticas (escala funcional, no marca) */
         severity: {
           critical: '#dc2626',  /* rojo crítico — NPR > 64, NCs urgentes */

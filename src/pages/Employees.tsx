@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Plus, X, Loader2, Users, Search, UserCheck, UserX, Phone, Mail, MessageCircle,
-  Bot, ExternalLink, Cpu, MapPin, Calendar, Briefcase, Heart, Award, Trash2,
+  Bot, ExternalLink, Cpu, MapPin, Briefcase, Heart, Award, Trash2,
   GraduationCap, AlertTriangle,
 } from 'lucide-react';
 import { api } from '@/lib/api';

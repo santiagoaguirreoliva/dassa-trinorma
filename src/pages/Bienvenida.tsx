@@ -413,7 +413,7 @@ export default function Bienvenida() {
   };
   const [pactChecked, setPactChecked] = useState(false);
   const [accepting, setAccepting] = useState(false);
-  const [alreadyAccepted, setAlreadyAccepted] = useState(false);
+  const [alreadyAccepted, setAlreadyAccepted] = useState<boolean | null>(null);
   const [news, setNews] = useState<any[]>([]);
   const [mirrorAs, setMirrorAs] = useState<string>('');
 
@@ -421,7 +421,7 @@ export default function Bienvenida() {
 
   useEffect(() => {
     api.post('/bienvenida/seen', {}).catch(() => {});
-    api.get<{ accepted: boolean }>('/bienvenida/status').then((r: any) => setAlreadyAccepted(r.accepted)).catch(() => {});
+    api.get<{ accepted: boolean }>('/bienvenida/status').then((r: any) => setAlreadyAccepted(!!r.accepted)).catch(() => setAlreadyAccepted(false));
     api.get<any[]>('/bienvenida/news').then(setNews).catch(() => {});
   }, []);
 
@@ -430,13 +430,18 @@ export default function Bienvenida() {
   const effectiveRole = (mirrorAs || user.role) as AppRole;
   const profile = getProfileForRole(effectiveRole, user.full_name);
   const isMirroring = !!mirrorAs && mirrorAs !== user.role;
+  // En Modo Espejo siempre mostramos el contenido completo (auditoría visual).
+  // El "modo corto" (solo novedades + CTA dashboard) aplica solo cuando el usuario real ya aceptó el pacto.
+  const showFullOnboarding = isMirroring || alreadyAccepted === false;
+  // Mientras carga el status del pacto, no mostramos contenido para evitar flicker.
+  const isLoadingStatus = alreadyAccepted === null && !isMirroring;
 
   async function acceptPact() {
     if (isMirroring) return;
     setAccepting(true);
     try {
       await api.post('/bienvenida/accept-pact', {});
-      navigate('/mis-pendientes');
+      navigate('/dashboard');
     } catch (e: any) {
       alert('Error al aceptar: ' + (e.message || 'desconocido'));
     } finally { setAccepting(false); }
@@ -476,12 +481,16 @@ export default function Bienvenida() {
           <div className="flex items-center gap-2 mb-4">
             <Sparkles className="w-5 h-5 text-yellow-300" />
             <span className="uppercase tracking-widest text-xs font-bold text-yellow-300">
-              {isMirroring ? 'Bienvenida (modo espejo)' : 'Bienvenida personalizada'}
+              {isMirroring ? 'Bienvenida (modo espejo)' : (alreadyAccepted ? 'Novedades del sistema' : 'Bienvenida personalizada')}
             </span>
           </div>
           <h1 className="text-3xl sm:text-4xl font-black mb-3 leading-tight">Hola {profile.greeting} {profile.heroEmoji}</h1>
           <p className="text-lg sm:text-xl text-white/90 mb-5 max-w-2xl">
-            {isMirroring ? `Esto es lo que ve un usuario con rol "${profile.roleLabel}".` : <>Te doy la bienvenida a <strong>TRINORMA</strong>, el Sistema de Gestión Integrado de DASSA.</>}
+            {isMirroring
+              ? `Esto es lo que ve un usuario con rol "${profile.roleLabel}".`
+              : alreadyAccepted
+                ? <>Repaso rápido de las novedades antes de entrar al panel.</>
+                : <>Te doy la bienvenida a <strong>TRINORMA</strong>, el Sistema de Gestión Integrado de DASSA.</>}
           </p>
           <div className="inline-flex items-center gap-2 bg-white/15 backdrop-blur-sm rounded-full px-4 py-2 border border-white/20">
             <Shield className="w-4 h-4" /><span className="font-medium">Tu rol: {profile.roleLabel}</span>
@@ -489,7 +498,13 @@ export default function Bienvenida() {
         </div>
       </header>
 
-      <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-10 pb-16">
+      {isLoadingStatus && (
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12 text-center text-gray-500">
+          <Loader2 className="w-6 h-6 animate-spin mx-auto" />
+        </div>
+      )}
+
+      <main className={`max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-10 pb-16 ${isLoadingStatus ? 'hidden' : ''}`}>
         {news.length > 0 && !isMirroring && (
           <section>
             <div className="mb-6 flex items-center gap-3">
@@ -524,6 +539,7 @@ export default function Bienvenida() {
           </section>
         )}
 
+        {showFullOnboarding && (
         <section>
           <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
             <h2 className="text-2xl font-bold text-gray-900 mb-3">¿Por qué TRINORMA y por qué vos?</h2>
@@ -531,8 +547,12 @@ export default function Bienvenida() {
             <p className="text-lg text-gray-700 leading-relaxed">{profile.rolePitch}</p>
           </div>
         </section>
+        )}
 
+        {showFullOnboarding && (
+        <>
         <section>
+          {/* Bloque "Lo más importante" — solo en onboarding completo */}
           <div className="mb-6"><h2 className="text-2xl font-bold text-gray-900 mb-2">Lo más importante (para todos)</h2><p className="text-gray-600">La columna vertebral de TRINORMA.</p></div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {IMPORTANT_FOR_EVERYONE.map((it, i) => {
@@ -612,29 +632,35 @@ export default function Bienvenida() {
             <ul className="space-y-3">{profile.consultaA.map((c, i) => (<li key={i} className="flex items-start gap-3"><div className="bg-dassa-red/10 text-dassa-red rounded-lg p-2 shrink-0"><MessageCircle className="w-4 h-4" /></div><div className="text-sm"><div className="font-semibold text-gray-900">{c.tema}</div><div className="text-gray-600">→ {c.persona}</div></div></li>))}</ul>
           </div>
         </section>
+        </>
+        )}
 
-        {!isMirroring && (
+        {/* Pacto firmable — solo la primera vez */}
+        {!isMirroring && alreadyAccepted === false && (
           <section>
             <div className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-300 rounded-2xl p-8">
               <div className="flex items-center gap-3 mb-4"><Shield className="w-8 h-8 text-amber-700" /><h2 className="text-2xl font-bold text-amber-900">Pacto Trinorma</h2></div>
-              <p className="text-amber-900/80 mb-6 leading-relaxed">Para que TRINORMA funcione y la gestión sea un éxito, te pido que aceptes estos compromisos. Tu aceptación queda registrada con fecha y hora — vamos a usarlo como evidencia en auditorías ISO.</p>
+              <p className="text-amber-900/80 mb-6 leading-relaxed">Para que TRINORMA funcione y la gestión sea un éxito, te pido que aceptes estos compromisos. Lo firmás <strong>una sola vez</strong> — queda registrado con fecha y hora como evidencia para auditorías ISO.</p>
               <div className="bg-white rounded-xl p-5 mb-6 space-y-2.5">
                 <h4 className="font-bold text-gray-900 mb-3">Me comprometo a:</h4>
                 {['Usar TRINORMA como única fuente de verdad. No paralelizar planillas Excel ni grupos de WhatsApp.','Cargar mis tareas y evidencias en tiempo y forma.','Atender mis pendientes con regularidad y no acumular atrasos.','Reportar NCs y desvíos apenas los detecte, sin filtrar nada.','Tratar la información con la confidencialidad que corresponde.','Avisar a Santiago si encuentro un error o algo que no funciona.'].map((p, i) => (
                   <div key={i} className="flex items-start gap-2 text-gray-700 text-sm"><CheckCircle2 className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" /><span>{p}</span></div>
                 ))}
               </div>
-              {alreadyAccepted ? (
-                <div className="bg-emerald-50 border border-emerald-300 rounded-lg p-4 text-center"><CheckCircle2 className="w-8 h-8 text-emerald-600 mx-auto mb-2" /><div className="font-bold text-emerald-900">Ya aceptaste el pacto. Gracias.</div></div>
-              ) : (
-                <>
-                  <label className="flex items-start gap-3 mb-4 cursor-pointer select-none"><input type="checkbox" checked={pactChecked} onChange={e => setPactChecked(e.target.checked)} className="w-5 h-5 accent-amber-600 mt-0.5" /><span className="text-amber-900 font-medium">Leí y entiendo. Me comprometo a cumplir el pacto.</span></label>
-                  <button disabled={!pactChecked || accepting} onClick={acceptPact} className="w-full bg-dassa-red hover:bg-dassa-red-deep disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-bold py-4 rounded-xl shadow-lg transition flex items-center justify-center gap-2 text-lg">
-                    {accepting ? (<><Loader2 className="w-5 h-5 animate-spin" />Aceptando...</>) : (<>Empezar por Mis Pendientes<ChevronRight className="w-5 h-5" /></>)}
-                  </button>
-                </>
-              )}
+              <label className="flex items-start gap-3 mb-4 cursor-pointer select-none"><input type="checkbox" checked={pactChecked} onChange={e => setPactChecked(e.target.checked)} className="w-5 h-5 accent-amber-600 mt-0.5" /><span className="text-amber-900 font-medium">Leí y entiendo. Me comprometo a cumplir el pacto.</span></label>
+              <button disabled={!pactChecked || accepting} onClick={acceptPact} className="w-full bg-dassa-red hover:bg-dassa-red-deep disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-bold py-4 rounded-xl shadow-lg transition flex items-center justify-center gap-2 text-lg">
+                {accepting ? (<><Loader2 className="w-5 h-5 animate-spin" />Aceptando...</>) : (<>Firmar y entrar al Dashboard<ChevronRight className="w-5 h-5" /></>)}
+              </button>
             </div>
+          </section>
+        )}
+
+        {/* CTA Dashboard — usuarios que ya firmaron */}
+        {!isMirroring && alreadyAccepted === true && (
+          <section>
+            <button onClick={() => navigate('/dashboard')} className="w-full bg-dassa-red hover:bg-dassa-red-deep text-white font-bold py-5 rounded-2xl shadow-lg transition flex items-center justify-center gap-3 text-lg">
+              Ir al Dashboard <ChevronRight className="w-6 h-6" />
+            </button>
           </section>
         )}
 

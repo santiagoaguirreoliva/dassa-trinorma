@@ -332,8 +332,49 @@ app.use('/api/tenants', tenantsAdminRouter);
 app.use('/api/auditor', auditorRouter);
 app.use('/api/profiles', profilesRouter);
 
-app.get('/api/health', (_req, res) => {
-  res.json({ status: 'ok', env: process.env.NODE_ENV, ts: new Date().toISOString() });
+// Umbrales: max horas desde last_run_at antes de marcar como "stale".
+// Para jobs semanales/mensuales, tolerancia generosa para no avisar fuera de su ventana.
+const TRINY_MAX_HOURS = {
+  intimacion_vencidas: 25,        // diario 10am
+  recordatorios_lunes: 8 * 24,    // semanal lunes 8am → tolera 8 días
+  resumen_viernes:     8 * 24,    // semanal viernes 16h → tolera 8 días
+  informe_mensual:     35 * 24,   // mensual día 1 9am → tolera 35 días
+};
+
+app.get('/api/health', async (_req, res) => {
+  try {
+    const r = await dbQuery(
+      `SELECT key, last_run_at, error_count,
+              EXTRACT(EPOCH FROM (NOW() - last_run_at))/3600 AS hours_since
+         FROM triny_scheduled_jobs
+        WHERE enabled = true`
+    );
+    const checks = (r.rows || []).map((row) => {
+      const limit = TRINY_MAX_HOURS[row.key] ?? 24 * 8;
+      const h = row.hours_since == null ? Infinity : parseFloat(row.hours_since);
+      const stale = h > limit;
+      return {
+        job: row.key,
+        last_run_at: row.last_run_at,
+        hours_since: Number.isFinite(h) ? Math.round(h * 10) / 10 : null,
+        max_hours: limit,
+        stale,
+        errors: row.error_count,
+        status: stale ? 'stale' : (row.error_count > 0 ? 'errored' : 'ok'),
+      };
+    });
+    const triny_status = checks.some((c) => c.stale) ? 'stale'
+                       : checks.some((c) => c.errors > 0) ? 'errored'
+                       : 'ok';
+    res.json({
+      status: triny_status === 'ok' ? 'ok' : 'degraded',
+      env: process.env.NODE_ENV,
+      ts: new Date().toISOString(),
+      triny: { status: triny_status, checks },
+    });
+  } catch (e) {
+    res.json({ status: 'ok', env: process.env.NODE_ENV, ts: new Date().toISOString(), triny_error: e.message });
+  }
 });
 
 // Email notification check endpoint (can be called by cron or manually)

@@ -4,8 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import {
   Briefcase, ArrowRight, Mail, Phone, MessageCircle, MapPin, Calendar,
-  ListChecks, Target, GraduationCap, Star, Award, AlertTriangle,
-  User, UserCheck,
+  ListChecks, Target, GraduationCap, Star, Award, AlertTriangle, UserCheck,
 } from 'lucide-react';
 import { api } from '@/lib/api';
 import { Header } from '@/components/layout/Header';

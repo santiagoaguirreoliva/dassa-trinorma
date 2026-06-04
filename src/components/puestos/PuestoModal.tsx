@@ -17,10 +17,6 @@ interface Profile {
 }
 interface OrgNode { id: string; name: string; type: string; level: number; area: string; }
 interface Employee { id: string; full_name: string; position?: string; sector?: string; is_active: boolean; }
-interface Assignment {
-  id: string; profile_id: string; role_label: string; is_primary: boolean;
-  since?: string; until?: string;
-}
 
 const SENIORITY = [
   { v: 'triunvirato', l: 'Triunvirato' },

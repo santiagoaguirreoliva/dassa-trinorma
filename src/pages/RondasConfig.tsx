@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { api } from '@/lib/api';
 import {
   ArrowLeft, Plus, Truck, KeyRound, FileText, MapPin, Loader2,
-  RefreshCw, Printer, Edit3, AlertTriangle, CheckCircle2, Download, FileBox,
+  RefreshCw, Printer, Edit3, AlertTriangle, CheckCircle2, FileBox,
 } from 'lucide-react';
 
 type Tab = 'templates' | 'machines' | 'operators' | 'geofence';

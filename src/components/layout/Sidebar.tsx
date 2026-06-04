@@ -23,7 +23,7 @@ function buildNav(openFindings: number, legalAlerts: number, role?: string): Nav
       items: [
         { path: '/bienvenida',    label: 'Bienvenida',      icon: <Sparkles size={15} /> },
         { path: '/dashboard',     label: 'Dashboard',       icon: <LayoutDashboard size={15} /> },
-        { path: '/mi-puesto',     label: 'Mi Puesto',       icon: <Briefcase size={15} /> },
+        { path: '/mi-perfil',     label: 'Mi Perfil',       icon: <Briefcase size={15} /> },
         { path: '/mis-pendientes', label: 'Mis Pendientes', icon: <ListChecks size={15} /> },
         { path: '/calendar',      label: 'Calendario',      icon: <CalendarDays size={15} /> },
         { path: '/triny',         label: 'TRINY · Agente IA', icon: <Bot size={15} /> },

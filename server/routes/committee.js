@@ -393,4 +393,108 @@ router.get('/:id/full', async (req, res) => {
 
 
 
+// ═══════════════════════════════════════════════════════════════════
+// ACTA VIVA · puntos discretos de la reunión (committee_agenda_items)
+// Se guarda punto por punto para no perder progreso durante la reunión.
+// ═══════════════════════════════════════════════════════════════════
+
+// GET /api/committee/:id/agenda · puntos del acta
+router.get('/:id/agenda', async (req, res) => {
+  try {
+    const { rows } = await query(
+      `SELECT ai.*, u.full_name AS created_by_name
+         FROM committee_agenda_items ai
+         LEFT JOIN users u ON u.id = ai.created_by
+        WHERE ai.meeting_id = $1
+        ORDER BY ai.orden, ai.created_at`, [req.params.id]);
+    res.json(rows);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// POST /api/committee/:id/agenda · agregar un punto
+router.post('/:id/agenda', async (req, res) => {
+  const { tipo, texto, orden } = req.body || {};
+  try {
+    const ord = Number.isFinite(orden) ? orden : (await query(
+      'SELECT COALESCE(MAX(orden),0)+1 AS n FROM committee_agenda_items WHERE meeting_id=$1',
+      [req.params.id])).rows[0].n;
+    const { rows } = await query(
+      `INSERT INTO committee_agenda_items (meeting_id, tipo, texto, orden, created_by)
+       VALUES ($1,$2,$3,$4,$5) RETURNING *`,
+      [req.params.id, tipo || 'nuevo', texto || '', ord, req.user.id]);
+    res.status(201).json(rows[0]);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// PATCH /api/committee/:id/agenda/:itemId · editar/resolver punto (autosave)
+router.patch('/:id/agenda/:itemId', async (req, res) => {
+  const FIELDS = ['tipo', 'texto', 'resuelto', 'orden'];
+  const updates = []; const values = []; let i = 1;
+  for (const f of FIELDS) {
+    if (req.body[f] !== undefined) { updates.push(`${f} = $${i++}`); values.push(req.body[f]); }
+  }
+  if (!updates.length) return res.status(400).json({ error: 'Sin campos' });
+  values.push(req.params.itemId);
+  try {
+    const { rows } = await query(
+      `UPDATE committee_agenda_items SET ${updates.join(', ')} WHERE id = $${i} RETURNING *`, values);
+    if (!rows[0]) return res.status(404).json({ error: 'No encontrado' });
+    res.json(rows[0]);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// DELETE /api/committee/:id/agenda/:itemId
+router.delete('/:id/agenda/:itemId', async (req, res) => {
+  try {
+    await query('DELETE FROM committee_agenda_items WHERE id=$1 AND meeting_id=$2',
+      [req.params.itemId, req.params.id]);
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ═══════════════════════════════════════════════════════════════════
+// TAREAS EN VIVO · escriben en `tasks` (fuente de verdad) + task_assignees
+// Permite crear/actualizar tareas DURANTE la reunión (no solo en el wizard).
+// ═══════════════════════════════════════════════════════════════════
+
+// POST /api/committee/:id/live-task · crear tarea con multi-responsable
+router.post('/:id/live-task', async (req, res) => {
+  const { title, assignees, due_date, priority, description, origin_detail } = req.body || {};
+  if (!title || !Array.isArray(assignees) || assignees.length === 0) {
+    return res.status(400).json({ error: 'title y al menos un responsable (assignees) requeridos' });
+  }
+  try {
+    const ins = await query(
+      `INSERT INTO tasks (title, description, status, priority, due_date, source_module, committee_id, created_by, origin_type, origin_detail, assigned_to, collaborator_id)
+       VALUES ($1,$2,'pendiente',$3,$4,'committee',$5,$6,'comite',$7,$8,$9) RETURNING id, task_number`,
+      [title.substring(0, 500), description || null, priority || 'media', due_date || null,
+       req.params.id, req.user.id, origin_detail || null, assignees[0], assignees[1] || null]);
+    const tid = ins.rows[0].id;
+    for (let i = 0; i < assignees.length; i++) {
+      await query(
+        'INSERT INTO task_assignees (task_id, user_id, role) VALUES ($1,$2,$3) ON CONFLICT DO NOTHING',
+        [tid, assignees[i], i === 0 ? 'principal' : 'colaborador']);
+    }
+    res.status(201).json({ id: tid, task_number: ins.rows[0].task_number });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// PATCH /api/committee/:id/live-task/:tid · actualizar tarea (status de pendientes anteriores, etc.)
+router.patch('/:id/live-task/:tid', async (req, res) => {
+  const { status, title, due_date, priority } = req.body || {};
+  const updates = []; const values = []; let i = 1;
+  if (status !== undefined)   { updates.push(`status=$${i++}`);   values.push(status); }
+  if (title !== undefined)    { updates.push(`title=$${i++}`);    values.push(title); }
+  if (due_date !== undefined) { updates.push(`due_date=$${i++}`); values.push(due_date); }
+  if (priority !== undefined) { updates.push(`priority=$${i++}`); values.push(priority); }
+  if (!updates.length) return res.status(400).json({ error: 'Sin campos' });
+  updates.push('updated_at=NOW()');
+  values.push(req.params.tid);
+  try {
+    const { rows } = await query(`UPDATE tasks SET ${updates.join(',')} WHERE id=$${i} RETURNING id, status`, values);
+    if (!rows[0]) return res.status(404).json({ error: 'No encontrada' });
+    res.json(rows[0]);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 export default router;

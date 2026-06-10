@@ -34,6 +34,7 @@ const Risks               = lazy(() => import('@/pages/Risks'));
 const Legal               = lazy(() => import('@/pages/Legal'));
 const Purchases           = lazy(() => import('@/pages/Purchases'));
 const Committee           = lazy(() => import('@/pages/Committee'));
+const CommitteeDetail     = lazy(() => import('@/pages/CommitteeDetail'));
 const Users               = lazy(() => import('@/pages/Users'));
 const Profile             = lazy(() => import('@/pages/Profile'));
 const Trainings           = lazy(() => import('@/pages/Trainings'));
@@ -109,6 +110,7 @@ export default function App() {
               <Route path="/legal"          element={<Legal />} />
               <Route path="/purchases"      element={<Purchases />} />
               <Route path="/committee"      element={<Committee />} />
+              <Route path="/committee/:id"  element={<CommitteeDetail />} />
               <Route path="/trainings"      element={<Trainings />} />
               <Route path="/users"          element={<Users />} />
               <Route path="/agent-settings"  element={<AgentSettings />} />

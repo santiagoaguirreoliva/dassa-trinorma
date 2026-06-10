@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Plus, X, Loader2, Target, TrendingUp, Shield, AlertTriangle,
-  Users, Pencil, Trash2
+  Users, Pencil, Trash2, Check
 } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
@@ -14,6 +14,8 @@ interface FodaItem {
   id: string; foda_type: string; category: string;
   description: string; order_index: number; is_active: boolean;
   created_by?: string; created_by_name?: string; created_at: string;
+  validation_status?: 'pendiente' | 'validado' | 'rechazado';
+  validated_by_name?: string; validated_at?: string;
 }
 interface FodaGrouped {
   fortaleza: FodaItem[]; oportunidad: FodaItem[];
@@ -73,7 +75,7 @@ export default function Context() {
 
   // Queries
   const { data: foda, isLoading: loadFoda } = useQuery<FodaGrouped>({
-    queryKey: ['context-foda'], queryFn: () => api.get('/context/foda'),
+    queryKey: ['context-foda'], queryFn: () => api.get('/context/foda?active=1'),
   });
   const { data: strategies = [], isLoading: loadStrat } = useQuery<Strategy[]>({
     queryKey: ['context-strategies'], queryFn: () => api.get('/context/strategies'),
@@ -92,6 +94,10 @@ export default function Context() {
   });
   const deleteFoda = useMutation({
     mutationFn: (id: string) => api.delete(`/context/foda/${id}`),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['context-foda'] }),
+  });
+  const validateFoda = useMutation({
+    mutationFn: (v: { id: string; status: string }) => api.patch(`/context/foda/${v.id}/validation`, { status: v.status }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['context-foda'] }),
   });
   const saveStrategy = useMutation({
@@ -167,7 +173,7 @@ export default function Context() {
         </div>
 
         {/* Tab Content */}
-        {tab === 'foda' && foda && <FodaGrid foda={foda} onEdit={(item) => { setEditing(item); setModal('foda'); }} onDelete={(id) => deleteFoda.mutate(id)} />}
+        {tab === 'foda' && foda && <FodaGrid foda={foda} onEdit={(item) => { setEditing(item); setModal('foda'); }} onDelete={(id) => deleteFoda.mutate(id)} onValidate={(id, status) => validateFoda.mutate({ id, status })} />}
         {tab === 'strategies' && <StrategiesTable strategies={strategies} users={users} onEdit={(s) => { setEditing(s); setModal('strategy'); }} onDelete={(id) => deleteStrategy.mutate(id)} />}
         {tab === 'stakeholders' && <StakeholdersTable stakeholders={stakeholders} onEdit={(s) => { setEditing(s); setModal('stakeholder'); }} onDelete={(id) => deleteStakeholder.mutate(id)} />}
       </PageContent>
@@ -181,37 +187,84 @@ export default function Context() {
 }
 
 // ─── FODA Grid ──────────────────────────────────────────────
-function FodaGrid({ foda, onEdit, onDelete }: { foda: FodaGrouped; onEdit: (i: FodaItem) => void; onDelete: (id: string) => void }) {
+function FodaGrid({ foda, onEdit, onDelete, onValidate }: { foda: FodaGrouped; onEdit: (i: FodaItem) => void; onDelete: (id: string) => void; onValidate: (id: string, status: string) => void }) {
+  const all = Object.values(foda).flat();
+  const val = all.filter(i => i.validation_status === 'validado').length;
+  const rej = all.filter(i => i.validation_status === 'rechazado').length;
+  const pend = all.filter(i => !i.validation_status || i.validation_status === 'pendiente').length;
+  const pct = all.length ? Math.round(((val + rej) / all.length) * 100) : 0;
+
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-      {(Object.keys(FODA_CONFIG) as (keyof typeof FODA_CONFIG)[]).map((type) => {
-        const cfg = FODA_CONFIG[type];
-        const items = foda[type] || [];
-        return (
-          <div key={type} className={`border rounded-xl p-4 ${cfg.light}`}>
-            <div className="flex items-center gap-2 mb-3">
-              <span className={`w-8 h-8 rounded-lg ${cfg.color} text-white flex items-center justify-center font-bold text-sm`}>{cfg.letter}</span>
-              <h3 className="font-bold text-gray-700">{cfg.label}</h3>
-              <span className="ml-auto text-xs font-medium text-gray-500">{items.length}</span>
-            </div>
-            {items.length === 0 && <p className="text-xs text-gray-400 italic">Sin elementos cargados</p>}
-            <div className="space-y-2">
-              {items.map((item) => (
-                <div key={item.id} className="bg-white rounded-lg p-3 shadow-sm flex items-start gap-2 group">
-                  <div className="flex-1 min-w-0">
-                    <span className="text-[11px] font-semibold text-gray-400 uppercase">{item.category}</span>
-                    <p className="text-[13px] text-gray-700">{item.description}</p>
-                  </div>
-                  <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button onClick={() => onEdit(item)} className="p-1 hover:bg-gray-100 rounded"><Pencil size={13} className="text-gray-400" /></button>
-                    <button onClick={() => { if (confirm('¿Eliminar?')) onDelete(item.id); }} className="p-1 hover:bg-red-50 rounded"><Trash2 size={13} className="text-red-400" /></button>
-                  </div>
-                </div>
-              ))}
-            </div>
+    <div className="space-y-4">
+      {/* Barra de cierre de validación con NIXA */}
+      <div className="bg-white border border-gray-200 rounded-xl p-4">
+        <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
+          <h3 className="text-sm font-bold text-gray-700">Validación del FODA 2026 con NIXA</h3>
+          <div className="flex gap-2 text-[11px] font-bold">
+            <span className="bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full">{val} validados</span>
+            <span className="bg-red-100 text-red-700 px-2 py-0.5 rounded-full">{rej} rechazados</span>
+            <span className="bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">{pend} pendientes</span>
           </div>
-        );
-      })}
+        </div>
+        <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+          <div className="h-full bg-dassa-red rounded-full transition-all" style={{ width: `${pct}%` }} />
+        </div>
+        <p className="text-[11px] text-gray-500 mt-1.5">{pct}% revisado · Validá o rechazá cada punto para cerrar el FODA antes de derivar acciones de mejora.</p>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {(Object.keys(FODA_CONFIG) as (keyof typeof FODA_CONFIG)[]).map((type) => {
+          const cfg = FODA_CONFIG[type];
+          const items = foda[type] || [];
+          return (
+            <div key={type} className={`border rounded-xl p-4 ${cfg.light}`}>
+              <div className="flex items-center gap-2 mb-3">
+                <span className={`w-8 h-8 rounded-lg ${cfg.color} text-white flex items-center justify-center font-bold text-sm`}>{cfg.letter}</span>
+                <h3 className="font-bold text-gray-700">{cfg.label}</h3>
+                <span className="ml-auto text-xs font-medium text-gray-500">{items.length}</span>
+              </div>
+              {items.length === 0 && <p className="text-xs text-gray-400 italic">Sin elementos cargados</p>}
+              <div className="space-y-2">
+                {items.map((item) => {
+                  const st = item.validation_status || 'pendiente';
+                  const ring = st === 'validado' ? 'ring-1 ring-emerald-300' : st === 'rechazado' ? 'ring-1 ring-red-300 opacity-60' : '';
+                  return (
+                    <div key={item.id} className={`bg-white rounded-lg p-3 shadow-sm ${ring}`}>
+                      <div className="flex items-start gap-2 group">
+                        <div className="flex-1 min-w-0">
+                          <span className="text-[11px] font-semibold text-gray-400 uppercase">{item.category}</span>
+                          <p className={`text-[13px] text-gray-700 ${st === 'rechazado' ? 'line-through' : ''}`}>{item.description}</p>
+                        </div>
+                        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button onClick={() => onEdit(item)} className="p-1 hover:bg-gray-100 rounded"><Pencil size={13} className="text-gray-400" /></button>
+                          <button onClick={() => { if (confirm('¿Eliminar?')) onDelete(item.id); }} className="p-1 hover:bg-red-50 rounded"><Trash2 size={13} className="text-red-400" /></button>
+                        </div>
+                      </div>
+                      {/* Botones de validación */}
+                      <div className="flex items-center gap-1.5 mt-2 pt-2 border-t border-gray-100">
+                        <button onClick={() => onValidate(item.id, 'validado')}
+                          className={`text-[11px] font-bold px-2.5 py-1 rounded flex items-center gap-1 ${st === 'validado' ? 'bg-emerald-600 text-white' : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'}`}>
+                          <Check size={12} /> Validar
+                        </button>
+                        <button onClick={() => onValidate(item.id, 'rechazado')}
+                          className={`text-[11px] font-bold px-2.5 py-1 rounded flex items-center gap-1 ${st === 'rechazado' ? 'bg-red-600 text-white' : 'bg-red-50 text-red-700 hover:bg-red-100'}`}>
+                          <X size={12} /> Rechazar
+                        </button>
+                        {st !== 'pendiente' && (
+                          <button onClick={() => onValidate(item.id, 'pendiente')} className="text-[10px] text-gray-400 hover:text-gray-600 ml-1">revertir</button>
+                        )}
+                        {item.validated_by_name && st !== 'pendiente' && (
+                          <span className="text-[10px] text-gray-400 ml-auto">{st === 'validado' ? '✓' : '✗'} {item.validated_by_name}</span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }

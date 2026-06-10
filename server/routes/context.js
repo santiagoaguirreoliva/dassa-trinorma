@@ -9,10 +9,13 @@ router.use(authenticate);
 
 router.get('/foda', async (req, res) => {
   try {
+    const onlyActive = req.query.active === '1' || req.query.active === 'true';
     const { rows } = await query(
-      `SELECT ca.*, u.full_name AS created_by_name
+      `SELECT ca.*, u.full_name AS created_by_name, vu.full_name AS validated_by_name
          FROM context_analysis ca
          LEFT JOIN users u ON u.id = ca.created_by
+         LEFT JOIN users vu ON vu.id = ca.validated_by
+        ${onlyActive ? 'WHERE ca.is_active = TRUE' : ''}
         ORDER BY ca.foda_type, ca.order_index`
     );
     // group by type
@@ -55,6 +58,27 @@ router.patch('/foda/:id', async (req, res) => {
   try {
     const { rows } = await query(
       `UPDATE context_analysis SET ${sets.join(', ')} WHERE id = $${i} RETURNING *`, vals
+    );
+    if (!rows.length) return res.status(404).json({ error: 'No encontrado' });
+    res.json(rows[0]);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Validar / rechazar un punto del FODA (cierre con NIXA antes de derivar acciones)
+router.patch('/foda/:id/validation', async (req, res) => {
+  const { status, note } = req.body || {};
+  if (!['pendiente', 'validado', 'rechazado'].includes(status)) {
+    return res.status(400).json({ error: "status debe ser 'pendiente', 'validado' o 'rechazado'" });
+  }
+  try {
+    const { rows } = await query(
+      `UPDATE context_analysis
+          SET validation_status = $1, validation_note = $2,
+              validated_by = $3, validated_at = NOW(), updated_at = NOW()
+        WHERE id = $4 RETURNING *`,
+      [status, note || null, req.user.id, req.params.id]
     );
     if (!rows.length) return res.status(404).json({ error: 'No encontrado' });
     res.json(rows[0]);

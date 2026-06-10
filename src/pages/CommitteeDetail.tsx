@@ -10,12 +10,14 @@ import {
   ArrowLeft, Plus, Trash2, Check, Loader2, CheckCircle2, Cloud,
   ClipboardList, ListChecks, Megaphone, AlertTriangle, GraduationCap,
   LineChart, Search, FileText, CalendarDays, UserPlus, ChevronDown, ChevronRight,
+  Mail, Send,
 } from 'lucide-react';
 
 interface User { id: string; full_name: string; role: string; }
 interface Meeting {
   id: string; meeting_date: string; status: string; location?: string;
   meeting_number?: number; attendees?: string[]; signatures?: any[];
+  summary_sent_at?: string | null;
 }
 interface AgendaItem { id: string; tipo: string; texto: string; resuelto: boolean; orden: number; }
 interface Assignee { id: string; name: string; role?: string; }
@@ -141,6 +143,18 @@ export default function CommitteeDetail() {
       await reload();
       flagSaved();
     } finally { setCreating(false); }
+  }
+
+  const [sending, setSending] = useState<'' | 'test' | 'all'>('');
+  async function sendSummary(test: boolean) {
+    if (!test && !confirm('¿Enviar el resumen de la reunión por mail a TODOS los usuarios de Trinorma?')) return;
+    setSending(test ? 'test' : 'all');
+    try {
+      const r = await api.post<{ sent_to: number }>(`/committee/${id}/send-summary`, { test });
+      alert(test ? `Previsualización enviada a tu correo (${r.sent_to}).` : `Resumen enviado a ${r.sent_to} usuarios de Trinorma.`);
+    } catch (e: any) {
+      alert('Error al enviar: ' + (e?.message || 'desconocido'));
+    } finally { setSending(''); }
   }
 
   if (loading) {
@@ -363,6 +377,28 @@ export default function CommitteeDetail() {
             <button onClick={createTask} disabled={!ntTitle.trim() || !ntResp || creating}
               className="mt-3 bg-dassa-red hover:bg-dassa-red-deep disabled:bg-gray-300 text-white text-sm font-bold px-4 py-2 rounded-lg flex items-center gap-2">
               {creating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />} Crear tarea
+            </button>
+          </div>
+        </section>
+
+        {/* Cierre — enviar resumen a Trinorma */}
+        <section className="bg-white border border-gray-200 rounded-xl p-4">
+          <div className="flex items-center gap-2 mb-1">
+            <Mail className="w-5 h-5 text-dassa-red" />
+            <h2 className="text-base font-bold text-gray-900">Cierre de la reunión</h2>
+          </div>
+          <p className="text-xs text-gray-500 mb-3">
+            Enviá el resumen (puntos del acta + tareas y responsables) por mail a todos los usuarios de Trinorma.
+            {meeting.summary_sent_at && <span className="text-emerald-600 font-medium"> · Ya enviado el {new Date(meeting.summary_sent_at).toLocaleString('es-AR')}</span>}
+          </p>
+          <div className="flex flex-wrap gap-2">
+            <button onClick={() => sendSummary(true)} disabled={!!sending}
+              className="text-sm font-medium border border-gray-300 rounded-lg px-3 py-2 flex items-center gap-1.5 hover:bg-gray-50 disabled:opacity-50">
+              {sending === 'test' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Mail className="w-4 h-4" />} Previsualizar (a mí)
+            </button>
+            <button onClick={() => sendSummary(false)} disabled={!!sending}
+              className="text-sm font-bold bg-dassa-red hover:bg-dassa-red-deep text-white rounded-lg px-4 py-2 flex items-center gap-1.5 disabled:opacity-50">
+              {sending === 'all' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />} Enviar resumen a Trinorma
             </button>
           </div>
         </section>

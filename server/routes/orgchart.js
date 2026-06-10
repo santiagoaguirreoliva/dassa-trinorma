@@ -191,8 +191,35 @@ router.get('/mi-perfil', async (req, res) => {
        LIMIT 1`, [req.user.id]);
     const employee = employeeQ.rows[0] || null;
 
+    // 0) Objetivos de los que el usuario es responsable (año en curso) — destacados en su perfil.
+    //    Se resuelve por req.user.id (objectives.responsible_id = users.id), independiente de la ficha de empleado,
+    //    para que también los vean los directores sin employee linkeado.
+    const objQ = await query(`
+      SELECT o.id, o.code, o.name, o.area, o.target_metric, o.target_value, o.baseline_value,
+             oi.indicator_name, oi.unit, oi.target_value AS ind_target, oi.frequency,
+             (SELECT json_build_object('period', m.period, 'value', m.value)
+                FROM objective_measurements m
+               WHERE m.indicator_id = oi.id
+                 AND date_part('year', m.period) = date_part('year', CURRENT_DATE)
+               ORDER BY m.period DESC LIMIT 1) AS last_measurement,
+             (SELECT COALESCE(SUM(m.value), 0) FROM objective_measurements m
+               WHERE m.indicator_id = oi.id
+                 AND date_part('year', m.period) = date_part('year', CURRENT_DATE)) AS ytd_sum,
+             (SELECT COUNT(*) FROM objective_measurements m
+               WHERE m.indicator_id = oi.id
+                 AND date_part('year', m.period) = date_part('year', CURRENT_DATE)) AS ytd_count
+        FROM objectives o
+        LEFT JOIN LATERAL (
+          SELECT * FROM objective_indicators WHERE objective_id = o.id ORDER BY created_at LIMIT 1
+        ) oi ON TRUE
+       WHERE o.responsible_id = $1
+         AND o.year = date_part('year', CURRENT_DATE)::int
+         AND o.status = 'activo'
+       ORDER BY o.code`, [req.user.id]);
+    const objectives = objQ.rows;
+
     if (!employee) {
-      return res.json({ ok: true, employee: null, profiles: [], training_status: [], warnings: [], certifications: [], succession: [] });
+      return res.json({ ok: true, employee: null, profiles: [], training_status: [], warnings: [], certifications: [], succession: [], objectives });
     }
 
     // 2) Fichas asignadas (con todos los campos del Master)
@@ -277,7 +304,7 @@ router.get('/mi-perfil', async (req, res) => {
         : Math.round((obligatorias.filter(t => t.status === 'completada').length / obligatorias.length) * 100),
     };
 
-    res.json({ ok: true, employee, profiles, training_status, warnings, certifications, succession, compliance });
+    res.json({ ok: true, employee, profiles, training_status, warnings, certifications, succession, compliance, objectives });
   } catch (e) {
     console.error('[mi-perfil] error:', e.message, e.stack);
     res.status(500).json({ error: e.message });

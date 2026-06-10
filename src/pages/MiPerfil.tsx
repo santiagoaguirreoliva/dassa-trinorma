@@ -86,6 +86,23 @@ interface Compliance {
   obligatorias_completadas: number;
   pct_obligatorias_ok: number;
 }
+interface MyObjective {
+  id: string;
+  code: string;
+  name: string;
+  area: string;
+  target_metric?: string | null;
+  target_value?: string | null;
+  baseline_value?: number | null;
+  indicator_name?: string | null;
+  unit?: string | null;
+  ind_target?: number | null;
+  frequency?: string | null;
+  last_measurement?: { period: string; value: number } | null;
+  ytd_sum?: number;
+  ytd_count?: number;
+}
+
 interface MiPerfilData {
   ok: boolean;
   employee: Employee | null;
@@ -95,6 +112,7 @@ interface MiPerfilData {
   certifications: Cert[];
   succession: Succession | null;
   compliance: Compliance;
+  objectives?: MyObjective[];
 }
 
 function parseKpi(raw: string): { name: string; meta?: string; frequency?: string } {
@@ -136,6 +154,20 @@ function daysUntil(d?: string | null) {
   return Math.floor((new Date(d).getTime() - Date.now()) / 86400000);
 }
 
+// Objetivos donde "menos es mejor" (reducción): días, energía, accidentes, papel, agua…
+const LOWER_IS_BETTER = /d[ií]as|kwh|kw|\bif\b|\bkg\b|m3|m³|accidente|perdid|papel|agua/i;
+function objHealth(o: MyObjective): { tone: 'success' | 'warning' | 'danger' | 'neutral'; dev: number | null } {
+  const last = o.last_measurement?.value;
+  const target = o.ind_target;
+  if (last == null || target == null || target === 0) return { tone: 'neutral', dev: null };
+  const lower = LOWER_IS_BETTER.test(o.unit || '') || LOWER_IS_BETTER.test(o.name || '') || LOWER_IS_BETTER.test(o.indicator_name || '');
+  const dev = lower ? (target - last) / target : (last - target) / target; // dev>0 = mejor que meta
+  if (dev >= -0.05) return { tone: 'success', dev };
+  if (dev >= -0.15) return { tone: 'warning', dev };
+  return { tone: 'danger', dev };
+}
+const MES_ABBR = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+
 export default function MiPerfil() {
   const qc = useQueryClient();
   const { data, isLoading } = useQuery<MiPerfilData>({
@@ -175,6 +207,7 @@ export default function MiPerfil() {
   const certPorVencer = data.certifications.filter(c => { const d = daysUntil(c.expiry_date); return d !== null && d >= 0 && d <= 60; });
   const warningsActivas = data.warnings.filter(w => w.warning_type !== 'felicitacion');
   const felicitaciones  = data.warnings.filter(w => w.warning_type === 'felicitacion');
+  const objectives = data.objectives || [];
 
   return (
     <PageContent>
@@ -262,6 +295,69 @@ export default function MiPerfil() {
           )}
         </div>
       </div>
+
+      {/* 🎯 Mis Objetivos del año — destacados (responsable de ejecución) */}
+      {objectives.length > 0 && (
+        <div className="bg-gradient-to-br from-dassa-celeste/10 to-dassa-red/5 border-2 border-dassa-celeste/40 rounded-2xl p-5 mb-4">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-extrabold text-gray-900 uppercase tracking-wider flex items-center gap-1.5">
+              <Target size={15} className="text-dassa-red" /> Mis Objetivos {new Date().getFullYear()}
+              <span className="text-[10px] font-bold bg-dassa-red text-white px-2 py-0.5 rounded-full ml-1">{objectives.length}</span>
+            </h3>
+            <Link to="/objetivos" className="text-[11px] font-bold text-dassa-red hover:underline">Ver todos →</Link>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+            {objectives.map(o => {
+              const h = objHealth(o);
+              const toneCard = h.tone === 'success' ? 'bg-emerald-50 border-emerald-200'
+                : h.tone === 'warning' ? 'bg-amber-50 border-amber-200'
+                : h.tone === 'danger' ? 'bg-red-50 border-red-200'
+                : 'bg-white border-gray-200';
+              const toneText = h.tone === 'success' ? 'text-emerald-700'
+                : h.tone === 'warning' ? 'text-amber-700'
+                : h.tone === 'danger' ? 'text-red-700' : 'text-gray-500';
+              const last = o.last_measurement;
+              const mes = last ? MES_ABBR[parseInt(last.period.slice(5, 7), 10) - 1] : null;
+              return (
+                <Link to="/objetivos" key={o.id} className={`block rounded-xl border p-3 hover:shadow-md transition-shadow ${toneCard}`}>
+                  <div className="flex items-center gap-1.5 mb-1">
+                    <span className="text-[9px] font-bold text-gray-400 font-mono">{o.code}</span>
+                    <span className="text-[9px] font-bold uppercase tracking-wide bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded">{o.area}</span>
+                  </div>
+                  <div className="text-sm font-bold text-gray-900 leading-tight mb-2">{o.name}</div>
+                  <div className="flex items-end justify-between gap-2">
+                    <div>
+                      {last ? (
+                        <>
+                          <div className={`text-2xl font-extrabold ${toneText} tabular-nums leading-none`}>
+                            {Number(last.value).toLocaleString('es-AR')}<span className="text-xs font-semibold ml-0.5">{o.unit}</span>
+                          </div>
+                          <div className="text-[10px] text-gray-500 mt-0.5">último: {mes}</div>
+                        </>
+                      ) : (
+                        <div className="text-xs text-gray-400 italic">sin medición {new Date().getFullYear()}</div>
+                      )}
+                    </div>
+                    <div className="text-right">
+                      <div className="text-[10px] text-gray-500">meta</div>
+                      <div className="text-xs font-bold text-gray-700">{o.target_value || (o.ind_target != null ? `${o.ind_target}${o.unit || ''}` : '—')}</div>
+                      {o.baseline_value != null && (
+                        <div className="text-[9px] text-gray-400">base {Number(o.baseline_value).toLocaleString('es-AR')}</div>
+                      )}
+                    </div>
+                  </div>
+                  {h.dev != null && (
+                    <div className={`mt-2 text-[10px] font-bold ${toneText} flex items-center gap-1`}>
+                      {h.dev >= 0 ? '▲' : '▼'} {Math.abs(h.dev * 100).toFixed(0)}% vs meta
+                      <span className="text-gray-400 font-normal">· {o.frequency}</span>
+                    </div>
+                  )}
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Resumen de cumplimiento + accesos rápidos */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-3 mb-4">

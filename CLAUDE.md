@@ -82,3 +82,22 @@ pm2 restart dassa-sgi
 - Centro de Comunicaciones: este repo es **réplica HMAC** del centro madre en smart-dassa-apps; modelo de migración final aún pendiente.
 - Nixa (responsable de conformidad ISO): correo `nixa.8908@gmail.com` solo para mails importantes; el resto por inbox de la app.
 - Sheet de nómina compartido con María: `1xkbIBNDK15rqe3om4bVazk6Z44...` (completar WhatsApp/emails de 30 internos + 2 externos).
+
+## Estado al cierre 2026-06-04 · Cierre auditoría Master DASSA v2026 (P1-P5)
+- Commit `22067fa` feat(sgi): Master DASSA v2026 + Mi Perfil 360 + audit fixes (P1-P5) — 17 archivos · +3753/-63 · pusheado a `dassa-trinorma`
+- BD `dassa_sgi`: 25/25 fichas activas · **14 críticos** (Balancero sumado) · 24/24 successions con `titular_id` · 21/25 con iso_45001 · 25/25 con marco legal/risks/authority/records
+- P1 Maq Containera: backup Fabián Fuentes + externo · P2 Balancero: backup Franco Di Dio + Vergara externo + crítico · P3 política emails Triny respetada · P4 succession FK reparada · P5 iso_45001 cargada
+- `npm run check` verde · `pm2 dassa-sgi` online · `/api/health` triny status:ok
+- `.gitignore`: agregado `server/.agent-inbox/` (runtime del agent-bus)
+- Pendiente sesión próxima: PARTE 15 (UI panel RR.AI, calendar sesiones multi-cap, radar madurez, KPIs RRHH, portal externo QR+PIN) + PARTE 16 (Triny tools mis-capacitaciones/mis-kpis/evaluar-competencias) + 3ra iteración ChatGPT para Matriz O/R/OP/NA completa
+
+## Estado al cierre 2026-06-10 · Objetivos 2026 + Comité Acta Viva + FODA + Instructivos + Video (SESION-2026-06-10-02)
+- 11 commits (`cb2bbde`→`86b8ace`), 52 archivos (+1699/-36), 3 migraciones prod: 048 `committee_agenda_items`, 049 `foda_validation`, 050 `committee_summary_sent`.
+- **Objetivos 2026** cargados con responsables; destacados en `/mi-perfil` (orgchart `/mi-perfil` ahora devuelve `objectives`).
+- **Comité Mixto "Acta Viva"** F1-F3: `CommitteeDetail.tsx` ruta `/committee/:id` (notas vivas autosave 700ms + panel contexto + cierre con firma TRINY en `signatures` jsonb + `send-summary` a todos). Fuente de verdad = tabla `tasks`. Botón "Nueva reunión" gate ampliado a `director`+`auditor_externo`.
+- **FODA 2026** consolidado (29 ítems) + validación Validar/Rechazar (`/context/foda?active=1`, `PATCH /foda/:id/validation`).
+- **Instructivos de carga** con capturas reales → web `https://trinorma.dassa.com.ar/instructivos/` + mail TRINY a María/Manuel/Fer/Nixa.
+- **Video recorrido** (informativo ~82s + ventas ~30s) generado con ffmpeg (capturas + zoompan + xfade + drawtext) → `https://trinorma.dassa.com.ar/video/` + guión en `docs/video/`.
+- Estáticos publicados en `public/{instructivos,video}/` (copiados a `dist/` para servirse ya).
+- `pm2 dassa-sgi` online. Pendiente: acciones de mejora (change_requests) desde FODA + `current_value` objetivos (tras validación Nixa); fix Bienvenida (accept-pact no persiste `accepted_at`).
+- Gotchas video: Puppeteer `screencast()` = 0 bytes en este box; inyectar JWT con `evaluateOnNewDocument` antes de navegar; scripts /tmp con `NODE_PATH` al node_modules de la app.

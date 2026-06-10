@@ -497,4 +497,54 @@ router.patch('/:id/live-task/:tid', async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// ═══════════════════════════════════════════════════════════════════
+// CONTEXTO de la reunión · lo que hay que revisar este mes
+// NC/desvíos abiertos · capacitaciones del mes (+vencidas) · objetivos+mediciones
+// ═══════════════════════════════════════════════════════════════════
+router.get('/:id/context', async (req, res) => {
+  try {
+    const m = await query('SELECT meeting_date FROM committee_meetings WHERE id=$1', [req.params.id]);
+    if (!m.rows[0]) return res.status(404).json({ error: 'meeting not found' });
+    const md = m.rows[0].meeting_date;
+
+    const findings = await query(
+      `SELECT code, title, status, finding_type, due_date, area
+         FROM findings
+        WHERE status <> 'cerrado' AND deleted_at IS NULL
+        ORDER BY due_date NULLS LAST, created_at DESC
+        LIMIT 50`);
+
+    const trainings = await query(
+      `SELECT title, status, scheduled_date, category, is_mandatory
+         FROM trainings
+        WHERE scheduled_date IS NOT NULL
+          AND date_trunc('month', scheduled_date) = date_trunc('month', $1::date)
+        ORDER BY scheduled_date`, [md]);
+
+    const overdue = await query(
+      `SELECT COUNT(*)::int AS n FROM v_employee_training_status WHERE status = 'vencida'`);
+
+    const objectives = await query(
+      `SELECT o.code, o.name, o.area, o.target_value, oi.unit, oi.target_value AS ind_target,
+              (SELECT json_build_object('period', mm.period, 'value', mm.value)
+                 FROM objective_measurements mm
+                WHERE mm.indicator_id = oi.id
+                  AND date_part('year', mm.period) = date_part('year', CURRENT_DATE)
+                ORDER BY mm.period DESC LIMIT 1) AS last_measurement
+         FROM objectives o
+         LEFT JOIN LATERAL (
+           SELECT * FROM objective_indicators WHERE objective_id = o.id ORDER BY created_at LIMIT 1
+         ) oi ON TRUE
+        WHERE o.year = date_part('year', CURRENT_DATE)::int AND o.status = 'activo'
+        ORDER BY o.code`);
+
+    res.json({
+      findings: findings.rows,
+      trainings: trainings.rows,
+      trainings_overdue: overdue.rows[0]?.n || 0,
+      objectives: objectives.rows,
+    });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 export default router;

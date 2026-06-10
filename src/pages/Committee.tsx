@@ -63,7 +63,7 @@ export default function Committee() {
   }
   useEffect(() => { loadMeetings(); }, []);
 
-  const isAdmin = ['master_admin','sgi_leader'].includes(user?.role || '');
+  const isAdmin = ['master_admin','sgi_leader','director'].includes(user?.role || '');
 
   return (
     <div className="flex-1 overflow-y-auto bg-slate-50">

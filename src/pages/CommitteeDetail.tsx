@@ -9,7 +9,7 @@ import { api } from '@/lib/api';
 import {
   ArrowLeft, Plus, Trash2, Check, Loader2, CheckCircle2, Cloud,
   ClipboardList, ListChecks, Megaphone, AlertTriangle, GraduationCap,
-  LineChart, Search, FileText, CalendarDays, UserPlus,
+  LineChart, Search, FileText, CalendarDays, UserPlus, ChevronDown, ChevronRight,
 } from 'lucide-react';
 
 interface User { id: string; full_name: string; role: string; }
@@ -24,6 +24,10 @@ interface Task {
   priority?: string; due_date?: string | null; committee_id?: string | null;
   assignees: Assignee[];
 }
+interface CtxFinding { code: string; title: string; status: string; finding_type?: string; due_date?: string | null; area?: string; }
+interface CtxTraining { title: string; status: string; scheduled_date?: string | null; category?: string; is_mandatory?: boolean; }
+interface CtxObjective { code: string; name: string; area: string; target_value?: string; unit?: string; ind_target?: number | null; last_measurement?: { period: string; value: number } | null; }
+interface Context { findings: CtxFinding[]; trainings: CtxTraining[]; trainings_overdue: number; objectives: CtxObjective[]; }
 
 const TIPOS: Record<string, { label: string; cls: string; icon: any }> = {
   pendiente:    { label: 'Pendiente anterior', cls: 'bg-amber-100 text-amber-800 border-amber-300',     icon: ListChecks },
@@ -50,6 +54,8 @@ export default function CommitteeDetail() {
   const [prev, setPrev] = useState<Task[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [users, setUsers] = useState<User[]>([]);
+  const [ctx, setCtx] = useState<Context | null>(null);
+  const [ctxOpen, setCtxOpen] = useState(true);
   const [loading, setLoading] = useState(true);
   const [save, setSave] = useState<'idle' | 'saving' | 'saved'>('idle');
   const timers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
@@ -61,25 +67,27 @@ export default function CommitteeDetail() {
 
   const reload = useCallback(async () => {
     if (!id) return;
-    const [full, ag, pp, us] = await Promise.all([
+    const [full, ag, pp, us, cx] = await Promise.all([
       api.get<{ meeting: Meeting; tasks: Task[] }>(`/committee/${id}/full`).catch(() => null),
       api.get<AgendaItem[]>(`/committee/${id}/agenda`).catch(() => []),
       api.get<Task[]>(`/committee/${id}/pending-from-previous`).catch(() => []),
       api.get<User[]>('/users').catch(() => []),
+      api.get<Context>(`/committee/${id}/context`).catch(() => null),
     ]);
     if (full) { setMeeting(full.meeting); setTasks(full.tasks || []); }
     setItems(ag || []);
     // "anteriores" = tareas vivas que NO nacieron en esta misma reunión
     setPrev((pp || []).filter(t => t.committee_id !== id));
     setUsers(us || []);
+    setCtx(cx);
     setLoading(false);
   }, [id]);
 
   useEffect(() => { reload(); }, [reload]);
 
   // ---- Acta: puntos ----
-  async function addItem(tipo: string) {
-    const it = await api.post<AgendaItem>(`/committee/${id}/agenda`, { tipo, texto: '' });
+  async function addItem(tipo: string, texto = '') {
+    const it = await api.post<AgendaItem>(`/committee/${id}/agenda`, { tipo, texto });
     setItems(prevItems => [...prevItems, it]);
     flagSaved();
   }
@@ -194,6 +202,72 @@ export default function CommitteeDetail() {
             </div>
           )}
         </section>
+
+        {/* PANEL D — Contexto del mes a revisar (NC / capacitaciones / objetivos) */}
+        {ctx && (
+          <section className="bg-white border border-gray-200 rounded-xl">
+            <button onClick={() => setCtxOpen(o => !o)} className="w-full flex items-center gap-2 p-3 text-left">
+              <Search className="w-5 h-5 text-violet-600" />
+              <h2 className="text-base font-bold text-gray-900">Contexto del mes — revisar</h2>
+              <span className="text-xs text-gray-500">
+                {ctx.findings.length} NC · {ctx.trainings.length} capac. · {ctx.objectives.length} objetivos
+              </span>
+              <span className="ml-auto text-gray-400">{ctxOpen ? <ChevronDown className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}</span>
+            </button>
+            {ctxOpen && (
+              <div className="px-3 pb-3 space-y-4">
+                {/* NC / desvíos abiertos */}
+                <div>
+                  <h3 className="text-xs font-bold text-red-700 uppercase tracking-wide mb-1.5 flex items-center gap-1"><AlertTriangle className="w-3.5 h-3.5" /> NC / Desvíos abiertos ({ctx.findings.length})</h3>
+                  {ctx.findings.length === 0 ? <p className="text-xs text-gray-400 italic">Sin NC abiertas.</p> : (
+                    <div className="space-y-1">
+                      {ctx.findings.slice(0, 12).map(f => (
+                        <div key={f.code} className="flex items-center gap-2 text-sm border border-gray-100 rounded-lg px-2 py-1.5">
+                          <span className="font-mono text-[10px] text-gray-400">{f.code}</span>
+                          <span className="flex-1 min-w-0 truncate text-gray-800">{f.title}</span>
+                          <span className="text-[10px] font-bold text-red-600">{f.status}</span>
+                          <button onClick={() => addItem('nc', `${f.code} — ${f.title}`)} className="text-[10px] font-bold text-dassa-red hover:underline flex items-center gap-0.5 shrink-0"><Plus className="w-3 h-3" />acta</button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                {/* Capacitaciones del mes */}
+                <div>
+                  <h3 className="text-xs font-bold text-indigo-700 uppercase tracking-wide mb-1.5 flex items-center gap-1"><GraduationCap className="w-3.5 h-3.5" /> Capacitaciones del mes ({ctx.trainings.length}) · <span className="text-amber-600">{ctx.trainings_overdue} vencidas en total</span></h3>
+                  {ctx.trainings.length === 0 ? <p className="text-xs text-gray-400 italic">Sin capacitaciones programadas este mes.</p> : (
+                    <div className="space-y-1">
+                      {ctx.trainings.map((t, i) => (
+                        <div key={i} className="flex items-center gap-2 text-sm border border-gray-100 rounded-lg px-2 py-1.5">
+                          <span className="flex-1 min-w-0 truncate text-gray-800">{t.title}</span>
+                          {t.is_mandatory && <span className="text-[9px] font-bold bg-red-100 text-red-700 px-1 rounded">OBLIG</span>}
+                          <span className="text-[10px] text-gray-500">{t.status}</span>
+                          <button onClick={() => addItem('capacitacion', `Capacitación: ${t.title}`)} className="text-[10px] font-bold text-dassa-red hover:underline flex items-center gap-0.5 shrink-0"><Plus className="w-3 h-3" />acta</button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                {/* Objetivos + mediciones */}
+                <div>
+                  <h3 className="text-xs font-bold text-emerald-700 uppercase tracking-wide mb-1.5 flex items-center gap-1"><LineChart className="w-3.5 h-3.5" /> Objetivos {new Date().getFullYear()} — cumplimiento ({ctx.objectives.length})</h3>
+                  <div className="space-y-1">
+                    {ctx.objectives.map(o => (
+                      <div key={o.code} className="flex items-center gap-2 text-sm border border-gray-100 rounded-lg px-2 py-1.5">
+                        <span className="flex-1 min-w-0 truncate text-gray-800">{o.name}</span>
+                        <span className="text-[11px] tabular-nums text-gray-700">
+                          {o.last_measurement ? `${o.last_measurement.value}${o.unit || ''}` : '—'}
+                          <span className="text-gray-400"> / {o.target_value || (o.ind_target ?? '')}</span>
+                        </span>
+                        <button onClick={() => addItem('medicion', `${o.name}: último ${o.last_measurement ? o.last_measurement.value + (o.unit || '') : 's/d'} (meta ${o.target_value || o.ind_target || ''})`)} className="text-[10px] font-bold text-dassa-red hover:underline flex items-center gap-0.5 shrink-0"><Plus className="w-3 h-3" />acta</button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+          </section>
+        )}
 
         {/* PANEL B — Acta por puntos */}
         <section>

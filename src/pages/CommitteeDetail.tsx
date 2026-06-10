@@ -145,15 +145,25 @@ export default function CommitteeDetail() {
     } finally { setCreating(false); }
   }
 
-  const [sending, setSending] = useState<'' | 'test' | 'all'>('');
+  const [sending, setSending] = useState<'' | 'test' | 'close'>('');
   async function sendSummary(test: boolean) {
-    if (!test && !confirm('¿Enviar el resumen de la reunión por mail a TODOS los usuarios de Trinorma?')) return;
-    setSending(test ? 'test' : 'all');
+    setSending('test');
     try {
       const r = await api.post<{ sent_to: number }>(`/committee/${id}/send-summary`, { test });
-      alert(test ? `Previsualización enviada a tu correo (${r.sent_to}).` : `Resumen enviado a ${r.sent_to} usuarios de Trinorma.`);
+      alert(`Previsualización enviada a tu correo (${r.sent_to}).`);
     } catch (e: any) {
       alert('Error al enviar: ' + (e?.message || 'desconocido'));
+    } finally { setSending(''); }
+  }
+  async function closeAndSign() {
+    if (!confirm('TRINY firmará y cerrará el acta, y enviará el resumen por mail a TODOS los usuarios de Trinorma. ¿Confirmás?')) return;
+    setSending('close');
+    try {
+      const r = await api.post<{ sent_to: number }>(`/committee/${id}/close-and-sign`, {});
+      alert(`Acta cerrada y firmada por TRINY. Resumen enviado a ${r.sent_to} usuarios de Trinorma.`);
+      await reload();
+    } catch (e: any) {
+      alert('Error al cerrar: ' + (e?.message || 'desconocido'));
     } finally { setSending(''); }
   }
 
@@ -388,17 +398,19 @@ export default function CommitteeDetail() {
             <h2 className="text-base font-bold text-gray-900">Cierre de la reunión</h2>
           </div>
           <p className="text-xs text-gray-500 mb-3">
-            Enviá el resumen (puntos del acta + tareas y responsables) por mail a todos los usuarios de Trinorma.
-            {meeting.summary_sent_at && <span className="text-emerald-600 font-medium"> · Ya enviado el {new Date(meeting.summary_sent_at).toLocaleString('es-AR')}</span>}
+            TRINY firma y cierra el acta, y envía el resumen (puntos + tareas y responsables) por mail a todos los usuarios de Trinorma.
+            {meeting.status === 'cerrada' && <span className="text-emerald-600 font-medium"> · Cerrada y firmada por TRINY</span>}
+            {meeting.summary_sent_at && <span className="text-gray-400"> · resumen enviado el {new Date(meeting.summary_sent_at).toLocaleString('es-AR')}</span>}
           </p>
           <div className="flex flex-wrap gap-2">
             <button onClick={() => sendSummary(true)} disabled={!!sending}
               className="text-sm font-medium border border-gray-300 rounded-lg px-3 py-2 flex items-center gap-1.5 hover:bg-gray-50 disabled:opacity-50">
               {sending === 'test' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Mail className="w-4 h-4" />} Previsualizar (a mí)
             </button>
-            <button onClick={() => sendSummary(false)} disabled={!!sending}
+            <button onClick={closeAndSign} disabled={!!sending || meeting.status === 'cerrada'}
               className="text-sm font-bold bg-dassa-red hover:bg-dassa-red-deep text-white rounded-lg px-4 py-2 flex items-center gap-1.5 disabled:opacity-50">
-              {sending === 'all' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />} Enviar resumen a Trinorma
+              {sending === 'close' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+              {meeting.status === 'cerrada' ? 'Reunión cerrada' : 'Cerrar y firmar como TRINY + enviar a todos'}
             </button>
           </div>
         </section>

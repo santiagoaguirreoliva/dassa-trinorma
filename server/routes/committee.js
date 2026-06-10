@@ -549,67 +549,97 @@ router.get('/:id/context', async (req, res) => {
 
 // ═══════════════════════════════════════════════════════════════════
 // RESUMEN POR MAIL · al cerrar la reunión se envía a toda Trinorma
-// Body opcional { test:true } → manda solo a quien dispara (previsualización)
 // ═══════════════════════════════════════════════════════════════════
+
+// Helper: arma {subject, html} del resumen de una reunión
+async function buildSummaryEmail(meetingId, { tag } = {}) {
+  const m = (await query('SELECT * FROM committee_meetings WHERE id=$1', [meetingId])).rows[0];
+  if (!m) return null;
+  const items = (await query(
+    'SELECT tipo, texto, resuelto FROM committee_agenda_items WHERE meeting_id=$1 ORDER BY orden, created_at', [meetingId])).rows;
+  const tasks = (await query(`
+    SELECT t.task_number, t.title, t.due_date,
+           COALESCE((SELECT string_agg(u.full_name, ', ') FROM task_assignees ta JOIN users u ON u.id=ta.user_id WHERE ta.task_id=t.id),
+                    (SELECT full_name FROM users WHERE id=t.assigned_to)) AS resp
+      FROM tasks t WHERE t.committee_id=$1 ORDER BY t.task_number`, [meetingId])).rows;
+
+  const fdate = new Date(m.meeting_date).toLocaleDateString('es-AR', { day: 'numeric', month: 'long', year: 'numeric' });
+  const TIPO_LBL = { pendiente: 'Pendiente anterior', nuevo: 'Tema nuevo', nc: 'NC / Desvío', capacitacion: 'Capacitación', medicion: 'Medición / Objetivo', auditoria: 'Auditoría', otro: 'Otro' };
+  const esc = (s) => String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+  let body = `<p style="margin:0 0 12px"><strong>Fecha:</strong> ${fdate}<br><strong>Lugar:</strong> ${esc(m.location)}<br><strong>Asistentes:</strong> ${(m.attendees || []).map(esc).join(', ') || '—'}</p>`;
+  if (m.preamble) body += `<p style="margin:0 0 12px;color:#555">${esc(m.preamble)}</p>`;
+  if (items.length) {
+    body += `<h3 style="color:#C8202C;margin:18px 0 6px">Puntos tratados</h3><ul style="margin:0;padding-left:18px">`;
+    for (const it of items) body += `<li style="margin-bottom:6px"><strong>[${TIPO_LBL[it.tipo] || it.tipo}]</strong> ${esc(it.texto)}${it.resuelto ? ' <span style="color:#16a34a">✓ resuelto</span>' : ''}</li>`;
+    body += `</ul>`;
+  }
+  if (tasks.length) {
+    body += `<h3 style="color:#C8202C;margin:18px 0 6px">Tareas y compromisos (${tasks.length})</h3>`;
+    body += `<table style="width:100%;border-collapse:collapse;font-size:13px"><tr style="background:#f3f4f6"><th align="left" style="padding:6px">#</th><th align="left" style="padding:6px">Tarea</th><th align="left" style="padding:6px">Responsable</th><th align="left" style="padding:6px">Vence</th></tr>`;
+    for (const t of tasks) body += `<tr style="border-bottom:1px solid #eee"><td style="padding:6px;color:#888">${esc(t.task_number)}</td><td style="padding:6px">${esc(t.title)}</td><td style="padding:6px">${esc(t.resp) || '—'}</td><td style="padding:6px">${t.due_date ? new Date(t.due_date).toLocaleDateString('es-AR') : '—'}</td></tr>`;
+    body += `</table>`;
+  }
+  if (!items.length && !tasks.length) body += `<p style="color:#888"><em>La reunión no registró puntos ni tareas.</em></p>`;
+  body += `<p style="margin-top:16px;font-size:12px;color:#888">Cada responsable tiene sus tareas en <strong>Mis Pendientes</strong> de la app TRINORMA.</p>`;
+  body += `<p style="margin-top:18px;padding-top:12px;border-top:1px solid #eee;font-size:12px;color:#999">📋 Acta cerrada y firmada digitalmente por <strong>TRINY</strong> · Agente IA del SGI, en nombre del Comité Mixto de DASSA · ${new Date().toLocaleString('es-AR')}</p>`;
+
+  const { createRequire } = await import('module');
+  const reqCjs = createRequire(import.meta.url);
+  const mailer = reqCjs('../services/mailer.cjs');
+  const subject = `[Comité Mixto] Resumen de la reunión del ${fdate}${tag ? ` ${tag}` : ''}`;
+  const html = mailer.layout
+    ? mailer.layout({ title: 'Resumen · Comité Mixto', body, ctaUrl: (process.env.APP_URL || 'https://trinorma.dassa.com.ar') + '/committee/' + meetingId, ctaLabel: 'Ver la reunión en TRINORMA' })
+    : `<h2>Resumen Comité Mixto</h2>${body}`;
+  return { mailer, subject, html, fdate };
+}
+
+async function recipientsAll() {
+  return (await query("SELECT email FROM users WHERE is_active=true AND email IS NOT NULL AND email <> ''")).rows.map(r => r.email);
+}
+
+// POST /:id/send-summary · { test:true } previsualiza al que dispara; sino a toda Trinorma
 router.post('/:id/send-summary', async (req, res) => {
   const test = !!(req.body && req.body.test);
   try {
-    const mRes = await query('SELECT * FROM committee_meetings WHERE id=$1', [req.params.id]);
-    const m = mRes.rows[0];
-    if (!m) return res.status(404).json({ error: 'meeting not found' });
-
-    const items = (await query(
-      'SELECT tipo, texto, resuelto FROM committee_agenda_items WHERE meeting_id=$1 ORDER BY orden, created_at', [req.params.id])).rows;
-    const tasks = (await query(`
-      SELECT t.task_number, t.title, t.due_date,
-             COALESCE((SELECT string_agg(u.full_name, ', ') FROM task_assignees ta JOIN users u ON u.id=ta.user_id WHERE ta.task_id=t.id),
-                      (SELECT full_name FROM users WHERE id=t.assigned_to)) AS resp
-        FROM tasks t WHERE t.committee_id=$1 ORDER BY t.task_number`, [req.params.id])).rows;
-
-    const fdate = new Date(m.meeting_date).toLocaleDateString('es-AR', { day: 'numeric', month: 'long', year: 'numeric' });
-    const TIPO_LBL = { pendiente: 'Pendiente anterior', nuevo: 'Tema nuevo', nc: 'NC / Desvío', capacitacion: 'Capacitación', medicion: 'Medición / Objetivo', auditoria: 'Auditoría', otro: 'Otro' };
-    const esc = (s) => String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-
-    let body = `<p style="margin:0 0 12px"><strong>Fecha:</strong> ${fdate}<br><strong>Lugar:</strong> ${esc(m.location)}<br><strong>Asistentes:</strong> ${(m.attendees || []).map(esc).join(', ') || '—'}</p>`;
-    if (m.preamble) body += `<p style="margin:0 0 12px;color:#555">${esc(m.preamble)}</p>`;
-    if (items.length) {
-      body += `<h3 style="color:#C8202C;margin:18px 0 6px">Puntos tratados</h3><ul style="margin:0;padding-left:18px">`;
-      for (const it of items) body += `<li style="margin-bottom:6px"><strong>[${TIPO_LBL[it.tipo] || it.tipo}]</strong> ${esc(it.texto)}${it.resuelto ? ' <span style="color:#16a34a">✓ resuelto</span>' : ''}</li>`;
-      body += `</ul>`;
-    }
-    if (tasks.length) {
-      body += `<h3 style="color:#C8202C;margin:18px 0 6px">Tareas y compromisos (${tasks.length})</h3>`;
-      body += `<table style="width:100%;border-collapse:collapse;font-size:13px"><tr style="background:#f3f4f6"><th align="left" style="padding:6px">#</th><th align="left" style="padding:6px">Tarea</th><th align="left" style="padding:6px">Responsable</th><th align="left" style="padding:6px">Vence</th></tr>`;
-      for (const t of tasks) body += `<tr style="border-bottom:1px solid #eee"><td style="padding:6px;color:#888">${esc(t.task_number)}</td><td style="padding:6px">${esc(t.title)}</td><td style="padding:6px">${esc(t.resp) || '—'}</td><td style="padding:6px">${t.due_date ? new Date(t.due_date).toLocaleDateString('es-AR') : '—'}</td></tr>`;
-      body += `</table>`;
-    }
-    if (!items.length && !tasks.length) body += `<p style="color:#888"><em>La reunión no registró puntos ni tareas.</em></p>`;
-    body += `<p style="margin-top:16px;font-size:12px;color:#888">Cada responsable tiene sus tareas en <strong>Mis Pendientes</strong> de la app TRINORMA.</p>`;
-
-    // Destinatarios
-    let recipients;
-    if (test) {
-      recipients = [req.user.email];
-    } else {
-      recipients = (await query("SELECT email FROM users WHERE is_active=true AND email IS NOT NULL AND email <> ''")).rows.map(r => r.email);
-    }
+    const built = await buildSummaryEmail(req.params.id, { tag: test ? '(PRUEBA)' : '' });
+    if (!built) return res.status(404).json({ error: 'meeting not found' });
+    const recipients = test ? [req.user.email] : await recipientsAll();
     if (!recipients.length) return res.status(400).json({ error: 'Sin destinatarios con email' });
-
-    const { createRequire } = await import('module');
-    const reqCjs = createRequire(import.meta.url);
-    const mailer = reqCjs('../services/mailer.cjs');
-    const subject = `[Comité Mixto] Resumen de la reunión del ${fdate}${test ? ' (PRUEBA)' : ''}`;
-    const html = mailer.layout
-      ? mailer.layout({ title: `Resumen · Comité Mixto`, body, ctaUrl: (process.env.APP_URL || 'https://trinorma.dassa.com.ar') + '/committee/' + req.params.id, ctaLabel: 'Ver la reunión en TRINORMA' })
-      : `<h2>Resumen Comité Mixto</h2>${body}`;
-    await mailer.sendMail({ to: recipients.join(', '), subject, html });
-
-    if (!test) {
-      await query('UPDATE committee_meetings SET summary_sent_at=NOW(), summary_sent_count=$1, updated_at=NOW() WHERE id=$2', [recipients.length, req.params.id]);
-    }
+    await built.mailer.sendMail({ to: recipients.join(', '), subject: built.subject, html: built.html });
+    if (!test) await query('UPDATE committee_meetings SET summary_sent_at=NOW(), summary_sent_count=$1, updated_at=NOW() WHERE id=$2', [recipients.length, req.params.id]);
     res.json({ ok: true, test, sent_to: recipients.length });
   } catch (e) {
     console.error('[send-summary]', e);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// POST /:id/close-and-sign · TRINY firma y cierra la reunión + envía el resumen a toda Trinorma
+router.post('/:id/close-and-sign', async (req, res) => {
+  try {
+    const m = (await query('SELECT signatures FROM committee_meetings WHERE id=$1', [req.params.id])).rows[0];
+    if (!m) return res.status(404).json({ error: 'meeting not found' });
+    const sigs = m.signatures || [];
+    // Firma del agente TRINY (en nombre del comité), conservando quién la disparó
+    sigs.push({
+      agent: true, name: 'TRINY · Agente IA del SGI', role: 'agente_sgi',
+      signed_at: new Date().toISOString(),
+      triggered_by: req.user.full_name, triggered_by_id: req.user.id,
+      note: 'Cierre del acta y notificación a Trinorma',
+    });
+    const built = await buildSummaryEmail(req.params.id, {});
+    const recipients = await recipientsAll();
+    if (recipients.length) await built.mailer.sendMail({ to: recipients.join(', '), subject: built.subject, html: built.html });
+    await query(
+      `UPDATE committee_meetings
+          SET signatures=$1, status='cerrada', closed_at=NOW(),
+              summary_sent_at=NOW(), summary_sent_count=$2, updated_at=NOW()
+        WHERE id=$3`,
+      [JSON.stringify(sigs), recipients.length, req.params.id]);
+    res.json({ ok: true, closed: true, signed_by: 'TRINY', sent_to: recipients.length });
+  } catch (e) {
+    console.error('[close-and-sign]', e);
     res.status(500).json({ error: e.message });
   }
 });

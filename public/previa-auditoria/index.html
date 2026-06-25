@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Previa Auditoría · SGI TRINORMA · DASSA</title>
+<link rel="icon" type="image/png" href="favicon.png" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800;900&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --red:#BF1E2E; --red-tint:#FBE7E9; --red-deep:#9A1825; --bordo:#7A1320; --bordo-dark:#4D0C16;
+    --celeste:#5BBDC9; --celeste-tint:#E2F4F7; --celeste-deep:#2E96A4; --navy:#0F1A4A;
+    --n0:#FFFFFF; --n50:#FAFAFA; --n100:#F2F2F2; --n200:#E7E7E7; --n300:#D5D5D5;
+    --n400:#B2B2B2; --n500:#8A8A8A; --n600:#5E5E5E; --n700:#3F3F3F; --n800:#262626; --n900:#141414;
+    --ok:#1E7A4D; --ok-tint:#E6F4EC; --warn:#B26A00; --warn-tint:#FBF0DD;
+    --font:"Montserrat",system-ui,-apple-system,sans-serif; --font2:"Open Sans",system-ui,sans-serif;
+    --shadow:0 8px 24px rgba(15,26,74,.08); --shadow-lg:0 14px 40px rgba(15,26,74,.14);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{font-family:var(--font);color:var(--n800);background:var(--n100);line-height:1.5;-webkit-font-smoothing:antialiased}
+  a{color:inherit;text-decoration:none}
+  .wrap{max-width:1120px;margin:0 auto;padding:0 24px}
+
+  /* ---------- HERO ---------- */
+  header.hero{background:var(--red);color:#fff;position:relative;overflow:hidden}
+  header.hero::after{content:"";position:absolute;right:-120px;top:-120px;width:420px;height:420px;border:60px solid rgba(255,255,255,.06);border-radius:50%}
+  .hero-inner{position:relative;z-index:1;padding:38px 24px 48px}
+  .topbar{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:34px}
+  .topbar img{height:38px;filter:brightness(0) invert(1)}
+  .topbar .meta{font-family:var(--font2);font-size:12.5px;opacity:.92;text-align:right;line-height:1.6}
+  .eyebrow{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;opacity:.9;margin-bottom:12px}
+  h1.title{font-size:clamp(34px,6vw,60px);font-weight:900;line-height:1.04;letter-spacing:-.01em}
+  h1.title .em{color:var(--celeste)}
+  .lead{font-family:var(--font2);max-width:680px;margin-top:16px;font-size:16px;opacity:.95;line-height:1.65}
+  .hero-grid{display:grid;grid-template-columns:1.5fr 1fr;gap:28px;margin-top:34px;align-items:center}
+  @media(max-width:760px){.hero-grid{grid-template-columns:1fr}}
+  .gauge{background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.22);border-radius:20px;padding:24px;text-align:center}
+  .gauge .ring{--p:81;width:148px;height:148px;border-radius:50%;margin:4px auto 14px;
+    background:conic-gradient(var(--celeste) calc(var(--p)*1%), rgba(255,255,255,.18) 0);
+    display:grid;place-items:center;position:relative}
+  .gauge .ring::before{content:"";position:absolute;inset:14px;border-radius:50%;background:var(--red)}
+  .gauge .ring b{position:relative;font-size:38px;font-weight:900;line-height:1}
+  .gauge .ring b span{font-size:18px;font-weight:700;vertical-align:super}
+  .gauge .glabel{font-size:12px;letter-spacing:.08em;text-transform:uppercase;font-weight:700;opacity:.9}
+  .gauge .gsub{font-family:var(--font2);font-size:12.5px;opacity:.85;margin-top:6px}
+
+  /* ---------- SECTION ---------- */
+  section{padding:42px 0}
+  .sec-eyebrow{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--red);margin-bottom:8px}
+  h2.sec-title{font-size:clamp(22px,3.5vw,30px);font-weight:800;color:var(--navy);letter-spacing:-.01em}
+  .sec-desc{font-family:var(--font2);color:var(--n600);max-width:760px;margin-top:10px;font-size:15px}
+
+  /* ---------- RESUMEN ---------- */
+  .resumen{background:var(--n0);border:1px solid var(--n200);border-left:5px solid var(--red);border-radius:16px;padding:26px 28px;box-shadow:var(--shadow);font-family:var(--font2);font-size:15.5px;line-height:1.7;color:var(--n700)}
+  .resumen b{color:var(--navy);font-family:var(--font);font-weight:700}
+
+  /* ---------- MAPA DE PROCESOS ---------- */
+  .map{background:var(--n0);border:1px solid var(--n200);border-radius:18px;padding:22px;box-shadow:var(--shadow);overflow:hidden}
+  .map .band{display:flex;align-items:center;gap:10px;margin:18px 0 8px}
+  .map .band b{font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--red)}
+  .map .band .ln{flex:1;height:1px;background:var(--n200)}
+  .circuit{margin:14px 0}
+  .circuit .cname{display:inline-block;font-weight:800;font-size:13px;color:#fff;background:var(--navy);padding:5px 14px;border-radius:9999px;margin-bottom:10px}
+  .flow{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+  .step{background:var(--celeste-tint);border:1px solid var(--celeste);color:var(--celeste-deep);font-size:11.5px;font-weight:600;padding:6px 10px;border-radius:8px;line-height:1.25}
+  .arrow{color:var(--n400);font-weight:800;font-size:12px}
+  .entrada .step{background:var(--red-tint);border-color:#eeb9bf;color:var(--red-deep)}
+  .soportes{display:flex;flex-wrap:wrap;gap:7px;margin-top:6px}
+  .soportes .sp{background:var(--n100);border:1px solid var(--n200);color:var(--n700);font-size:11.5px;font-weight:600;padding:6px 11px;border-radius:8px}
+  .soportes .sp.gap{background:var(--warn-tint);border-color:#e8cf9a;color:var(--warn)}
+  .map-note{font-family:var(--font2);font-size:13px;color:var(--n600);margin-top:16px;padding:12px 14px;background:var(--warn-tint);border-radius:10px;border:1px solid #ecd6a6}
+  .map-note b{color:var(--warn)}
+
+  /* ---------- LEYENDA + NAV ---------- */
+  .legend{display:flex;flex-wrap:wrap;gap:18px;align-items:center;margin-top:8px;font-family:var(--font2);font-size:13.5px;color:var(--n600)}
+  .legend .dot{display:inline-block;width:11px;height:11px;border-radius:50%;margin-right:7px;vertical-align:middle}
+  .quicknav{display:flex;flex-wrap:wrap;gap:8px;margin-top:22px}
+  .quicknav a{display:inline-flex;align-items:center;gap:7px;background:var(--n0);border:1px solid var(--n200);border-radius:9999px;padding:7px 14px;font-size:13px;font-weight:600;color:var(--n700);transition:.15s}
+  .quicknav a:hover{border-color:var(--red);color:var(--red)}
+  .quicknav a .qn{display:inline-grid;place-items:center;width:20px;height:20px;border-radius:50%;background:var(--navy);color:#fff;font-size:11px;font-weight:800}
+
+  /* ---------- CARDS ---------- */
+  .cards{display:flex;flex-direction:column;gap:20px}
+  .card{background:var(--n0);border:1px solid var(--n200);border-radius:18px;box-shadow:var(--shadow);overflow:hidden;scroll-margin-top:18px}
+  .card.done{border-left:5px solid var(--ok)}
+  .card.partial{border-left:5px solid var(--warn)}
+  .card.todo{border-left:5px solid var(--red)}
+  .chead{display:flex;align-items:flex-start;gap:18px;padding:22px 24px 16px}
+  .cnum{flex:none;width:54px;height:54px;border-radius:14px;background:var(--navy);color:#fff;display:grid;place-items:center;font-size:24px;font-weight:900}
+  .ctitle-wrap{flex:1;min-width:0}
+  .ctitle{font-size:19px;font-weight:800;color:var(--navy);letter-spacing:-.01em}
+  .ciso{font-family:var(--font2);font-size:12px;color:var(--n500);margin-top:4px}
+  .cright{flex:none;text-align:right;min-width:128px}
+  .badge{display:inline-block;font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;padding:5px 11px;border-radius:9999px}
+  .badge.done{background:var(--ok-tint);color:var(--ok)}
+  .badge.partial{background:var(--warn-tint);color:var(--warn)}
+  .badge.todo{background:var(--red-tint);color:var(--red)}
+  .pct{font-size:13px;font-weight:800;color:var(--n700);margin-top:8px}
+  .bar{height:7px;border-radius:9999px;background:var(--n200);overflow:hidden;margin:0 24px}
+  .bar > i{display:block;height:100%;border-radius:9999px}
+  .bar > i.done{background:var(--ok)} .bar > i.partial{background:var(--warn)} .bar > i.todo{background:var(--red)}
+  .cbody{padding:18px 24px 8px}
+  .cresumen{font-family:var(--font2);font-size:14.5px;color:var(--n700);line-height:1.65;margin-bottom:18px}
+  .cols{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  @media(max-width:680px){.cols{grid-template-columns:1fr}}
+  .col h4{font-size:12px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;margin-bottom:9px;display:flex;align-items:center;gap:7px}
+  .col.ok h4{color:var(--ok)} .col.pend h4{color:var(--red)}
+  .col ul{list-style:none;display:flex;flex-direction:column;gap:7px}
+  .col li{font-family:var(--font2);font-size:13px;line-height:1.5;color:var(--n700);padding-left:18px;position:relative}
+  .col.ok li::before{content:"›";position:absolute;left:2px;color:var(--ok);font-weight:800}
+  .col.pend li::before{content:"›";position:absolute;left:2px;color:var(--red);font-weight:800}
+  .metrics{display:flex;flex-wrap:wrap;gap:7px;margin:18px 0 4px}
+  .metrics .m{font-family:var(--font2);font-size:11.5px;background:var(--n100);border:1px solid var(--n200);color:var(--n600);padding:4px 10px;border-radius:8px}
+  details.reco{margin-top:14px;border-top:1px dashed var(--n300);padding-top:12px}
+  details.reco summary{cursor:pointer;font-size:12.5px;font-weight:700;color:var(--celeste-deep);list-style:none;display:flex;align-items:center;gap:7px}
+  details.reco summary::-webkit-details-marker{display:none}
+  details.reco summary::before{content:"+";display:inline-grid;place-items:center;width:18px;height:18px;border-radius:50%;background:var(--celeste-tint);color:var(--celeste-deep);font-weight:800}
+  details.reco[open] summary::before{content:"–"}
+  details.reco ul{list-style:none;margin-top:12px;display:flex;flex-direction:column;gap:8px}
+  details.reco li{font-family:var(--font2);font-size:13px;color:var(--n700);line-height:1.55;padding-left:18px;position:relative}
+  details.reco li::before{content:"→";position:absolute;left:0;color:var(--celeste-deep);font-weight:700}
+  .cfoot{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;padding:16px 24px 22px;margin-top:6px;border-top:1px solid var(--n100)}
+  .btn{display:inline-flex;align-items:center;gap:9px;background:var(--red);color:#fff;font-weight:700;font-size:13.5px;padding:11px 22px;border-radius:9999px;transition:.15s;border:none;cursor:pointer}
+  .btn:hover{background:var(--red-deep)}
+  .btn .ext{font-size:11px;opacity:.8}
+  .validar{display:inline-flex;align-items:center;gap:9px;font-family:var(--font2);font-size:13px;font-weight:600;color:var(--n600);cursor:pointer;user-select:none}
+  .validar input{width:18px;height:18px;accent-color:var(--ok);cursor:pointer}
+  .validar.checked{color:var(--ok)}
+
+  /* ---------- BRECHAS ---------- */
+  .gaps{display:flex;flex-direction:column;gap:12px}
+  .gap{display:flex;gap:14px;background:var(--n0);border:1px solid var(--n200);border-radius:14px;padding:16px 18px;box-shadow:var(--shadow)}
+  .gap .pri{flex:none;font-size:11px;font-weight:800;letter-spacing:.04em;padding:5px 10px;border-radius:8px;height:fit-content}
+  .gap .pri.p0{background:var(--red-tint);color:var(--red)}
+  .gap .pri.p1{background:var(--warn-tint);color:var(--warn)}
+  .gap .pri.p2{background:var(--celeste-tint);color:var(--celeste-deep)}
+  .gap .pri.ok{background:var(--ok-tint);color:var(--ok)}
+  .gap p{font-family:var(--font2);font-size:14px;color:var(--n700);line-height:1.6}
+  .gap p b{font-family:var(--font);color:var(--navy);font-weight:700}
+
+  /* ---------- ORDEN NIXA ---------- */
+  .orden{background:var(--navy);border-radius:18px;padding:30px;color:#fff}
+  .orden h2{color:#fff} .orden .sec-eyebrow{color:var(--celeste)}
+  .orden .sec-desc{color:rgba(255,255,255,.8)}
+  .steps{counter-reset:s;display:flex;flex-direction:column;gap:10px;margin-top:22px}
+  .ostep{display:flex;gap:14px;align-items:flex-start;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:14px 16px}
+  .ostep .on{flex:none;width:28px;height:28px;border-radius:50%;background:var(--celeste);color:var(--navy);font-weight:800;display:grid;place-items:center;font-size:13px}
+  .ostep p{font-family:var(--font2);font-size:14px;line-height:1.55;opacity:.95}
+  .ostep p b{font-family:var(--font);font-weight:700;opacity:1}
+
+  /* ---------- FOOTER ---------- */
+  footer{background:var(--bordo);color:#fff;padding:36px 0;margin-top:48px}
+  footer .wrap{display:flex;align-items:center;justify-content:space-between;gap:18px;flex-wrap:wrap}
+  footer img{height:30px;filter:brightness(0) invert(1)}
+  footer .ft{font-family:var(--font2);font-size:12.5px;opacity:.8;line-height:1.7;text-align:right}
+  .reset{font-family:var(--font2);font-size:12px;color:rgba(255,255,255,.7);text-decoration:underline;cursor:pointer;background:none;border:none}
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="hero-inner wrap">
+    <div class="topbar">
+      <img src="logo.png" alt="DASSA" />
+      <div class="meta">
+        Documento de trabajo interno · 25/06/2026<br/>
+        Revisa: Nixa Méndez · Aprueba: Santiago Aguirre
+      </div>
+    </div>
+    <div class="eyebrow">Sistema de Gestión Integrado · TRINORMA · ISO 9001 · 14001 · 45001</div>
+    <h1 class="title">Previa <span class="em">Auditoría</span></h1>
+    <div class="hero-grid">
+      <p class="lead">Recorrido punto por punto del circuito del Sistema de Gestión, del mapa de procesos a los objetivos. Cada punto enlaza a su sección en la aplicación y muestra lo consolidado y lo que resta cerrar antes de la auditoría. Pensado para validar junto a Nixa.</p>
+      <div class="gauge">
+        <div class="ring"><b id="gauge-num">81<span>%</span></b></div>
+        <div class="glabel">Preparación general</div>
+        <div class="gsub">Actualizado 25/06 tras el build nativo · +5 puntos</div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<section><div class="wrap">
+  <div class="sec-eyebrow">Síntesis</div>
+  <h2 class="sec-title">Dónde estamos parados</h2>
+  <div class="resumen" style="margin-top:18px">
+    El Sistema de Gestión llega a la previa con un <b>armazón documental sólido</b> y un foco de trabajo claro en evidencia y operación. Lo estructural —roles, fichas de puesto, dotación y procedimientos por puesto (cláusulas <b>5.3</b> y <b>7.5</b>)— está consolidado: organigrama vivo, 25 fichas activas con titular real y matriz de procedimientos por ficha. El esfuerzo previo a la auditoría se concentra en tres frentes: <b>registrar la evidencia de capacitaciones realizadas</b> (7.2), <b>exponer política, misión y valores</b> al colaborador en su perfil (7.3 y 5.2), y <b>poner al día la medición de objetivos</b> y las acciones de mejora (6.2, 9.1 y 10). Cerrando los puntos 6, 7 y 8, el sistema pasa de auditable con observaciones a auditable con confianza.
+  </div>
+  <div style="margin-top:16px;background:var(--ok-tint);border:1px solid #bfe3cd;border-left:5px solid var(--ok);border-radius:14px;padding:18px 22px">
+    <div style="font-size:12px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--ok);margin-bottom:10px">Avances del 25/06</div>
+    <ul style="list-style:none;display:grid;grid-template-columns:1fr 1fr;gap:8px 22px;font-family:var(--font2);font-size:13.5px;color:var(--n700)">
+      <li style="padding-left:18px;position:relative"><span style="position:absolute;left:0;color:var(--ok);font-weight:800">✓</span> Mapa de procesos <b>nativo</b> en la app, fiel a F-TRI-03</li>
+      <li style="padding-left:18px;position:relative"><span style="position:absolute;left:0;color:var(--ok);font-weight:800">✓</span> 4 circuitos <b>separados</b> marítimo/terrestre (impo y expo)</li>
+      <li style="padding-left:18px;position:relative"><span style="position:absolute;left:0;color:var(--ok);font-weight:800">✓</span> Procedimientos del SGI <b>nativos</b> con árbol y buscador</li>
+      <li style="padding-left:18px;position:relative"><span style="position:absolute;left:0;color:var(--ok);font-weight:800">✓</span> Menú desambiguado: instructivos de la app aparte</li>
+      <li style="padding-left:18px;position:relative"><span style="position:absolute;left:0;color:var(--ok);font-weight:800">✓</span> Organigrama corregido (3 ajustes, 0 fichas sin nodo)</li>
+      <li style="padding-left:18px;position:relative"><span style="position:absolute;left:0;color:var(--ok);font-weight:800">✓</span> Pedidos a María enviados (contactos y capacitaciones)</li>
+    </ul>
+  </div>
+</div></section>
+
+<section style="padding-top:6px"><div class="wrap">
+  <div class="sec-eyebrow">Punto 0 · Cláusula 4.4</div>
+  <h2 class="sec-title">Mapa de procesos (F-TRI-03 Rev. 02)</h2>
+  <p class="sec-desc">Estructura oficial aprobada: la entrada comercial alimenta los cuatro circuitos operativos, sostenidos por los procesos de soporte. Así está documentado y así lo cubre el sistema.</p>
+  <div class="map" style="margin-top:20px">
+    <div class="band"><b>Entrada · de cliente a requisito</b><span class="ln"></span></div>
+    <div class="flow entrada">
+      <span class="step">Determinación de requisitos</span><span class="arrow">→</span>
+      <span class="step">Definir mercado</span><span class="arrow">→</span>
+      <span class="step">Contactar</span><span class="arrow">→</span>
+      <span class="step">Despertar interés</span><span class="arrow">→</span>
+      <span class="step">Definición producto/servicio</span><span class="arrow">→</span>
+      <span class="step">Oferta</span><span class="arrow">→</span>
+      <span class="step">Fidelizar / firma de propuesta</span>
+    </div>
+    <div class="band"><b>Procesos operativos · los 4 circuitos</b><span class="ln"></span></div>
+    <div id="circuits"></div>
+    <div class="band"><b>Procesos de soporte</b><span class="ln"></span></div>
+    <div class="soportes" id="soportes"></div>
+    <div class="map-note"><b>Observación para la auditoría:</b> el mapa distingue cuatro circuitos (Importación / Exportación × Marítimo / Terrestre), pero los procedimientos los consolidan en dos (P-TRI-14 Importación y P-TRI-13 Exportación), sin separar marítimo de terrestre. A definir con Nixa: abrir los procedimientos o documentar los cuatro circuitos como secciones internas. Falta además el procedimiento de Control de Dispositivos de Seguimiento y Medición (calibración, 7.1.5).</div>
+  </div>
+</div></section>
+
+<section style="padding-top:6px"><div class="wrap">
+  <div class="sec-eyebrow">Checklist de validación</div>
+  <h2 class="sec-title">Los 9 puntos del circuito</h2>
+  <div class="legend">
+    <span><span class="dot" style="background:var(--ok)"></span>Completo</span>
+    <span><span class="dot" style="background:var(--warn)"></span>Parcial</span>
+    <span><span class="dot" style="background:var(--red)"></span>Pendiente de cierre</span>
+    <span style="font-size:12.5px;color:var(--n500)">Marcá “Validado con Nixa” a medida que repasan cada punto · se guarda en este navegador</span>
+  </div>
+  <div class="quicknav" id="quicknav"></div>
+  <div class="cards" id="cards" style="margin-top:24px"></div>
+</div></section>
+
+<section><div class="wrap">
+  <div class="sec-eyebrow">Foco previo a la auditoría</div>
+  <h2 class="sec-title">Brechas a cerrar, priorizadas</h2>
+  <p class="sec-desc">Lo que conviene resolver antes de la auditoría, ordenado por criticidad.</p>
+  <div class="gaps" id="gaps" style="margin-top:22px"></div>
+</div></section>
+
+<section><div class="wrap">
+  <div class="orden">
+    <div class="sec-eyebrow">Hoja de ruta</div>
+    <h2 class="sec-title">Orden sugerido para validar con Nixa</h2>
+    <p class="sec-desc">Abrir por las fortalezas y cerrar por los puntos de evidencia y mejora.</p>
+    <div class="steps" id="orden"></div>
+  </div>
+</div></section>
+
+<footer><div class="wrap">
+  <img src="logo.png" alt="DASSA" />
+  <div class="ft">
+    Sistema de Gestión Integrado · TRINORMA<br/>
+    Previa auditoría generada el 25/06/2026 · estado verificado contra base de datos y aplicación en vivo<br/>
+    <button class="reset" id="reset">Reiniciar marcas de validación</button>
+  </div>
+</div></footer>
+
+<script>
+const BASE = "https://trinorma.dassa.com.ar";
+
+const CIRCUITS = [
+  ["Importación Marítima", ["Recepción documental","Coord. de cargas","Traslado e ingreso","Doc. desconsolidación","Orden del día","Informar al cliente","Almacenaje","Despacho verificar/retirar","Retiro, control y entrega"]],
+  ["Exportación Marítima", ["Recepción doc. e INV","Coord. e ingreso","Estado de mercancía","Almacenaje","Retiro de vacío de puerto","Verificación / consolidado","Precinto y pre-cumplido","Entrega puerto / doc. / control","Ingreso a puerto"]],
+  ["Exportación Terrestre", ["Recepción documental","Coord. e ingreso","Estado de mercancía","Almacenaje","Verificaciones","Consolidación de camión","Precintado y pre-cumplido","Control de salida y doc."]],
+  ["Importación Terrestre", ["Preaviso arribo camión","Arribo y control de precintos","Doc. desconsolidación","Estado merc. desconsolidada","Informar al cliente","Almacenaje","Despacho verificar/retirar","Retiro, control y entrega"]],
+];
+const SOPORTES = [
+  ["Compras y Eval. de Proveedores",0],["RRHH / Capital Humano",0],["Eval. de Peligros y Riesgos",0],["Participación y Consultas",0],
+  ["Mantenimiento",0],["Información Documentada",0],["Aspectos Ambientales",0],["Control de Dispositivos de Seguimiento y Medición",1],
+  ["Cumplimiento Legal",0],["Incidentes y Accidentes",0],["Comunicación",0],["Emergencias",0],
+];
+
+const PUNTOS = [
+  {
+    n:0, estado:"partial", pct:85, titulo:"Mapa de procesos", iso:"ISO 9001 · 4.4 enfoque a procesos · 4.3 alcance · 8.1",
+    ruta:"/mapa-procesos", rutaLabel:"Abrir Mapa de Procesos",
+    resumen:"Resuelto en gran medida (25/06). El mapa F-TRI-03 ahora se ve NATIVO en la app, los 4 circuitos quedaron separados marítimo/terrestre como procedimientos, los 31 procedimientos del SGI son nativos (árbol + buscador) y se desambiguó el menú (los instructivos de la app van aparte). Resta solo crear el procedimiento de calibración (7.1.5) y limpiar la codificación legacy.",
+    listo:[
+      "Mapa de procesos NATIVO en la app (/mapa-procesos), fiel al diseño F-TRI-03: entrada comercial, 4 circuitos y soportes, cada caja enlaza a su procedimiento.",
+      "4 circuitos SEPARADOS: P-TRI-14.1 Importación Marítima, P-TRI-14.2 Importación Terrestre, P-TRI-13.1 Exportación Marítima, P-TRI-13.2 Exportación Terrestre (cuelgan de P-TRI-13/14).",
+      "Procedimientos del SGI NATIVOS: árbol por sección + buscador por palabra clave + detalle renderizado en la app (sin descargar docx).",
+      "Menú desambiguado: Procedimientos = los del SGI; los 14 instructivos de uso de la app se movieron a Instructivos de la app.",
+      "31 procedimientos, todos con sección asignada (0 sin proceso). Mapa oficial F-TRI-03 Rev. 02 aprobado como documento controlado.",
+    ],
+    pendiente:[
+      "Crear el procedimiento Control de Dispositivos de Seguimiento y Medición (calibración, 7.1.5) — única caja del mapa sin procedimiento.",
+      "Limpiar codificación legacy (P-AMB/P-CAL/P-OP/P-SST) y revisar duplicidad P-CAL-003 vs P-TRI-07.",
+      "Confirmar con Nixa los huecos de numeración P-TRI-15/16/19/20 y el detalle de los 4 circuitos nuevos.",
+    ],
+    metricas:["Mapa nativo /mapa-procesos","4 circuitos separados","31 procedimientos · 0 sin sección","árbol + buscador nativo"],
+    reco:[
+      "Mostrar a Nixa el mapa nativo en pantalla (/mapa-procesos) y navegar de una caja a su procedimiento.",
+      "Crear el procedimiento de Control de Dispositivos de Seguimiento y Medición.",
+      "Completar el detalle de los 4 circuitos nuevos con el referente operativo.",
+      "Decidir la limpieza de la codificación legacy duplicada.",
+    ],
+  },
+  {
+    n:1, estado:"done", pct:97, titulo:"Organigrama", iso:"ISO 9001/14001/45001 · 5.3 roles y autoridades · 5.1 liderazgo",
+    ruta:"/organigrama", rutaLabel:"Abrir Organigrama",
+    resumen:"Implementado, poblado y editable desde la app, con las correcciones del 25/06 aplicadas. 13 nodos en 4 niveles, cadena de mando completa en las 25 fichas y 25/25 vinculadas a su nodo. La relación de reporte apunta a puestos (correcto para 5.3), no a áreas.",
+    listo:[
+      "13 nodos activos en 4 niveles (raíz, triunvirato, áreas, sectores), con nodos externos diferenciados.",
+      "Las 8 áreas esperadas representadas (Dirección, Gerencia, Operaciones, Depósito, Comercial, Administración, SGI, Tecnología).",
+      "Cadena de mando: 25/25 fichas con reporte y área; ahora 25/25 vinculadas a su nodo.",
+      "Corregido: Analista de Datos/IA vinculada al nodo Tecnología; etiqueta del CEO unificada; raíz 'Directorio' normalizada a 'TRIUNVIRATO DASSA'.",
+      "Editable desde la app con control de roles, guardia anti-ciclos y bloqueo de borrado con hijos.",
+    ],
+    pendiente:[
+      "La relación de reporte se expresa por puesto (ej. Apuntador reporta a Supervisor de Depósito), modelado correcto para 5.3 — se decidió no normalizarla a nombres de área.",
+    ],
+    metricas:["13 nodos · 4 niveles","25/25 con reporte y área","25/25 ficha↔nodo"],
+    reco:[
+      "Mostrar en la previa el modo edición en vivo como evidencia de documento controlado (5.3 / 7.5).",
+      "Opcional: exportar el organigrama + cadena de mando por puesto como evidencia documental de 5.3.",
+    ],
+  },
+  {
+    n:2, estado:"partial", pct:94, titulo:"Fichas de puesto", iso:"ISO 9001/14001/45001 · 5.3 · 7.1.2 · 7.2 · 7.3",
+    ruta:"/puestos", rutaLabel:"Abrir Puestos / Fichas",
+    resumen:"Casi completo. Las 25 fichas activas provienen del Master DASSA v2026 (cero legacy en el set vivo) con 16 de 18 campos al 100%. El único hueco es la relación con dos normas en puestos administrativos: ISO 14001 (faltan 7) e ISO 45001 (faltan 4).",
+    listo:[
+      "25/25 fichas activas, todas con fuente Master DASSA v2026 (24 legacy correctamente desactivadas).",
+      "16/18 campos al 100%: misión, responsabilidades, objetivos, KPIs, autoridad, registros, riesgos, marco legal, formación y experiencia mínima.",
+      "PuestoDetalle muestra 13 secciones alineadas a las cláusulas ISO.",
+      "14 fichas marcadas como críticas; nivel de autonomía 1-5 por puesto.",
+    ],
+    pendiente:[
+      "ISO 14001 sólo en 18/25: faltan 7 fichas (Administración/RRHH, Analista IA, Apuntador, Balancero, Facturación, Resp. Comercial, Resp. Tecnología).",
+      "ISO 45001 sólo en 21/25: faltan 4 fichas administrativas (Analista IA, Facturación, Resp. Comercial, Resp. Tecnología).",
+      "La ficha oculta la tarjeta ISO cuando el campo está vacío: el hueco no se ve, no avisa.",
+    ],
+    metricas:["25/25 activas","16/18 campos al 100%","ISO 14001: 18/25","ISO 45001: 21/25"],
+    reco:[
+      "Completar ISO 14001 en las 7 fichas faltantes (relación de cada puesto con residuos, energía, papel, derrames).",
+      "Completar ISO 45001 en las 4 fichas administrativas (ergonomía, pausas, evacuación).",
+      "Priorizar los 4 puestos que les faltan ambas normas: un lote deja 4 fichas completas de golpe.",
+      "Mostrar un aviso de campo pendiente en lugar de ocultar la tarjeta ISO vacía.",
+    ],
+  },
+  {
+    n:3, estado:"done", pct:97, titulo:"Personal por puesto", iso:"ISO 9001/14001/45001 · 7.1.2 personas · 7.2 competencia · 5.3",
+    ruta:"/puestos", rutaLabel:"Abrir Puestos / Fichas",
+    resumen:"El punto más sólido. Las 25 fichas activas tienen titular vigente: cero vacantes. Nixa (Directora SGI) y Toti (Mantenimiento) ya son titulares desde el 01/01/2026. Los 32 empleados activos están vinculados a alguna ficha y la sucesión cubre 24/25.",
+    listo:[
+      "25 fichas con titular vigente, 0 vacantes; 25 empleados distintos como titular.",
+      "32 empleados activos, los 32 vinculados a una ficha (ninguno sin ficha).",
+      "Sucesión: 24 filas con reemplazo primario definido (cobertura A=13, B=9, C=2).",
+      "13 fichas críticas, todas con titular y sucesión.",
+    ],
+    pendiente:[
+      "1 ficha sin fila de sucesión: Mantenimiento (Externo) — no crítica, conviene registrar backup formal.",
+      "24 fichas inactivas (legacy/duplicadas) conviven con las 25 activas: filtrarlas para no confundir en la auditoría.",
+      "Validar con Nixa si la cobertura nivel C (2 fichas) requiere plan de mejora documentado.",
+    ],
+    metricas:["25 fichas / 0 vacantes","32/32 empleados vinculados","24 sucesiones","13 críticas con backup"],
+    reco:[
+      "Cargar la sucesión faltante de Mantenimiento (Externo) para llegar a 25/25.",
+      "Corregir la nota de la auditoría: Nixa y Toti ya no son vacantes (cubiertas desde el 01/01/2026).",
+      "Filtrar las fichas inactivas en la pantalla para mostrar sólo las 25 vigentes.",
+    ],
+  },
+  {
+    n:4, estado:"done", pct:92, titulo:"Procedimientos por ficha de puesto", iso:"ISO 9001/14001/45001 · 5.3 · 7.5 información documentada",
+    ruta:"/puestos", rutaLabel:"Abrir Puestos / Fichas",
+    resumen:"La matriz de asociaciones está correcta y completa. Las 25 fichas tienen procedimientos vinculados, los 13 transversales están en las 25 y los específicos por área tienen sentido operativo. Sin duplicados ni huérfanos. Observaciones menores de modelo legacy y una asociación discutible.",
+    listo:[
+      "25/25 fichas con procedimientos; ninguna en cero.",
+      "13 procedimientos transversales en las 25 fichas (rol aplica).",
+      "Específicos por área coherentes: Comercial, Coordinación, Depósito, Seguridad e Higiene, Administración.",
+      "477 vínculos sin duplicados ni documentos huérfanos; el endpoint los arma correctamente.",
+    ],
+    pendiente:[
+      "Modelo dual: 467 vínculos por documento + 10 legacy; la columna fk_procedure_id quedó vacía (muerta).",
+      "Colisión cosmética de códigos: P-TRI-012/013/014 legacy contra P-TRI-12/13/14 del SGI.",
+      "Asociación discutible: Maestranza hereda Operación Impo/Expo e IMO como responsable (revisar rol o quitar).",
+      "1 ficha de prueba (Test 2) inactiva conviene borrarla antes de mostrar a Nixa.",
+    ],
+    metricas:["477 vínculos","13/13 transversales en 25/25","0 duplicados · 0 huérfanos"],
+    reco:[
+      "No bloqueante: las asociaciones son defendibles ante Nixa.",
+      "Borrar la ficha de prueba y limpiar vínculos legacy residuales de fichas inactivas.",
+      "Revisar el rol de Maestranza en Operación Impo/Expo e IMO (bajar a aplica o quitar).",
+      "Decidir el destino del modelo legacy y eliminar la columna vacía para evitar confusión.",
+    ],
+  },
+  {
+    n:5, estado:"partial", pct:85, titulo:"Capacitaciones por ficha de puesto", iso:"ISO 9001/14001/45001 · 7.2 competencia · 7.3 toma de conciencia",
+    ruta:"/trainings", rutaLabel:"Abrir Capacitaciones",
+    resumen:"Las asociaciones están bien armadas: las 25 fichas tienen capacitaciones requeridas y el catálogo tiene 86 códigos. El problema es un código obligatorio que no existe en el catálogo (CAP-081) y algunas duplicaciones, que rompen la trazabilidad de competencia.",
+    listo:[
+      "25/25 fichas con capacitaciones requeridas (4 a 16 por ficha) en tres niveles (obligatoria, recomendada, opcional).",
+      "Catálogo de 86 códigos distintos (CAP-001 a CAP-189), todos con código.",
+      "6 sesiones multi-capacitación que agrupan 44 capacitaciones.",
+      "La ficha muestra capacitaciones obligatorias y recomendadas por puesto.",
+    ],
+    pendiente:[
+      "CAP-081 figura como obligatoria de Admin. Importación y Exportación pero no existe en el catálogo (rompe la trazabilidad).",
+      "5 filas duplicadas en el catálogo (CAP-006/008/020/023).",
+      "2 capacitaciones del catálogo sin asignar (Accidente in itinere, Salud integral), habituales obligatorias por SRT.",
+      "La ficha muestra el código crudo sin resolver el título, por eso el huérfano no se ve.",
+    ],
+    metricas:["25/25 con requeridas","86 códigos en catálogo","1 huérfano (CAP-081)","6 sesiones · 44 ítems"],
+    reco:[
+      "Dar de alta CAP-081 en el catálogo antes de la previa (probable comercio exterior, según vecinos).",
+      "Limpiar las 5 filas duplicadas o documentarlas como instancias de dictado.",
+      "Asignar las 2 capacitaciones SRT a las fichas operativas o justificar su exclusión.",
+      "Resolver el código contra el catálogo y mostrar el título (en rojo si no existe).",
+    ],
+  },
+  {
+    n:6, estado:"partial", pct:70, titulo:"Vista perfil del colaborador", iso:"ISO 9001/14001/45001 · 7.1.2 · 7.2 · 7.3 · 5.2 política",
+    ruta:"/mi-perfil", rutaLabel:"Abrir Mi Perfil",
+    resumen:"Mi Perfil arma una vista 360 robusta (ficha, capacitaciones con estado y vencimientos, certificaciones, objetivos, sucesión, cumplimiento). De los 6 elementos pedidos, 4 están presentes. Faltan dos: los procedimientos del puesto no aparecen en el perfil, y la información de empresa (política, misión, valores) no se expone en ningún lado de la app.",
+    listo:[
+      "Ficha de puesto completa con todos los campos del Master.",
+      "Capacitaciones con estado y fechas (semáforo, último dictado y próximo programado).",
+      "Fechas clave: vencimientos de capacitaciones y certificaciones, con alertas.",
+      "Extras: objetivos del responsable, amonestaciones/felicitaciones, sucesión y cumplimiento.",
+    ],
+    pendiente:[
+      "Procedimientos: Mi Perfil no los muestra (sólo el detalle de la ficha). Hay 477 vínculos listos para exponer.",
+      "Información de empresa: política, misión, visión y manifiesto existen cargados pero no se exponen en ninguna pantalla (tabla huérfana).",
+      "Falta confirmar si la Política de Desarrollo 4.0 cubre la Política Integrada de la Trinorma (5.2).",
+      "Sólo 7 de 32 empleados tienen usuario vinculado para ver su perfil.",
+    ],
+    metricas:["4/6 elementos presentes","3 documentos de empresa sin exponer","477 procedimientos sin mostrar en perfil","7/32 con usuario"],
+    reco:[
+      "Agregar el bloque Mis procedimientos en Mi Perfil (el código del detalle de ficha se reutiliza).",
+      "Exponer la información de empresa (política, misión, visión, valores) en un bloque del perfil: los documentos ya están cargados.",
+      "Confirmar con Nixa la Política Integrada (5.2).",
+      "Aumentar la vinculación usuario↔empleado (hoy 7/32) coordinando con RRHH.",
+    ],
+  },
+  {
+    n:7, estado:"partial", pct:70, titulo:"Registro de capacitaciones realizadas", iso:"ISO 9001/14001/45001 · 7.2 · 7.5.3 registros",
+    ruta:"/trainings", rutaLabel:"Abrir Capacitaciones",
+    resumen:"La infraestructura de registro está completa y bien diseñada (asistencia con conforme y nota, semáforo por colaborador, acta F-TRI-36, propagación automática por sesión). El problema crítico es que no hay datos cargados: cero asistencias registradas y las 6 sesiones 2026 están todas programadas a futuro. El sistema demuestra capacidad, pero todavía no evidencia.",
+    listo:[
+      "Esquema de asistencia completo (asistió, fecha, nota, conforme, internos y externos).",
+      "Pantalla de marcado de asistencia con porcentaje y acta oficial F-TRI-36.",
+      "Semáforo por colaborador y capacitación; matriz de competencia por puesto.",
+      "Propagación automática: al cerrar una sesión grupal alimenta el histórico por capacitación.",
+    ],
+    pendiente:[
+      "Cero registros de asistencia: sin esto no hay evidencia objetiva de competencia (7.2).",
+      "Las 6 sesiones 2026 están todas programadas a futuro (jul-dic) y sin instructor; ninguna cerrada.",
+      "No hay pantalla de carga masiva por sesión grupal; hoy la asistencia se carga una por una.",
+      "Sin evidencias adjuntas (planilla firmada, fotos, acta).",
+    ],
+    metricas:["0 asistencias registradas","6 sesiones, todas a futuro","528 filas de estado listas","0 evidencias adjuntas"],
+    reco:[
+      "Cargar la asistencia real de las capacitaciones ya dictadas en 2026 (inducción, SySO) con conforme y acta.",
+      "Cerrar las sesiones ejecutadas (instructor + estado realizada).",
+      "Exponer una pantalla de asistencia por sesión grupal que dispare la propagación automática.",
+      "Demostrar el flujo completo en la previa: asistencia, acta F-TRI-36 y semáforo en verde en Mi Perfil.",
+    ],
+  },
+  {
+    n:8, estado:"partial", pct:65, titulo:"Objetivos y proyectos 2025-2026", iso:"ISO 9001/14001/45001 · 6.2 objetivos · 9.1 medición · 10 mejora",
+    ruta:"/objetivos", rutaLabel:"Abrir Objetivos",
+    resumen:"Los 16 objetivos 2026 están bien planificados: responsable real, meta, métrica e indicador con frecuencia. El problema no es la planificación sino la medición y la mejora: el valor actual no se muestra, hay indicadores congelados, las acciones derivadas del FODA están vacías y las acciones de mejora son todas de 2024.",
+    listo:[
+      "16 objetivos 2026 con responsable real, meta, métrica e indicador con frecuencia.",
+      "91 mediciones cargadas; los objetivos de Importación, Exportación y Mix están al día (may-2026).",
+      "FODA cargado: 47 puntos en los 4 cuadrantes, con flujo de validación.",
+      "Módulos de objetivos, cambios y contexto completos en la app.",
+    ],
+    pendiente:[
+      "El valor actual no se muestra en la pantalla de objetivos (no se calcula la última medición).",
+      "8 de 16 indicadores sin mediciones y 5 congelados desde ago-2025.",
+      "Acciones derivadas del FODA vacías pese a 29 puntos activos; 23/29 puntos en estado rechazado.",
+      "Las 14 acciones de mejora son todas de 2024, sin responsable, presupuesto ni aprobación.",
+    ],
+    metricas:["16 objetivos 2026 planificados","valor actual: 0/27 mostrado","FODA 47 puntos · 4 validados","acciones de mejora: 0 de 2026"],
+    reco:[
+      "Poner al día las mediciones de los indicadores congelados y abrir los que no tienen datos.",
+      "Mostrar el último valor medido por objetivo (avance vs meta) en la pantalla.",
+      "Cerrar y validar el FODA, y cargar al menos una acción por debilidad/amenaza crítica.",
+      "Crear el set de acciones de mejora 2026 con responsable, plazo y presupuesto.",
+    ],
+  },
+];
+
+const BRECHAS = [
+  ["p0","Evidencia de capacitaciones en cero (Punto 7 · 7.2)","La infraestructura está completa pero no hay asistencias registradas y las 6 sesiones 2026 están a futuro. Cargar la asistencia real de lo ya dictado con acta y conforme para que el semáforo muestre evidencia objetiva."],
+  ["p0","Política, misión y valores no accesibles (Punto 6 · 7.3 y 5.2)","Los documentos existen cargados pero no se exponen en ninguna pantalla. Mostrarlos en Mi Perfil y confirmar con Nixa si la Política 4.0 cubre la Política Integrada de la Trinorma."],
+  ["p0","Medición y mejora detenidas (Punto 8 · 6.2 / 9.1 / 10)","Valor actual sin mostrar, indicadores congelados, acciones del FODA vacías y mejoras todas de 2024. Poner objetivos al día, cerrar el FODA y cargar las acciones 2026."],
+  ["p2","Trazabilidad de competencia rota por un huérfano (Punto 5 · 7.2)","CAP-081 es obligatoria de dos fichas pero no existe en el catálogo. Darla de alta y limpiar los duplicados del catálogo."],
+  ["p1","Calibración de dispositivos sin procedimiento (Punto 0 · 7.1.5)","Es la única caja del mapa sin procedimiento. Crear el procedimiento de Control de Dispositivos de Seguimiento y Medición (balanza e instrumentos)."],
+  ["ok","Resuelto el 25/06 (Punto 0 · 4.4)","El mapa de procesos ya se ve nativo en la app, los 4 circuitos quedaron separados marítimo/terrestre, los procedimientos del SGI son nativos con árbol y buscador, y se desambiguó el menú de instructivos."],
+];
+
+const ORDEN = [
+  "<b>Punto 3 · Personal por puesto (97%)</b> — abrir con la fortaleza: cero vacantes y dotación real. Aclarar que Nixa y Toti ya son titulares.",
+  "<b>Punto 1 · Organigrama (92%)</b> — mostrar el modo edición en vivo como documento controlado.",
+  "<b>Punto 2 · Fichas de puesto (94%)</b> — recorrer una o dos fichas completas y reconocer el gap acotado de ISO 14001/45001.",
+  "<b>Punto 4 · Procedimientos por ficha (92%)</b> — defender la matriz aplica/responsable; mencionar como menor el modelo legacy.",
+  "<b>Punto 0 · Mapa de procesos (55%)</b> — presentar el documento oficial, desambiguar menús y acordar el criterio de los 4 circuitos.",
+  "<b>Punto 5 · Capacitaciones por ficha (85%)</b> — validar el catálogo y cerrar el huérfano CAP-081 antes de la previa.",
+  "<b>Punto 6 · Mi Perfil / toma de conciencia (70%)</b> — acordar exponer política y procedimientos en el perfil del colaborador.",
+  "<b>Punto 7 · Registro de capacitaciones (70%)</b> — mostrar el flujo de carga con un caso real y acordar la evidencia mínima.",
+  "<b>Punto 8 · Objetivos y mejora (65%)</b> — cerrar con el plan de medición para la próxima revisión por la dirección.",
+];
+
+const LABEL = {done:"Completo", partial:"Parcial", todo:"Pendiente"};
+
+// ---- Mapa de procesos
+document.getElementById("circuits").innerHTML = CIRCUITS.map(([name,steps])=>`
+  <div class="circuit"><span class="cname">${name}</span>
+    <div class="flow">${steps.map((s,i)=>`<span class="step">${s}</span>${i<steps.length-1?'<span class="arrow">→</span>':''}`).join("")}</div>
+  </div>`).join("");
+document.getElementById("soportes").innerHTML = SOPORTES.map(([s,gap])=>`<span class="sp${gap?' gap':''}">${s}${gap?' · falta':''}</span>`).join("");
+
+// ---- Quicknav
+document.getElementById("quicknav").innerHTML = PUNTOS.map(p=>`<a href="#p${p.n}"><span class="qn">${p.n}</span>${p.titulo}</a>`).join("");
+
+// ---- Cards
+const saved = JSON.parse(localStorage.getItem("previa-trinorma-validado")||"{}");
+document.getElementById("cards").innerHTML = PUNTOS.map(p=>`
+  <article class="card ${p.estado}" id="p${p.n}">
+    <div class="chead">
+      <div class="cnum">${p.n}</div>
+      <div class="ctitle-wrap">
+        <div class="ctitle">${p.titulo}</div>
+        <div class="ciso">${p.iso}</div>
+      </div>
+      <div class="cright">
+        <span class="badge ${p.estado}">${LABEL[p.estado]}</span>
+        <div class="pct">${p.pct}% listo</div>
+      </div>
+    </div>
+    <div class="bar"><i class="${p.estado}" style="width:${p.pct}%"></i></div>
+    <div class="cbody">
+      <p class="cresumen">${p.resumen}</p>
+      <div class="cols">
+        <div class="col ok"><h4>Lo que está</h4><ul>${p.listo.map(x=>`<li>${x}</li>`).join("")}</ul></div>
+        <div class="col pend"><h4>Lo que falta</h4><ul>${p.pendiente.map(x=>`<li>${x}</li>`).join("")}</ul></div>
+      </div>
+      <div class="metrics">${p.metricas.map(m=>`<span class="m">${m}</span>`).join("")}</div>
+      <details class="reco"><summary>Recomendaciones para la previa</summary><ul>${p.reco.map(x=>`<li>${x}</li>`).join("")}</ul></details>
+    </div>
+    <div class="cfoot">
+      <label class="validar ${saved['p'+p.n]?'checked':''}" data-k="p${p.n}">
+        <input type="checkbox" ${saved['p'+p.n]?'checked':''} /> Validado con Nixa
+      </label>
+      <a class="btn" href="${BASE}${p.ruta}" target="_blank" rel="noopener">${p.rutaLabel} <span class="ext">↗</span></a>
+    </div>
+  </article>`).join("");
+
+// ---- Brechas
+document.getElementById("gaps").innerHTML = BRECHAS.map(([pri,t,d])=>`
+  <div class="gap"><span class="pri ${pri}">${pri.toUpperCase()}</span><p><b>${t}.</b> ${d}</p></div>`).join("");
+
+// ---- Orden
+document.getElementById("orden").innerHTML = ORDEN.map((t,i)=>`
+  <div class="ostep"><div class="on">${i+1}</div><p>${t}</p></div>`).join("");
+
+// ---- Persistencia de validación
+document.querySelectorAll(".validar").forEach(el=>{
+  const cb = el.querySelector("input"); const k = el.dataset.k;
+  cb.addEventListener("change",()=>{
+    const s = JSON.parse(localStorage.getItem("previa-trinorma-validado")||"{}");
+    s[k]=cb.checked; localStorage.setItem("previa-trinorma-validado",JSON.stringify(s));
+    el.classList.toggle("checked",cb.checked);
+  });
+});
+document.getElementById("reset").addEventListener("click",()=>{
+  localStorage.removeItem("previa-trinorma-validado");
+  document.querySelectorAll(".validar").forEach(el=>{el.classList.remove("checked");el.querySelector("input").checked=false;});
+});
+</script>
+</body>
+</html>

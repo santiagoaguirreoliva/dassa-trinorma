@@ -8,7 +8,10 @@ import {
   UserCheck, Activity, CheckCircle2, Clock, AlertCircle,
   Sparkles, FileText, Bot, ShieldCheck, ChevronRight,
   ClipboardList, Crown, ArrowUpRight,
+  Eye, Cpu, Shuffle, Leaf, Heart, Handshake, Lightbulb, HardHat, Sprout, Users,
+  ClipboardCheck, Compass, BookOpen,
 } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import { api } from '@/lib/api';
 import { Header } from '@/components/layout/Header';
 import { Spinner, PageContent } from '@/components/ui';
@@ -103,6 +106,19 @@ interface MyObjective {
   ytd_count?: number;
 }
 
+interface StrategicDocItem { nombre: string; texto: string; icon?: string }
+interface StrategicDoc {
+  code: string;
+  doc_type: 'mision' | 'vision' | 'valores' | 'politica_integrada';
+  title: string;
+  body_md: string;
+  metadata: { icon?: string; accent?: 'red' | 'celeste'; order?: number; intro?: string; cierre?: string; items?: StrategicDocItem[] };
+}
+interface Procedure {
+  id: string; code: string; title: string;
+  module?: string | null; norma?: string | null; document_id?: string | null;
+}
+
 interface MiPerfilData {
   ok: boolean;
   employee: Employee | null;
@@ -113,7 +129,16 @@ interface MiPerfilData {
   succession: Succession | null;
   compliance: Compliance;
   objectives?: MyObjective[];
+  strategic_docs?: StrategicDoc[];
+  procedures?: Procedure[];
 }
+
+// Mapa nombre→ícono lucide para los valores y principios institucionales (metadata.icon)
+const DOC_ICON: Record<string, LucideIcon> = {
+  Eye, Cpu, Shuffle, Leaf, ShieldCheck, Heart, Award, Handshake,
+  GraduationCap, Lightbulb, HardHat, Sprout, Users, Target, Compass, ClipboardCheck,
+};
+const docIcon = (name?: string): LucideIcon => (name && DOC_ICON[name]) || Sparkles;
 
 function parseKpi(raw: string): { name: string; meta?: string; frequency?: string } {
   try {
@@ -167,6 +192,127 @@ function objHealth(o: MyObjective): { tone: 'success' | 'warning' | 'danger' | '
   return { tone: 'danger', dev };
 }
 const MES_ABBR = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+
+function MdParas({ text }: { text: string }) {
+  return <>{text.split('\n\n').filter(Boolean).map((p, i) => <p key={i}>{p}</p>)}</>;
+}
+
+// Identidad DASSA — Misión · Visión · Valores · Política de Gestión Integrada (ISO 5.2 / 7.3)
+function IdentidadDASSA({ docs }: { docs: StrategicDoc[] }) {
+  if (!docs?.length) return null;
+  const byType = (t: string) => docs.find(d => d.doc_type === t);
+  const mision = byType('mision');
+  const vision = byType('vision');
+  const valores = byType('valores');
+  const politica = byType('politica_integrada');
+
+  return (
+    <div className="mb-4">
+      <h3 className="text-sm font-extrabold text-gray-900 uppercase tracking-wider flex items-center gap-1.5 mb-3">
+        <Compass size={15} className="text-dassa-red" /> Identidad DASSA
+        <span className="text-[10px] font-bold bg-dassa-celeste/20 text-dassa-celeste-deep px-2 py-0.5 rounded-full ml-1">Política · Misión · Visión · Valores</span>
+      </h3>
+
+      {(mision || vision) && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+          {mision && (
+            <div className="bg-gradient-to-br from-dassa-red/10 to-dassa-red/[0.03] border border-dassa-red/20 rounded-2xl p-5">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-9 h-9 rounded-xl bg-dassa-red text-white flex items-center justify-center shrink-0"><Target size={18} /></div>
+                <h4 className="text-base font-extrabold text-dassa-red uppercase tracking-wide">{mision.title}</h4>
+              </div>
+              <div className="space-y-2 text-sm text-gray-700 leading-relaxed"><MdParas text={mision.body_md} /></div>
+            </div>
+          )}
+          {vision && (
+            <div className="bg-gradient-to-br from-dassa-celeste/15 to-dassa-celeste/[0.04] border border-dassa-celeste/30 rounded-2xl p-5">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-9 h-9 rounded-xl bg-dassa-celeste-deep text-white flex items-center justify-center shrink-0"><Eye size={18} /></div>
+                <h4 className="text-base font-extrabold text-dassa-celeste-deep uppercase tracking-wide">{vision.title}</h4>
+              </div>
+              <div className="space-y-2 text-sm text-gray-700 leading-relaxed"><MdParas text={vision.body_md} /></div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {valores?.metadata?.items?.length ? (
+        <div className="bg-white border border-gray-200 rounded-2xl p-5 mb-4">
+          <h4 className="text-sm font-extrabold text-dassa-red uppercase tracking-wide flex items-center gap-1.5 mb-3"><Heart size={14} /> {valores.title}</h4>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+            {valores.metadata.items.map((it, i) => {
+              const Ic = docIcon(it.icon);
+              return (
+                <div key={i} className="rounded-xl border border-gray-100 bg-gray-50/60 p-3 hover:border-dassa-red/30 hover:shadow-sm transition">
+                  <div className="flex items-center gap-2 mb-1">
+                    <div className="w-8 h-8 rounded-lg bg-dassa-red/10 text-dassa-red flex items-center justify-center shrink-0"><Ic size={16} /></div>
+                    <span className="text-sm font-bold text-gray-900">{it.nombre}</span>
+                  </div>
+                  <p className="text-xs text-gray-600 leading-relaxed">{it.texto}</p>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      ) : null}
+
+      {politica && (
+        <div className="bg-gradient-to-br from-dassa-red/[0.06] to-dassa-celeste/[0.06] border border-dassa-red/20 rounded-2xl p-5">
+          <h4 className="text-sm font-extrabold text-dassa-red uppercase tracking-wide flex items-center gap-1.5 mb-2"><ClipboardCheck size={14} /> {politica.title}</h4>
+          {politica.body_md && <p className="text-sm text-gray-700 leading-relaxed mb-3">{politica.body_md}</p>}
+          {politica.metadata?.items?.length ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {politica.metadata.items.map((it, i) => {
+                const Ic = docIcon(it.icon);
+                return (
+                  <div key={i} className="rounded-xl border border-gray-100 bg-white/70 p-3">
+                    <div className="flex items-center gap-2 mb-1">
+                      <div className="w-8 h-8 rounded-lg bg-dassa-celeste/15 text-dassa-celeste-deep flex items-center justify-center shrink-0"><Ic size={16} /></div>
+                      <span className="text-sm font-bold text-gray-900">{it.nombre}</span>
+                    </div>
+                    <p className="text-xs text-gray-600 leading-relaxed">{it.texto}</p>
+                  </div>
+                );
+              })}
+            </div>
+          ) : null}
+          {politica.metadata?.cierre && (
+            <p className="text-xs text-gray-500 italic mt-3 pt-3 border-t border-gray-200/60">{politica.metadata.cierre}</p>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Procedimientos vinculados al puesto del operario (ISO 7.5 — info documentada del rol)
+function ProcedimientosPuesto({ procedures }: { procedures: Procedure[] }) {
+  if (!procedures?.length) return null;
+  return (
+    <div className="bg-white border border-gray-200 rounded-2xl p-5 mb-4">
+      <h3 className="text-sm font-extrabold text-gray-900 uppercase tracking-wider flex items-center gap-1.5 mb-3">
+        <BookOpen size={15} className="text-dassa-red" /> Procedimientos de mi puesto
+        <span className="text-[10px] font-bold bg-dassa-red text-white px-2 py-0.5 rounded-full ml-1">{procedures.length}</span>
+      </h3>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+        {procedures.map(p => (
+          <Link key={p.id} to={`/procedimientos?code=${encodeURIComponent(p.code)}`}
+            className="flex items-center gap-2 rounded-xl border border-gray-100 bg-gray-50/60 p-2.5 hover:border-dassa-red/30 hover:shadow-sm transition group">
+            <div className="w-8 h-8 rounded-lg bg-dassa-red/10 text-dassa-red flex items-center justify-center shrink-0"><FileText size={15} /></div>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-1.5">
+                <span className="text-[9px] font-bold text-gray-400 font-mono">{p.code}</span>
+                {p.norma && <span className="text-[9px] font-bold uppercase bg-gray-100 text-gray-500 px-1 rounded">{p.norma}</span>}
+              </div>
+              <div className="text-xs font-semibold text-gray-800 truncate">{p.title}</div>
+            </div>
+            <ChevronRight size={14} className="text-gray-300 group-hover:text-dassa-red shrink-0" />
+          </Link>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 export default function MiPerfil() {
   const qc = useQueryClient();
@@ -295,6 +441,9 @@ export default function MiPerfil() {
           )}
         </div>
       </div>
+
+      {/* 🧭 Identidad DASSA — Política · Misión · Visión · Valores (ISO 5.2 / 7.3) */}
+      <IdentidadDASSA docs={data.strategic_docs || []} />
 
       {/* 🎯 Mis Objetivos del año — destacados (responsable de ejecución) */}
       {objectives.length > 0 && (
@@ -641,6 +790,9 @@ export default function MiPerfil() {
           </div>
         </div>
       )}
+
+      {/* 📚 Procedimientos de mi puesto */}
+      <ProcedimientosPuesto procedures={data.procedures || []} />
 
       {/* Próximos features placeholder */}
       <div className="bg-gradient-to-br from-gray-50 to-white border border-dashed border-gray-300 rounded-xl p-4 text-center text-xs text-gray-500">

@@ -1,0 +1,62 @@
+{
+  "_meta": {
+    "fuente": "DASSA — Misión, Visión, Valores y Política de Gestión Integrada (PDF oficial de marca)",
+    "uso": "strategic_documents (ISO 5.2 política / concientización 7.3). Renderizados on-brand en Mi Perfil."
+  },
+  "documentos": [
+    {
+      "code": "MISION_DASSA",
+      "doc_type": "mision",
+      "title": "Misión",
+      "body_md": "Garantizar la excelencia operativa en la gestión de depósito fiscal, proporcionando soluciones de almacenaje seguras y eficientes dentro de la cadena de comercio exterior.\n\nNos comprometemos a una atención personalizada y a la innovación tecnológica para agilizar y enriquecer la experiencia de nuestros clientes.",
+      "metadata": { "icon": "Target", "accent": "red", "order": 1 }
+    },
+    {
+      "code": "VISION_DASSA",
+      "doc_type": "vision",
+      "title": "Visión",
+      "body_md": "Ser reconocidos como un Depósito Fiscal Modelo en la Región, distinguidos por nuestra eficiencia operativa, seguridad avanzada y servicio al cliente excepcional.\n\nAspiramos a ser pioneros en la implementación de tecnologías inteligentes y sostenibles que potencien el futuro de la logística y el comercio exterior.",
+      "metadata": { "icon": "Eye", "accent": "celeste", "order": 2 }
+    },
+    {
+      "code": "VALORES_DASSA",
+      "doc_type": "valores",
+      "title": "Valores",
+      "body_md": "",
+      "metadata": {
+        "icon": "Heart",
+        "accent": "red",
+        "order": 3,
+        "items": [
+          { "nombre": "Transparencia y Claridad", "texto": "Nos comprometemos a la honestidad y la comunicación abierta con nuestros clientes y colaboradores.", "icon": "Eye" },
+          { "nombre": "Eficiencia y Tecnología", "texto": "Utilizamos la innovación tecnológica para optimizar nuestros procesos logísticos y ofrecer soluciones inteligentes.", "icon": "Cpu" },
+          { "nombre": "Adaptabilidad", "texto": "Personalizamos nuestros servicios a las necesidades únicas de cada cliente.", "icon": "Shuffle" },
+          { "nombre": "Sustentabilidad", "texto": "Operamos con responsabilidad ambiental, minimizando el impacto ecológico y promoviendo la sustentabilidad.", "icon": "Leaf" },
+          { "nombre": "Seguridad", "texto": "Priorizamos la seguridad de nuestros colaboradores y clientes, el cuidado de las cargas y la confidencialidad de la información.", "icon": "ShieldCheck" },
+          { "nombre": "Pasión por la Logística", "texto": "Nos apasiona encontrar soluciones creativas, superar desafíos y asegurar la fluidez y eficiencia en cada paso de la cadena de comercio exterior.", "icon": "Heart" }
+        ]
+      }
+    },
+    {
+      "code": "POLITICA_GESTION_INTEGRADA",
+      "doc_type": "politica_integrada",
+      "title": "Política de Gestión Integrada",
+      "body_md": "Nos especializamos en el Servicio de Almacenaje, Clasificación y Custodia de Mercadería en nuestro Depósito Fiscal, complementado con una gestión de transporte eficiente desde y hacia el puerto y el Depósito Fiscal DASSA.",
+      "metadata": {
+        "icon": "ClipboardCheck",
+        "accent": "red",
+        "order": 4,
+        "cierre": "Establecemos esta Política para que sea implementada, comunicada y comprendida por todos los integrantes de la organización.",
+        "items": [
+          { "nombre": "Calidad", "texto": "Nos dedicamos a superar las expectativas de nuestros clientes y partes interesadas, ofreciendo servicios de la más alta calidad, eficiencia y seguridad. Nos comprometemos a cumplir con todas las condiciones y plazos establecidos, asegurando la excelencia en cada operación.", "icon": "Award" },
+          { "nombre": "Confianza", "texto": "Nos esforzamos por mantener y elevar nuestra reputación a través del respeto y cumplimiento de los requisitos legales y normativos aplicables a nuestra actividad. Nos enorgullece operar de manera ética y responsable, garantizando la integridad en cada paso de nuestro proceso.", "icon": "Handshake" },
+          { "nombre": "Aprendizaje Continuo", "texto": "Priorizamos el desarrollo y la competencia de nuestro equipo, fomentando la formación continua para asegurar un desempeño excepcional en todas sus funciones.", "icon": "GraduationCap" },
+          { "nombre": "Innovación y Mejora Continua", "texto": "Nos orientamos hacia la vanguardia tecnológica, buscando ser líderes en depósitos fiscales y uso de Herramientas Tecnológicas, mejorando constantemente nuestros procesos y trazabilidad de cada paso.", "icon": "Lightbulb" },
+          { "nombre": "Seguridad y Salud", "texto": "Proporcionamos un entorno laboral seguro, eliminamos riesgos y promovemos la salud en el trabajo, comprometiéndonos con la prevención de incidentes y enfermedades laborales.", "icon": "HardHat" },
+          { "nombre": "Protección Ambiental", "texto": "Actuamos con responsabilidad ambiental, gestionando nuestros recursos de manera eficiente, previniendo la contaminación y fomentando prácticas sostenibles.", "icon": "Sprout" },
+          { "nombre": "Sinergia", "texto": "Valoramos la colaboración y participación activa de todos los miembros de nuestra organización y partes interesadas, fomentando un ambiente de trabajo inclusivo y abierto al diálogo.", "icon": "Users" }
+        ]
+      }
+    }
+  ]
+}

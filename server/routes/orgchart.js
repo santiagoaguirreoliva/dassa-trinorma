@@ -224,8 +224,19 @@ router.get('/mi-perfil', async (req, res) => {
        ORDER BY o.code`, [req.user.id]);
     const objectives = objQ.rows;
 
+    // 0b) Documentos institucionales (Misión / Visión / Valores / Política de Gestión
+    //     Integrada) — ISO 5.2 (política) y 7.3 (toma de conciencia). Globales, los ve
+    //     todo el personal (incluido un director sin ficha de empleado linkeada).
+    const docsQ = await query(`
+      SELECT code, doc_type, title, body_md, metadata
+        FROM strategic_documents
+       WHERE code IN ('MISION_DASSA','VISION_DASSA','VALORES_DASSA','POLITICA_GESTION_INTEGRADA')
+         AND is_active = TRUE
+       ORDER BY (metadata->>'order')::int`);
+    const strategic_docs = docsQ.rows;
+
     if (!employee) {
-      return res.json({ ok: true, employee: null, profiles: [], training_status: [], warnings: [], certifications: [], succession: [], objectives });
+      return res.json({ ok: true, employee: null, profiles: [], training_status: [], warnings: [], certifications: [], succession: [], objectives, strategic_docs, procedures: [] });
     }
 
     // 2) Fichas asignadas (con todos los campos del Master)
@@ -244,6 +255,25 @@ router.get('/mi-perfil', async (req, res) => {
        WHERE jpe.employee_id = $1 AND jpe.until IS NULL AND jp.is_active = TRUE
        ORDER BY jpe.is_primary DESC, jp.role_label`, [employee.id]);
     const profiles = profQ.rows;
+
+    // 2b) Procedimientos vinculados a los puestos del empleado (deduplicados).
+    //     Mismo origen que /puesto/:id (job_profile_procedures → documents/procedures).
+    const procQ = await query(`
+      SELECT id, code, title, module, norma, document_id FROM (
+        SELECT DISTINCT ON (COALESCE(d.id, p.id))
+               COALESCE(d.id, p.id) AS id,
+               COALESCE(d.code, p.code) AS code,
+               COALESCE(d.title, p.title) AS title,
+               COALESCE(d.proceso, p.module) AS module,
+               d.norma AS norma, d.id AS document_id
+          FROM job_profile_employees jpe
+          JOIN job_profile_procedures jpp ON jpp.profile_id = jpe.profile_id
+          LEFT JOIN procedures p ON p.id = COALESCE(jpp.fk_procedure_id, jpp.procedure_id)
+          LEFT JOIN documents d ON d.id = jpp.document_id
+         WHERE jpe.employee_id = $1 AND jpe.until IS NULL
+           AND (d.id IS NOT NULL OR p.id IS NOT NULL)
+      ) t ORDER BY code`, [employee.id]);
+    const procedures = procQ.rows;
 
     // 3) Estado de capacitaciones requeridas
     const trainQ = await query(`
@@ -310,7 +340,7 @@ router.get('/mi-perfil', async (req, res) => {
         : Math.round((obligatorias.filter(t => t.status === 'completada').length / obligatorias.length) * 100),
     };
 
-    res.json({ ok: true, employee, profiles, training_status, warnings, certifications, succession, compliance, objectives });
+    res.json({ ok: true, employee, profiles, training_status, warnings, certifications, succession, compliance, objectives, strategic_docs, procedures });
   } catch (e) {
     console.error('[mi-perfil] error:', e.message, e.stack);
     res.status(500).json({ error: e.message });

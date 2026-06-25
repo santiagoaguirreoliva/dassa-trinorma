@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Plus, X, Loader2, Users, Search, UserCheck, UserX, Phone, Mail, MessageCircle,
   Bot, ExternalLink, Cpu, MapPin, Briefcase, Heart, Award, Trash2,
-  GraduationCap, AlertTriangle,
+  GraduationCap, AlertTriangle, Link2, Copy, Check, RefreshCw, KeyRound,
 } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
@@ -35,7 +35,64 @@ interface Employee {
   contract_type?: string;
   work_schedule?: string;
   notes?: string;
+  marital_status?: string;
+  portal_invite_token?: string;
+  portal_activated_at?: string;
+  portal_onboarded_at?: string;
   created_at: string;
+}
+
+// Botón + panel para generar el link de primer acceso al Portal del Empleado.
+function PortalLinkButton({ employeeId }: { employeeId: string }) {
+  const [open, setOpen] = useState(false);
+  const [data, setData] = useState<{ portal_invite_token: string; portal_activated_at: string | null; portal_onboarded_at: string | null; pin_set: boolean } | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [err, setErr] = useState('');
+
+  async function gen(regenerate = false) {
+    setBusy(true); setErr('');
+    try { setData(await api.post(`/employees/${employeeId}/portal-invite`, { regenerate })); setOpen(true); }
+    catch (e) { setErr((e as Error).message || 'Error'); }
+    finally { setBusy(false); }
+  }
+  const link = data ? `${window.location.origin}/portal-empleado?t=${data.portal_invite_token}` : '';
+  async function copy() { await navigator.clipboard.writeText(link); setCopied(true); setTimeout(() => setCopied(false), 1800); }
+
+  return (
+    <>
+      <button onClick={() => (data ? setOpen(true) : gen(false))} disabled={busy}
+        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-dassa-celeste/15 text-dassa-celeste-deep text-xs font-bold hover:bg-dassa-celeste/25 disabled:opacity-50">
+        {busy ? <Loader2 size={13} className="animate-spin" /> : <Link2 size={13} />} Link de acceso
+      </button>
+      {open && data && (
+        <div className="fixed inset-0 bg-black/60 z-[60] flex items-center justify-center p-4" onClick={() => setOpen(false)}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-5" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="font-extrabold text-gray-900 flex items-center gap-2"><Link2 size={16} className="text-dassa-celeste-deep" /> Link de primer acceso</h3>
+              <button onClick={() => setOpen(false)}><X size={18} className="text-gray-400" /></button>
+            </div>
+            <p className="text-[12px] text-gray-500 mb-2">Envialo por WhatsApp o mail. Con este link la persona entra una vez, crea su PIN y completa sus datos.</p>
+            <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-lg p-2 mb-3">
+              <input readOnly value={link} className="flex-1 bg-transparent text-[12px] text-gray-700 outline-none" />
+              <button onClick={copy} className="shrink-0 flex items-center gap-1 px-2.5 py-1.5 rounded-md bg-dassa-red text-white text-xs font-bold">{copied ? <Check size={13} /> : <Copy size={13} />}{copied ? 'Copiado' : 'Copiar'}</button>
+            </div>
+            <div className="flex items-center gap-2 text-[12px] mb-3">
+              <KeyRound size={14} className={data.pin_set ? 'text-emerald-600' : 'text-amber-500'} />
+              {data.pin_set
+                ? <span className="text-emerald-700 font-semibold">Ya creó su PIN{data.portal_onboarded_at ? ' · datos completos' : ' · datos pendientes'}</span>
+                : <span className="text-amber-600 font-semibold">Pendiente de activación</span>}
+            </div>
+            <button onClick={() => { if (confirm('Regenerar invalida el link y el PIN actuales. ¿Continuar?')) gen(true); }} disabled={busy}
+              className="w-full flex items-center justify-center gap-1.5 py-2 rounded-lg border border-gray-200 text-gray-600 text-xs font-bold hover:bg-gray-50 disabled:opacity-50">
+              {busy ? <Loader2 size={13} className="animate-spin" /> : <RefreshCw size={13} />} Regenerar link (resetea PIN)
+            </button>
+          </div>
+        </div>
+      )}
+      {err && <span className="text-[11px] text-red-600">{err}</span>}
+    </>
+  );
 }
 interface EmployeeCertification {
   id: string; cert_type?: string; cert_name: string; issued_by?: string;
@@ -389,7 +446,10 @@ function EmployeeModal({ employee, onClose }: { employee?: Employee; onClose: ()
               </p>
             )}
           </div>
-          <button onClick={onClose}><X size={18} className="text-gray-400" /></button>
+          <div className="flex items-center gap-2">
+            {isEdit && <PortalLinkButton employeeId={employee!.id} />}
+            <button onClick={onClose}><X size={18} className="text-gray-400" /></button>
+          </div>
         </div>
 
         {/* Tabs */}

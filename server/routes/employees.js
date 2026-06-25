@@ -74,10 +74,36 @@ router.get('/:id', async (req, res) => {
 const EDITABLE_FIELDS = [
   'full_name','email','phone','whatsapp',
   'sector','position','evaluator_id','secondary_evaluator_id','supervisor_id','user_id','is_active',
-  'cuil','birth_date','address',
+  'cuil','birth_date','address','marital_status',
   'emergency_contact_name','emergency_contact_phone','emergency_contact_relation',
   'hire_date','contract_type','work_schedule','notes'
 ];
+
+// POST /api/employees/:id/portal-invite · genera (o regenera) el link de primer acceso
+// al Portal del Empleado. Devuelve el token; el front arma la URL con su propio origin.
+router.post('/:id/portal-invite', requireRole('master_admin', 'director', 'sgi_leader'), async (req, res) => {
+  try {
+    const regenerate = !!req.body?.regenerate;
+    const { rows } = await query(
+      `UPDATE employees
+          SET portal_invite_token = CASE WHEN portal_invite_token IS NULL OR $2
+                                         THEN gen_random_uuid()::text ELSE portal_invite_token END,
+              portal_invite_created_at = CASE WHEN portal_invite_token IS NULL OR $2
+                                              THEN NOW() ELSE portal_invite_created_at END,
+              -- al regenerar el link se invalida el PIN/activación previos (re-onboarding)
+              portal_activated_at = CASE WHEN $2 THEN NULL ELSE portal_activated_at END,
+              portal_pin_hash     = CASE WHEN $2 THEN NULL ELSE portal_pin_hash END
+        WHERE id = $1 AND is_active = TRUE
+        RETURNING portal_invite_token, portal_invite_created_at, portal_activated_at,
+                  portal_onboarded_at, (portal_pin_hash IS NOT NULL) AS pin_set, full_name`,
+      [req.params.id, regenerate]);
+    if (!rows[0]) return res.status(404).json({ error: 'Empleado no encontrado o inactivo' });
+    res.json({ ok: true, ...rows[0] });
+  } catch (err) {
+    console.error('Error employees portal-invite:', err.message);
+    res.status(500).json({ error: 'Error al generar el link de acceso' });
+  }
+});
 
 // POST /api/employees
 router.post('/', requireRole('master_admin', 'director', 'sgi_leader'), async (req, res) => {

@@ -8,6 +8,15 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/), versionado [S
 
 ## [Sin publicar]
 
+### Portal del Empleado (externo, QR + PIN) · 2026-06-25
+Portal público para operarios **sin cuenta de la app**, mobile-first ("dedo gigante"), on-brand DASSA. Ruta pública `/portal-empleado`, fuera del login de la app.
+- **Primer acceso por invitación**: desde la vista de Empleados, cada persona tiene un **link de primer ingreso** (`employees.portal_invite_token`, migración 060). Con el link el empleado entra una vez, **crea su propio PIN** (4 dígitos, único global, rechaza triviales) y completa el onboarding. Botón "Link de acceso" + regenerar en el modal de ficha (`Employees.tsx`).
+- **Onboarding obligatorio de legajo**: wizard que exige Datos personales (nacimiento, CUIL, dirección, estado civil), Contacto (teléfono/WhatsApp/email) y Contacto de emergencia antes de navegar; `portal_onboarded_at` lo cierra. Self-service editable después ("Mis datos"). `marital_status` sumado a `employees`.
+- **Login recurrente por PIN** (bcrypt) con sesión HMAC efímera (30 min) y rate-limit por IP. Reusa el patrón del checklist de maquinaria.
+- **Secciones read-only**: Mi ficha de puesto · Mis capacitaciones (estado/vencimientos) · Organigrama · Mapa de procesos (F-TRI-03) · Procedimientos del SGI · Identidad DASSA (Misión/Visión/Valores/Política). Espejo de `/mi-perfil` resuelto por `employee_id`.
+- **Comunicaciones + acuse de lectura (ISO 7.3)**: feed de comunicaciones (`communications` enviadas) + novedades (`system_announcements`); el empleado confirma "Leí y entendí" → registro en `communication_reads` con `employee_id` (migración 061). Badge de no leídas.
+- Backend: router `server/routes/public-portal.js` (`/api/public/portal`: login, activate, me, me/legajo, institucional, me/comunicaciones). Migraciones 059–061.
+
 ### Mejoras post-auditoría · 2026-05-17
 - **H-11 · Performance de carga inicial**: code-splitting por ruta. Las 44 páginas pasaron a `React.lazy()` (Login y el shell `AppLayout` quedan estáticos). `Suspense` global para rutas públicas + `Suspense` sobre el `<Outlet/>` de `AppLayout` (mantiene el sidebar mientras carga la página). El bundle inicial `index.js` cayó de **497 KB / 103 KB gzip → 38 KB / 12 KB gzip**; `recharts` (108 KB gzip) ya no se descarga en la pantalla de login.
 - **H-12 · Accesibilidad de páginas públicas** (`Login.tsx`, `PublicNC.tsx`, `PublicComm.tsx`): landmark `<main>` en todas las vistas; `aria-label` en botones-ícono (toggle contraseña, quitar foto, spinner) e inputs sin `<label>`; contraste corregido (`text-gray-400 → text-gray-500`, fallaba 4.5:1 AA); touch targets de íconos ampliados a 36–40 px.

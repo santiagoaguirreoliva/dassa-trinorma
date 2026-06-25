@@ -25,6 +25,7 @@ import ssoRouter            from './routes/sso.js';  // SSO Smart DASSA Apps
 import publicNcRouter       from './routes/public-nc.js';  // router público dedicado (H-06)
 import publicChecklistRouter from './routes/public-checklist.js';  // checklist maquinaria QR+PIN
 import publicProcedimientosRouter from './routes/public-procedimientos.js';  // árbol público de procedimientos del SGI
+import publicPortalRouter    from './routes/public-portal.js';  // portal del empleado (QR+PIN)
 import dashboardRouter      from './routes/dashboard.js';
 import findingsRouter       from './routes/findings.js';
 import purchasesRouter      from './routes/purchases.js';
@@ -262,6 +263,7 @@ app.use('/api/findings',        findingsRouter);
 app.use('/api/public',          publicNcRouter);  // solo POST /nc — desacoplado del findingsRouter (H-06)
 app.use('/api/public/checklist', publicChecklistRouter);  // checklist maquinaria QR+PIN
 app.use('/api/public/procedimientos', publicProcedimientosRouter);  // árbol público de procedimientos del SGI
+app.use('/api/public/portal',    publicPortalRouter);  // portal del empleado (QR+PIN)
 app.use('/api/users',           usersRouter);
 app.use('/api/risks',           risksRouter);
 app.use('/api/legal',           legalRouter);

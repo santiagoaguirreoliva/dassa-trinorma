@@ -21,6 +21,9 @@ const PuestoDetalle       = lazy(() => import('@/pages/PuestoDetalle'));
 const MiPuesto            = lazy(() => import('@/pages/MiPuesto'));
 const MiPerfil            = lazy(() => import('@/pages/MiPerfil'));
 const Objetivos           = lazy(() => import('@/pages/Objetivos'));
+const ObjetivosEstrategicos = lazy(() => import('@/pages/ObjetivosEstrategicos'));
+const Proyectos           = lazy(() => import('@/pages/Proyectos'));
+const Inversiones         = lazy(() => import('@/pages/Inversiones'));
 const Cambios             = lazy(() => import('@/pages/Cambios'));
 const Procedimientos      = lazy(() => import('@/pages/Procedimientos'));
 const Instructivos        = lazy(() => import('@/pages/Instructivos'));
@@ -125,7 +128,10 @@ export default function App() {
               <Route path="/mi-puesto"      element={<Navigate to="/mi-perfil" replace />} />
               <Route path="/mi-perfil"      element={<MiPerfil />} />
               <Route path="/mi-puesto-legacy" element={<MiPuesto />} />
-              <Route path="/objetivos"      element={<Objetivos />} />
+              <Route path="/objetivos"      element={<ObjetivosEstrategicos />} />
+              <Route path="/objetivos-historico" element={<Objetivos />} />
+              <Route path="/proyectos"      element={<Proyectos />} />
+              <Route path="/inversiones"    element={<Inversiones />} />
               <Route path="/cambios"        element={<Cambios />} />
               <Route path="/mapa-procesos"  element={<MapaProcesos />} />
               <Route path="/procedimientos" element={<Procedimientos />} />

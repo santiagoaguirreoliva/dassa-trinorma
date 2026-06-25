@@ -21,26 +21,54 @@ const isLeader = (role) => ['master_admin','director','sgi_leader'].includes(rol
 objectivesRouter.get('/', async (req, res) => {
   try {
     const year = req.query.year ? parseInt(req.query.year) : new Date().getFullYear();
+    const params = [year];
+    let where = 'o.year = $1';
+    if (req.query.tier) { params.push(req.query.tier); where += ` AND o.tier = $${params.length}`; }  // 'estrategico' = tablero 3 niveles
     const { rows } = await query(`
       SELECT o.*, u.full_name AS responsible_name,
-             (SELECT COUNT(*) FROM objective_indicators WHERE objective_id = o.id) AS num_indicators
+             (SELECT COUNT(*) FROM objective_indicators oi WHERE oi.objective_id = o.id) AS num_indicators,
+             (SELECT COUNT(*) FROM objective_indicators oi WHERE oi.objective_id = o.id AND oi.enabled) AS num_enabled,
+             (SELECT COUNT(DISTINCT oi.id) FROM objective_indicators oi
+                JOIN objective_measurements m ON m.indicator_id = oi.id WHERE oi.objective_id = o.id) AS num_with_data
       FROM objectives o LEFT JOIN users u ON u.id = o.responsible_id
-      WHERE o.year = $1 ORDER BY o.code
-    `, [year]);
+      WHERE ${where} ORDER BY o.code
+    `, params);
     res.json({ ok: true, objectives: rows });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 objectivesRouter.get('/:id', async (req, res) => {
   try {
-    const { rows: obj } = await query('SELECT * FROM objectives WHERE id = $1', [req.params.id]);
+    const { rows: obj } = await query(
+      'SELECT o.*, u.full_name AS responsible_name FROM objectives o LEFT JOIN users u ON u.id=o.responsible_id WHERE o.id = $1',
+      [req.params.id]);
     if (!obj[0]) return res.status(404).json({ error: 'No encontrado' });
     const { rows: indicators } = await query(`
-      SELECT oi.*, (SELECT json_agg(json_build_object('period', period, 'value', value) ORDER BY period)
-                    FROM objective_measurements om WHERE om.indicator_id = oi.id) AS measurements
+      SELECT oi.*,
+             (SELECT json_agg(json_build_object('period', period, 'value', value) ORDER BY period)
+                FROM objective_measurements om WHERE om.indicator_id = oi.id) AS measurements,
+             (SELECT json_build_object('period', period, 'value', value) FROM objective_measurements om
+               WHERE om.indicator_id = oi.id ORDER BY period DESC LIMIT 1) AS last_measurement
       FROM objective_indicators oi WHERE oi.objective_id = $1
+      ORDER BY oi.kpi_order, oi.indicator_name
     `, [req.params.id]);
     res.json({ ok: true, objective: obj[0], indicators });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// Toggle/edición de un KPI (indicador) del objetivo — habilitación progresiva
+objectivesRouter.patch('/:id/indicators/:indId', async (req, res) => {
+  if (!isLeader(req.user.role)) return res.status(403).json({ error: 'No autorizado' });
+  try {
+    const FIELDS = ['enabled','connector_source','connection_status','target_text','baseline_value','unit','indicator_name','frequency','kpi_order'];
+    const updates = []; const values = []; let i = 1;
+    for (const f of FIELDS) if (req.body[f] !== undefined) { updates.push(`${f} = $${i++}`); values.push(req.body[f]); }
+    if (!updates.length) return res.status(400).json({ error: 'Sin cambios' });
+    values.push(req.params.indId, req.params.id);
+    const { rows } = await query(
+      `UPDATE objective_indicators SET ${updates.join(', ')} WHERE id = $${i++} AND objective_id = $${i} RETURNING *`, values);
+    if (!rows[0]) return res.status(404).json({ error: 'Indicador no encontrado' });
+    res.json({ ok: true, indicator: rows[0] });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
@@ -63,7 +91,7 @@ objectivesRouter.post('/', async (req, res) => {
 objectivesRouter.patch('/:id', async (req, res) => {
   if (!isLeader(req.user.role)) return res.status(403).json({ error: 'No autorizado' });
   try {
-    const FIELDS = ['name','description','area','target_metric','target_value','admissible_value','baseline_value','current_value','status'];
+    const FIELDS = ['name','description','area','target_metric','target_value','admissible_value','baseline_value','current_value','status','enabled','tier','responsible_text'];
     const updates = []; const values = []; let i = 1;
     for (const f of FIELDS) if (req.body[f] !== undefined) { updates.push(`${f} = $${i++}`); values.push(req.body[f]); }
     if (!updates.length) return res.status(400).json({ error: 'Sin cambios' });

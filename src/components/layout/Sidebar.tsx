@@ -6,7 +6,7 @@ import {
   CalendarDays, ChevronDown, ChevronRight, Star, Settings, X,
   Briefcase, Workflow, Target, GitMerge, BookOpen as BookOpen2,
   Megaphone, Inbox, Bot, ListChecks, FolderTree, Sparkles,
-  ClipboardCheck, Map, Smartphone,
+  ClipboardCheck, Map, Smartphone, GitBranch, Wallet,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -43,10 +43,12 @@ function buildNav(openFindings: number, legalAlerts: number, role?: string): Nav
     },
     {
       group: 'Estrategia',
-      subtitle: 'Contexto · Objetivos · Cambios',
+      subtitle: 'Objetivos · Proyectos · Inversiones',
       items: [
         { path: '/context',         label: 'Contexto / FODA',     icon: <BarChart3 size={15} /> },
         { path: '/objetivos',       label: 'Objetivos',           icon: <Target size={15} /> },
+        { path: '/proyectos',       label: 'Proyectos',           icon: <GitBranch size={15} /> },
+        { path: '/inversiones',     label: 'Plan de Inversiones', icon: <Wallet size={15} /> },
         { path: '/cambios',         label: 'Gestión de Cambios',  icon: <GitMerge size={15} /> },
         { path: '/sistema-gestion', label: 'Sistema de Gestión',  icon: <Settings size={15} /> },
         { path: '/committee',       label: 'Comité Mixto',        icon: <Building2 size={15} /> },

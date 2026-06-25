@@ -1,9 +1,20 @@
 import express from 'express';
 import { query } from '../db/db.js';
-import { authenticate } from '../middleware/auth.js';
+import { authenticate, requireRole } from '../middleware/auth.js';
 
 const router = express.Router();
 router.use(authenticate);
+
+// Roles que pueden construir el FODA (CRUD) y homologar el ciclo
+const FODA_ADMIN = ['master_admin', 'director', 'sgi_leader'];
+const FODA_HOMOLOGA = ['master_admin', 'director'];
+
+// ¿el ciclo está homologado (congelado)? Bloquea edición.
+async function cicloHomologado(ciclo) {
+  if (!ciclo) return false;
+  const { rows } = await query('SELECT estado FROM foda_homologacion WHERE ciclo = $1', [ciclo]);
+  return rows[0]?.estado === 'homologado';
+}
 
 // ─── FODA (context_analysis) ───────────────────────────────
 
@@ -29,16 +40,20 @@ router.get('/foda', async (req, res) => {
   }
 });
 
-router.post('/foda', async (req, res) => {
-  const { foda_type, category, description, order_index } = req.body;
+router.post('/foda', requireRole(...FODA_ADMIN), async (req, res) => {
+  const { foda_type, category, description, order_index, vinculo, ciclo } = req.body;
   if (!foda_type || !category || !description) {
     return res.status(400).json({ error: 'foda_type, category y description son requeridos' });
   }
+  const cicloFinal = ciclo || '2025-2026';
+  if (await cicloHomologado(cicloFinal)) {
+    return res.status(423).json({ error: `El FODA del ciclo ${cicloFinal} está homologado (cerrado). Reabrilo para editar.` });
+  }
   try {
     const { rows } = await query(
-      `INSERT INTO context_analysis (foda_type, category, description, order_index, created_by)
-       VALUES ($1,$2,$3,$4,$5) RETURNING *`,
-      [foda_type, category, description, order_index || 0, req.user.id]
+      `INSERT INTO context_analysis (foda_type, category, description, order_index, vinculo, ciclo, is_active, validation_status, created_by)
+       VALUES ($1,$2,$3,$4,$5,$6,TRUE,'pendiente',$7) RETURNING *`,
+      [foda_type, category, description, order_index || 0, vinculo || null, cicloFinal, req.user.id]
     );
     res.status(201).json(rows[0]);
   } catch (err) {
@@ -46,8 +61,13 @@ router.post('/foda', async (req, res) => {
   }
 });
 
-router.patch('/foda/:id', async (req, res) => {
-  const allowed = ['foda_type', 'category', 'description', 'order_index', 'is_active'];
+router.patch('/foda/:id', requireRole(...FODA_ADMIN), async (req, res) => {
+  const cur = await query('SELECT ciclo FROM context_analysis WHERE id = $1', [req.params.id]);
+  if (!cur.rows.length) return res.status(404).json({ error: 'No encontrado' });
+  if (await cicloHomologado(cur.rows[0].ciclo)) {
+    return res.status(423).json({ error: `El FODA del ciclo ${cur.rows[0].ciclo} está homologado (cerrado). Reabrilo para editar.` });
+  }
+  const allowed = ['foda_type', 'category', 'description', 'order_index', 'is_active', 'vinculo', 'ciclo'];
   const sets = []; const vals = []; let i = 1;
   for (const f of allowed) {
     if (req.body[f] !== undefined) { sets.push(`${f} = $${i++}`); vals.push(req.body[f]); }
@@ -87,10 +107,65 @@ router.patch('/foda/:id/validation', async (req, res) => {
   }
 });
 
-router.delete('/foda/:id', async (req, res) => {
+router.delete('/foda/:id', requireRole(...FODA_ADMIN), async (req, res) => {
   try {
+    const cur = await query('SELECT ciclo FROM context_analysis WHERE id = $1', [req.params.id]);
+    if (!cur.rows.length) return res.status(404).json({ error: 'No encontrado' });
+    if (await cicloHomologado(cur.rows[0].ciclo)) {
+      return res.status(423).json({ error: `El FODA del ciclo ${cur.rows[0].ciclo} está homologado (cerrado). Reabrilo para eliminar.` });
+    }
     await query('DELETE FROM context_analysis WHERE id = $1', [req.params.id]);
     res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ─── Homologación del FODA por ciclo (cierre con fecha) ─────
+router.get('/foda/ciclo', async (req, res) => {
+  const ciclo = req.query.ciclo || '2025-2026';
+  try {
+    const { rows } = await query(
+      `SELECT h.*, u.full_name AS homologado_by_name,
+              (SELECT COUNT(*) FROM context_analysis WHERE ciclo = h.ciclo AND is_active = TRUE)::int AS items,
+              (SELECT COUNT(*) FROM context_analysis WHERE ciclo = h.ciclo AND is_active = TRUE AND validation_status = 'validado')::int AS validados,
+              (SELECT COUNT(*) FROM context_analysis WHERE ciclo = h.ciclo AND is_active = TRUE AND (validation_status IS NULL OR validation_status = 'pendiente'))::int AS pendientes
+         FROM foda_homologacion h LEFT JOIN users u ON u.id = h.homologado_by
+        WHERE h.ciclo = $1`, [ciclo]);
+    res.json(rows[0] || { ciclo, estado: 'borrador', items: 0, validados: 0, pendientes: 0 });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.post('/foda/homologar', requireRole(...FODA_HOMOLOGA), async (req, res) => {
+  const ciclo = req.body.ciclo || '2025-2026';
+  const nota = req.body.nota || null;
+  try {
+    const pend = await query(
+      "SELECT COUNT(*)::int AS n FROM context_analysis WHERE ciclo = $1 AND is_active = TRUE AND (validation_status IS NULL OR validation_status = 'pendiente')", [ciclo]);
+    if (pend.rows[0].n > 0 && !req.body.force) {
+      return res.status(409).json({ error: `Quedan ${pend.rows[0].n} ítems sin validar en el ciclo ${ciclo}. Validalos o homologá con force=true.`, pendientes: pend.rows[0].n });
+    }
+    const { rows } = await query(
+      `INSERT INTO foda_homologacion (ciclo, estado, homologado_at, homologado_by, nota, updated_at)
+       VALUES ($1,'homologado',NOW(),$2,$3,NOW())
+       ON CONFLICT (ciclo) DO UPDATE SET estado='homologado', homologado_at=NOW(), homologado_by=$2, nota=$3, updated_at=NOW()
+       RETURNING *`, [ciclo, req.user.id, nota]);
+    res.json(rows[0]);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.post('/foda/reabrir', requireRole(...FODA_HOMOLOGA), async (req, res) => {
+  const ciclo = req.body.ciclo || '2025-2026';
+  try {
+    const { rows } = await query(
+      `UPDATE foda_homologacion SET estado='borrador', homologado_at=NULL, homologado_by=NULL, updated_at=NOW()
+        WHERE ciclo = $1 RETURNING *`, [ciclo]);
+    if (!rows.length) return res.status(404).json({ error: 'Ciclo no encontrado' });
+    res.json(rows[0]);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

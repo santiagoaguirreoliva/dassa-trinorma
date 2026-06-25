@@ -25,7 +25,7 @@ async function compileInputs(year) {
     query(`SELECT
         COUNT(*) FILTER (WHERE closed_at IS NULL) AS abiertas,
         COUNT(*) FILTER (WHERE closed_at IS NOT NULL AND date_part('year',closed_at)=$1) AS cerradas_periodo,
-        COUNT(*) FILTER (WHERE origin='auditoria_interna') AS de_auditoria,
+        COUNT(*) FILTER (WHERE origin='auditoria_interna' AND closed_at IS NULL) AS de_auditoria,
         COUNT(*) AS total
       FROM findings WHERE deleted_at IS NULL`, [year]),
     query(`SELECT COUNT(*) AS total, COALESCE(SUM(lost_time_days),0) AS dias_perdidos

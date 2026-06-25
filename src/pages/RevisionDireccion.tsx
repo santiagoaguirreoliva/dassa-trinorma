@@ -84,7 +84,8 @@ export default function RevisionDireccion() {
   });
 
   if (inputsQ.isLoading || reviewsQ.isLoading) return <PageContent><Header title="🏛️ Revisión por la Dirección" icon={<ClipboardCheck size={20} />} /><div className="flex justify-center py-10"><Spinner /></div></PageContent>;
-  const inp = inputsQ.data!.inputs;
+  if (inputsQ.isError || !inputsQ.data) return <PageContent><Header title="🏛️ Revisión por la Dirección" icon={<ClipboardCheck size={20} />} /><div className="text-sm text-gray-500 py-10 text-center">No se pudieron cargar las entradas de desempeño. Reintentá en unos segundos.</div></PageContent>;
+  const inp = inputsQ.data.inputs;
   const locked = !form || form.status === 'cerrada' || !canEdit;
   const set = (k: keyof Review, v: any) => setForm(f => f ? { ...f, [k]: v } : f);
   const actions: Action[] = form?.improvement_actions || [];

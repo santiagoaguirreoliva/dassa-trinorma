@@ -232,7 +232,7 @@ router.get('/mi-perfil', async (req, res) => {
         FROM strategic_documents
        WHERE code IN ('MISION_DASSA','VISION_DASSA','VALORES_DASSA','POLITICA_GESTION_INTEGRADA')
          AND is_active = TRUE
-       ORDER BY (metadata->>'order')::int`);
+       ORDER BY COALESCE((metadata->>'order')::int, 999), code`);
     const strategic_docs = docsQ.rows;
 
     if (!employee) {

@@ -1,0 +1,1133 @@
+{
+  "objetivos": [
+    {
+      "code": "OBJ-01",
+      "name": "Crecimiento Comercial",
+      "description": "Incrementar el volumen de operaciones y desarrollar nuevos clientes.",
+      "area": "Comercial",
+      "responsable": "Resp. Comercial (Manuel/Santiago)",
+      "estado": "activo"
+    },
+    {
+      "code": "OBJ-02",
+      "name": "Rentabilidad",
+      "description": "Mejorar la rentabilidad mediante gestión eficiente de costos, precios y productividad.",
+      "area": "Finanzas",
+      "responsable": "Dirección",
+      "estado": "activo"
+    },
+    {
+      "code": "OBJ-03",
+      "name": "Excelencia Operativa",
+      "description": "Optimizar la eficiencia, productividad y trazabilidad de las operaciones.",
+      "area": "Operaciones",
+      "responsable": "Supervisor de Depósito (Marcelo)",
+      "estado": "activo"
+    },
+    {
+      "code": "OBJ-04",
+      "name": "Clientes",
+      "description": "Mejorar la satisfacción y fidelización de los clientes.",
+      "area": "Comercial",
+      "responsable": "Resp. Comercial",
+      "estado": "activo"
+    },
+    {
+      "code": "OBJ-05",
+      "name": "Personas y SST",
+      "description": "Desarrollar un ambiente de trabajo seguro, saludable y con personal altamente capacitado.",
+      "area": "RRHH / SySO",
+      "responsable": "RRHH (María) + SySO (Ponzi)",
+      "estado": "activo"
+    },
+    {
+      "code": "OBJ-06",
+      "name": "Medio Ambiente",
+      "description": "Reducir el impacto ambiental de las operaciones y promover el uso eficiente de los recursos.",
+      "area": "Ambiente",
+      "responsable": "Supervisor de Depósito",
+      "estado": "activo"
+    },
+    {
+      "code": "OBJ-07",
+      "name": "Transformación Digital",
+      "description": "Digitalizar integralmente la gestión mediante aplicaciones propias e IA.",
+      "area": "Tecnología",
+      "responsable": "Resp. Tecnología (Santiago)",
+      "estado": "activo"
+    },
+    {
+      "code": "OBJ-08",
+      "name": "Modernización Administrativa (Odoo)",
+      "description": "Modernizar la administración mediante la implementación del ERP Odoo.",
+      "area": "Administración",
+      "responsable": "Administración",
+      "estado": "activo"
+    },
+    {
+      "code": "OBJ-09",
+      "name": "Sistema Integrado de Gestión",
+      "description": "Mantener un SGI eficaz y en mejora continua.",
+      "area": "SGI",
+      "responsable": "Líder SGI (Santiago) / Nixa",
+      "estado": "activo"
+    },
+    {
+      "code": "OBJ-10",
+      "name": "Digitalización del SGI",
+      "description": "Migrar el SGI desde Google Drive hacia la plataforma nativa DASSA (Trinorma).",
+      "area": "SGI / Tecnología",
+      "responsable": "Líder SGI",
+      "estado": "activo"
+    }
+  ],
+  "kpis": [
+    {
+      "objetivo": "OBJ-01",
+      "kpi": "Operaciones IMPO",
+      "unidad": "CNT/mes",
+      "baseline": null,
+      "target": "3.800/año",
+      "frecuencia": "mensual",
+      "origen": "OBJ-2026-02",
+      "conector": "depofis_mirror / app Orden",
+      "estado": "vivo"
+    },
+    {
+      "objetivo": "OBJ-01",
+      "kpi": "Operaciones EXPO",
+      "unidad": "CNT/mes",
+      "baseline": null,
+      "target": "3.120/año",
+      "frecuencia": "mensual",
+      "origen": "OBJ-2026-03",
+      "conector": "depofis_mirror / app Orden",
+      "estado": "vivo"
+    },
+    {
+      "objetivo": "OBJ-01",
+      "kpi": "Mix IMPO",
+      "unidad": "%",
+      "baseline": null,
+      "target": "55%",
+      "frecuencia": "mensual",
+      "origen": "OBJ-2026-04",
+      "conector": "derivado IMPO/EXPO",
+      "estado": "vivo"
+    },
+    {
+      "objetivo": "OBJ-01",
+      "kpi": "Nuevos clientes",
+      "unidad": "clientes",
+      "baseline": null,
+      "target": null,
+      "frecuencia": "mensual",
+      "origen": "nuevo",
+      "conector": "Depófis (1ª operación) / CRM Odoo",
+      "estado": "construible"
+    },
+    {
+      "objetivo": "OBJ-01",
+      "kpi": "Retención de clientes",
+      "unidad": "%",
+      "baseline": null,
+      "target": null,
+      "frecuencia": "mensual",
+      "origen": "nuevo",
+      "conector": "Depófis (recurrencia)",
+      "estado": "construible"
+    },
+    {
+      "objetivo": "OBJ-01",
+      "kpi": "NPS",
+      "unidad": "NPS",
+      "baseline": null,
+      "target": null,
+      "frecuencia": "mensual",
+      "origen": "nuevo (CC-12)",
+      "conector": "Portal Clientes/Mudancera",
+      "estado": "construible"
+    },
+    {
+      "objetivo": "OBJ-02",
+      "kpi": "EBITDA",
+      "unidad": "$",
+      "baseline": null,
+      "target": "+17%",
+      "frecuencia": "mensual",
+      "origen": "OBJ-2026-14",
+      "conector": "tablero /costos + Odoo",
+      "estado": "construible"
+    },
+    {
+      "objetivo": "OBJ-02",
+      "kpi": "Margen EBITDA",
+      "unidad": "%",
+      "baseline": null,
+      "target": null,
+      "frecuencia": "mensual",
+      "origen": "OBJ-2026-14",
+      "conector": "/costos + Odoo",
+      "estado": "construible"
+    },
+    {
+      "objetivo": "OBJ-02",
+      "kpi": "Facturación",
+      "unidad": "$",
+      "baseline": null,
+      "target": null,
+      "frecuencia": "mensual",
+      "origen": "nuevo",
+      "conector": "Odoo / ctaccted (espejo)",
+      "estado": "construible"
+    },
+    {
+      "objetivo": "OBJ-02",
+      "kpi": "Rentabilidad por operación",
+      "unidad": "$",
+      "baseline": null,
+      "target": null,
+      "frecuencia": "mensual",
+      "origen": "nuevo",
+      "conector": "costeo ABC (CC-07)",
+      "estado": "construible"
+    },
+    {
+      "objetivo": "OBJ-02",
+      "kpi": "Rentabilidad por cliente",
+      "unidad": "$",
+      "baseline": null,
+      "target": null,
+      "frecuencia": "mensual",
+      "origen": "nuevo",
+      "conector": "costeo ABC (CC-07)",
+      "estado": "construible"
+    },
+    {
+      "objetivo": "OBJ-03",
+      "kpi": "Forzoso en término",
+      "unidad": "%",
+      "baseline": null,
+      "target": "≥97%",
+      "frecuencia": "mensual",
+      "origen": "OBJ-2026-05",
+      "conector": "app Orden/Tally + espejo",
+      "estado": "congelado"
+    },
+    {
+      "objetivo": "OBJ-03",
+      "kpi": "Días de desconsolidación",
+      "unidad": "días",
+      "baseline": null,
+      "target": "<3",
+      "frecuencia": "mensual",
+      "origen": "OBJ-2026-06",
+      "conector": "app Orden/Tally + espejo",
+      "estado": "congelado"
+    },
+    {
+      "objetivo": "OBJ-03",
+      "kpi": "Tiempo de ciclo IMPO",
+      "unidad": "días",
+      "baseline": null,
+      "target": null,
+      "frecuencia": "mensual",
+      "origen": "nuevo",
+      "conector": "app Orden (timestamps)",
+      "estado": "construible"
+    },
+    {
+      "objetivo": "OBJ-03",
+      "kpi": "Tiempo de ciclo EXPO",
+      "unidad": "días",
+      "baseline": null,
+      "target": null,
+      "frecuencia": "mensual",
+      "origen": "nuevo",
+      "conector": "app Orden (timestamps)",
+      "estado": "construible"
+    },
+    {
+      "objetivo": "OBJ-03",
+      "kpi": "Productividad (cuadrilla)",
+      "unidad": "u/hh",
+      "baseline": null,
+      "target": null,
+      "frecuencia": "mensual",
+      "origen": "nuevo",
+      "conector": "Orden/Tally (horas)",
+      "estado": "construible"
+    },
+    {
+      "objetivo": "OBJ-03",
+      "kpi": "Incidentes / errores operativos",
+      "unidad": "nº",
+      "baseline": null,
+      "target": null,
+      "frecuencia": "mensual",
+      "origen": "nuevo",
+      "conector": "Orden (anomalías) / manual",
+      "estado": "manual"
+    },
+    {
+      "objetivo": "OBJ-04",
+      "kpi": "NPS",
+      "unidad": "NPS",
+      "baseline": null,
+      "target": null,
+      "frecuencia": "mensual",
+      "origen": "nuevo (CC-12)",
+      "conector": "Portales",
+      "estado": "construible"
+    },
+    {
+      "objetivo": "OBJ-04",
+      "kpi": "Reclamos",
+      "unidad": "nº",
+      "baseline": null,
+      "target": null,
+      "frecuencia": "mensual",
+      "origen": "nuevo",
+      "conector": "Trinorma (findings/NC) / portales",
+      "estado": "construible"
+    },
+    {
+      "objetivo": "OBJ-04",
+      "kpi": "Tiempo de respuesta",
+      "unidad": "hs",
+      "baseline": null,
+      "target": null,
+      "frecuencia": "mensual",
+      "origen": "nuevo",
+      "conector": "portales / mail",
+      "estado": "manual"
+    },
+    {
+      "objetivo": "OBJ-04",
+      "kpi": "SLA cumplido",
+      "unidad": "%",
+      "baseline": null,
+      "target": null,
+      "frecuencia": "mensual",
+      "origen": "nuevo",
+      "conector": "Orden + acuerdos",
+      "estado": "construible"
+    },
+    {
+      "objetivo": "OBJ-04",
+      "kpi": "Clientes recuperados",
+      "unidad": "nº",
+      "baseline": null,
+      "target": null,
+      "frecuencia": "mensual",
+      "origen": "nuevo",
+      "conector": "CRM / COMEX (CC-10)",
+      "estado": "construible"
+    },
+    {
+      "objetivo": "OBJ-04",
+      "kpi": "Satisfacción promedio",
+      "unidad": "%",
+      "baseline": null,
+      "target": "≥97%",
+      "frecuencia": "mensual",
+      "origen": "OBJ-2026-01",
+      "conector": "encuesta / NPS",
+      "estado": "construible"
+    },
+    {
+      "objetivo": "OBJ-05",
+      "kpi": "Accidentes con tiempo perdido",
+      "unidad": "nº",
+      "baseline": null,
+      "target": "-15%",
+      "frecuencia": "mensual",
+      "origen": "OBJ-2026-10",
+      "conector": "registro SySO (Trinorma)",
+      "estado": "congelado"
+    },
+    {
+      "objetivo": "OBJ-05",
+      "kpi": "Días perdidos por accidentes",
+      "unidad": "días",
+      "baseline": null,
+      "target": "≤ baseline",
+      "frecuencia": "mensual",
+      "origen": "OBJ-2026-11",
+      "conector": "registro SySO",
+      "estado": "congelado"
+    },
+    {
+      "objetivo": "OBJ-05",
+      "kpi": "Accidentes sin tiempo perdido",
+      "unidad": "nº",
+      "baseline": null,
+      "target": null,
+      "frecuencia": "mensual",
+      "origen": "nuevo",
+      "conector": "registro SySO",
+      "estado": "manual"
+    },
+    {
+      "objetivo": "OBJ-05",
+      "kpi": "Incidentes",
+      "unidad": "nº",
+      "baseline": null,
+      "target": null,
+      "frecuencia": "mensual",
+      "origen": "nuevo",
+      "conector": "registro SySO",
+      "estado": "manual"
+    },
+    {
+      "objetivo": "OBJ-05",
+      "kpi": "Uso de EPP",
+      "unidad": "%",
+      "baseline": null,
+      "target": null,
+      "frecuencia": "mensual",
+      "origen": "nuevo",
+      "conector": "registro SySO",
+      "estado": "manual"
+    },
+    {
+      "objetivo": "OBJ-05",
+      "kpi": "Ausentismo",
+      "unidad": "%",
+      "baseline": null,
+      "target": null,
+      "frecuencia": "mensual",
+      "origen": "nuevo",
+      "conector": "RRHH",
+      "estado": "manual"
+    },
+    {
+      "objetivo": "OBJ-05",
+      "kpi": "Enfermedades laborales",
+      "unidad": "nº",
+      "baseline": null,
+      "target": null,
+      "frecuencia": "mensual",
+      "origen": "nuevo",
+      "conector": "RRHH",
+      "estado": "manual"
+    },
+    {
+      "objetivo": "OBJ-05",
+      "kpi": "Aptos médicos vigentes",
+      "unidad": "%",
+      "baseline": null,
+      "target": null,
+      "frecuencia": "mensual",
+      "origen": "nuevo",
+      "conector": "Trinorma (certificaciones)",
+      "estado": "construible"
+    },
+    {
+      "objetivo": "OBJ-05",
+      "kpi": "Simulacros realizados",
+      "unidad": "nº",
+      "baseline": null,
+      "target": null,
+      "frecuencia": "mensual",
+      "origen": "nuevo",
+      "conector": "SySO / Trinorma",
+      "estado": "manual"
+    },
+    {
+      "objetivo": "OBJ-05",
+      "kpi": "Horas de capacitación",
+      "unidad": "hs",
+      "baseline": null,
+      "target": null,
+      "frecuencia": "mensual",
+      "origen": "OBJ-2026-12",
+      "conector": "Trinorma (trainings)",
+      "estado": "construible"
+    },
+    {
+      "objetivo": "OBJ-05",
+      "kpi": "% personal capacitado",
+      "unidad": "%",
+      "baseline": null,
+      "target": "+20%",
+      "frecuencia": "mensual",
+      "origen": "OBJ-2026-12",
+      "conector": "Trinorma (training_participants)",
+      "estado": "construible"
+    },
+    {
+      "objetivo": "OBJ-05",
+      "kpi": "Competencias por puesto",
+      "unidad": "%",
+      "baseline": null,
+      "target": null,
+      "frecuencia": "mensual",
+      "origen": "nuevo",
+      "conector": "Trinorma (fichas)",
+      "estado": "construible"
+    },
+    {
+      "objetivo": "OBJ-05",
+      "kpi": "Polivalencia",
+      "unidad": "índice",
+      "baseline": null,
+      "target": null,
+      "frecuencia": "mensual",
+      "origen": "nuevo",
+      "conector": "Trinorma",
+      "estado": "construible"
+    },
+    {
+      "objetivo": "OBJ-05",
+      "kpi": "Clima laboral",
+      "unidad": "índice",
+      "baseline": null,
+      "target": null,
+      "frecuencia": "mensual",
+      "origen": "OBJ-2026-13",
+      "conector": "RRHH (encuesta)",
+      "estado": "manual"
+    },
+    {
+      "objetivo": "OBJ-05",
+      "kpi": "Rotación",
+      "unidad": "%",
+      "baseline": null,
+      "target": null,
+      "frecuencia": "mensual",
+      "origen": "nuevo",
+      "conector": "RRHH",
+      "estado": "manual"
+    },
+    {
+      "objetivo": "OBJ-05",
+      "kpi": "Evaluaciones de desempeño",
+      "unidad": "%",
+      "baseline": null,
+      "target": null,
+      "frecuencia": "mensual",
+      "origen": "nuevo",
+      "conector": "RRHH / Trinorma",
+      "estado": "construible"
+    },
+    {
+      "objetivo": "OBJ-06",
+      "kpi": "Energía",
+      "unidad": "kWh",
+      "baseline": null,
+      "target": "-10%",
+      "frecuencia": "mensual",
+      "origen": "OBJ-2026-07",
+      "conector": "medidor / factura",
+      "estado": "congelado"
+    },
+    {
+      "objetivo": "OBJ-06",
+      "kpi": "Agua",
+      "unidad": "m³",
+      "baseline": null,
+      "target": "Baja Aysa",
+      "frecuencia": "mensual",
+      "origen": "OBJ-2026-09",
+      "conector": "factura Aysa",
+      "estado": "manual"
+    },
+    {
+      "objetivo": "OBJ-06",
+      "kpi": "Combustible",
+      "unidad": "l",
+      "baseline": null,
+      "target": null,
+      "frecuencia": "mensual",
+      "origen": "nuevo",
+      "conector": "manual",
+      "estado": "manual"
+    },
+    {
+      "objetivo": "OBJ-06",
+      "kpi": "Residuos reciclados",
+      "unidad": "kg",
+      "baseline": null,
+      "target": null,
+      "frecuencia": "mensual",
+      "origen": "nuevo",
+      "conector": "registro ambiental",
+      "estado": "manual"
+    },
+    {
+      "objetivo": "OBJ-06",
+      "kpi": "Residuos peligrosos",
+      "unidad": "kg",
+      "baseline": null,
+      "target": null,
+      "frecuencia": "mensual",
+      "origen": "nuevo",
+      "conector": "registro ambiental",
+      "estado": "manual"
+    },
+    {
+      "objetivo": "OBJ-06",
+      "kpi": "Residuos comunes",
+      "unidad": "kg",
+      "baseline": null,
+      "target": null,
+      "frecuencia": "mensual",
+      "origen": "nuevo",
+      "conector": "registro ambiental",
+      "estado": "manual"
+    },
+    {
+      "objetivo": "OBJ-06",
+      "kpi": "Derrames",
+      "unidad": "nº",
+      "baseline": null,
+      "target": null,
+      "frecuencia": "mensual",
+      "origen": "nuevo",
+      "conector": "registro ambiental",
+      "estado": "manual"
+    },
+    {
+      "objetivo": "OBJ-06",
+      "kpi": "Incidentes ambientales",
+      "unidad": "nº",
+      "baseline": null,
+      "target": null,
+      "frecuencia": "mensual",
+      "origen": "nuevo",
+      "conector": "registro ambiental",
+      "estado": "manual"
+    },
+    {
+      "objetivo": "OBJ-06",
+      "kpi": "Requisitos legales (ambiental)",
+      "unidad": "%",
+      "baseline": null,
+      "target": null,
+      "frecuencia": "mensual",
+      "origen": "nuevo",
+      "conector": "Trinorma (legal_requirements)",
+      "estado": "construible"
+    },
+    {
+      "objetivo": "OBJ-06",
+      "kpi": "Aspectos ambientales controlados",
+      "unidad": "%",
+      "baseline": null,
+      "target": null,
+      "frecuencia": "mensual",
+      "origen": "nuevo",
+      "conector": "Trinorma",
+      "estado": "construible"
+    },
+    {
+      "objetivo": "OBJ-07",
+      "kpi": "% procesos digitalizados",
+      "unidad": "%",
+      "baseline": null,
+      "target": null,
+      "frecuencia": "mensual",
+      "origen": "nuevo",
+      "conector": "inventario de procesos (manual)",
+      "estado": "manual"
+    },
+    {
+      "objetivo": "OBJ-07",
+      "kpi": "Usuarios activos",
+      "unidad": "nº",
+      "baseline": null,
+      "target": null,
+      "frecuencia": "mensual",
+      "origen": "nuevo",
+      "conector": "SSO Smart DASSA / apps",
+      "estado": "construible"
+    },
+    {
+      "objetivo": "OBJ-07",
+      "kpi": "Apps implementadas",
+      "unidad": "nº",
+      "baseline": null,
+      "target": null,
+      "frecuencia": "mensual",
+      "origen": "nuevo",
+      "conector": "inventario ecosistema",
+      "estado": "manual"
+    },
+    {
+      "objetivo": "OBJ-07",
+      "kpi": "Automatizaciones",
+      "unidad": "nº",
+      "baseline": null,
+      "target": null,
+      "frecuencia": "mensual",
+      "origen": "nuevo",
+      "conector": "inventario ecosistema",
+      "estado": "manual"
+    },
+    {
+      "objetivo": "OBJ-07",
+      "kpi": "Tiempo ahorrado",
+      "unidad": "hs",
+      "baseline": null,
+      "target": null,
+      "frecuencia": "mensual",
+      "origen": "nuevo",
+      "conector": "estimación",
+      "estado": "manual"
+    },
+    {
+      "objetivo": "OBJ-07",
+      "kpi": "Documentos digitalizados",
+      "unidad": "nº",
+      "baseline": null,
+      "target": null,
+      "frecuencia": "mensual",
+      "origen": "nuevo",
+      "conector": "Trinorma (documents)",
+      "estado": "construible"
+    },
+    {
+      "objetivo": "OBJ-08",
+      "kpi": "% implementación Odoo",
+      "unidad": "%",
+      "baseline": null,
+      "target": "100% Q2",
+      "frecuencia": "mensual",
+      "origen": "OBJ-2026-16",
+      "conector": "seguimiento Odoo",
+      "estado": "manual"
+    },
+    {
+      "objetivo": "OBJ-09",
+      "kpi": "Objetivos cumplidos",
+      "unidad": "%",
+      "baseline": null,
+      "target": null,
+      "frecuencia": "mensual",
+      "origen": "nuevo",
+      "conector": "Trinorma (objectives)",
+      "estado": "vivo"
+    },
+    {
+      "objetivo": "OBJ-09",
+      "kpi": "Auditorías",
+      "unidad": "nº",
+      "baseline": null,
+      "target": null,
+      "frecuencia": "mensual",
+      "origen": "nuevo",
+      "conector": "Trinorma (audits)",
+      "estado": "construible"
+    },
+    {
+      "objetivo": "OBJ-09",
+      "kpi": "No conformidades",
+      "unidad": "nº",
+      "baseline": null,
+      "target": null,
+      "frecuencia": "mensual",
+      "origen": "nuevo",
+      "conector": "Trinorma (findings/nc)",
+      "estado": "construible"
+    },
+    {
+      "objetivo": "OBJ-09",
+      "kpi": "Estado OEA",
+      "unidad": "%",
+      "baseline": null,
+      "target": "Habilitación",
+      "frecuencia": "mensual",
+      "origen": "OBJ-2026-15",
+      "conector": "seguimiento trámite",
+      "estado": "manual"
+    },
+    {
+      "objetivo": "OBJ-10",
+      "kpi": "Indicadores online",
+      "unidad": "nº",
+      "baseline": null,
+      "target": null,
+      "frecuencia": "mensual",
+      "origen": "nuevo",
+      "conector": "objective_indicators",
+      "estado": "vivo"
+    }
+  ],
+  "proyectos": [
+    {
+      "code": "PRY-01",
+      "name": "ERP Odoo",
+      "area": "Tecnología",
+      "objetivos": null,
+      "estado": "En ejecución",
+      "avance": null,
+      "responsable": null,
+      "notas": null
+    },
+    {
+      "code": "PRY-02",
+      "name": "DASSA Trinorma App",
+      "area": "Tecnología",
+      "objetivos": null,
+      "estado": "En ejecución",
+      "avance": null,
+      "responsable": null,
+      "notas": null
+    },
+    {
+      "code": "PRY-03",
+      "name": "Portal Clientes",
+      "area": "Tecnología",
+      "objetivos": null,
+      "estado": "En ejecución",
+      "avance": null,
+      "responsable": null,
+      "notas": null
+    },
+    {
+      "code": "PRY-04",
+      "name": "Portal Proveedores",
+      "area": "Tecnología",
+      "objetivos": null,
+      "estado": "Planificado",
+      "avance": null,
+      "responsable": null,
+      "notas": null
+    },
+    {
+      "code": "PRY-05",
+      "name": "RR.AI",
+      "area": "Tecnología",
+      "objetivos": null,
+      "estado": "En ejecución",
+      "avance": null,
+      "responsable": null,
+      "notas": null
+    },
+    {
+      "code": "PRY-06",
+      "name": "FICO",
+      "area": "Tecnología",
+      "objetivos": null,
+      "estado": "En ejecución",
+      "avance": null,
+      "responsable": null,
+      "notas": null
+    },
+    {
+      "code": "PRY-07",
+      "name": "TRINY",
+      "area": "Tecnología",
+      "objetivos": null,
+      "estado": "En ejecución",
+      "avance": null,
+      "responsable": null,
+      "notas": null
+    },
+    {
+      "code": "PRY-08",
+      "name": "SINCRO",
+      "area": "Tecnología",
+      "objetivos": null,
+      "estado": "En ejecución",
+      "avance": null,
+      "responsable": null,
+      "notas": null
+    },
+    {
+      "code": "PRY-09",
+      "name": "Dashboard Ejecutivo",
+      "area": "Tecnología",
+      "objetivos": null,
+      "estado": "En ejecución",
+      "avance": null,
+      "responsable": null,
+      "notas": null
+    },
+    {
+      "code": "PRY-10",
+      "name": "Cashflow Online",
+      "area": "Tecnología",
+      "objetivos": null,
+      "estado": "Planificado",
+      "avance": null,
+      "responsable": null,
+      "notas": null
+    },
+    {
+      "code": "PRY-11",
+      "name": "Metabase",
+      "area": "Tecnología",
+      "objetivos": null,
+      "estado": "Planificado",
+      "avance": null,
+      "responsable": null,
+      "notas": null
+    },
+    {
+      "code": "PRY-12",
+      "name": "MOVERS",
+      "area": "Tecnología",
+      "objetivos": null,
+      "estado": "En ejecución",
+      "avance": null,
+      "responsable": null,
+      "notas": null
+    },
+    {
+      "code": "PRY-13",
+      "name": "OEA Digital",
+      "area": "Tecnología",
+      "objetivos": null,
+      "estado": "Planificado",
+      "avance": null,
+      "responsable": null,
+      "notas": null
+    },
+    {
+      "code": "PRY-15",
+      "name": "Autoelevadores",
+      "area": "Operación",
+      "objetivos": null,
+      "estado": "Finalizado",
+      "avance": null,
+      "responsable": null,
+      "notas": null
+    },
+    {
+      "code": "PRY-16",
+      "name": "Robot NEO",
+      "area": "Operación",
+      "objetivos": null,
+      "estado": "Planificado",
+      "avance": null,
+      "responsable": null,
+      "notas": null
+    },
+    {
+      "code": "PRY-17",
+      "name": "Red Hidrantes",
+      "area": "Operación",
+      "objetivos": null,
+      "estado": "Planificado",
+      "avance": null,
+      "responsable": null,
+      "notas": null
+    },
+    {
+      "code": "PRY-18",
+      "name": "CCTV IA",
+      "area": "Operación",
+      "objetivos": null,
+      "estado": "Planificado",
+      "avance": null,
+      "responsable": null,
+      "notas": null
+    },
+    {
+      "code": "PRY-19",
+      "name": "Control Accesos",
+      "area": "Operación",
+      "objetivos": null,
+      "estado": "Planificado",
+      "avance": null,
+      "responsable": null,
+      "notas": null
+    },
+    {
+      "code": "PRY-20",
+      "name": "QR Operativos",
+      "area": "Operación",
+      "objetivos": null,
+      "estado": "Planificado",
+      "avance": null,
+      "responsable": null,
+      "notas": null
+    },
+    {
+      "code": "PRY-21",
+      "name": "Nuevo sitio web",
+      "area": "Comercial",
+      "objetivos": null,
+      "estado": "En ejecución",
+      "avance": null,
+      "responsable": null,
+      "notas": null
+    },
+    {
+      "code": "PRY-22",
+      "name": "Marketing 2026 autonomo",
+      "area": "Comercial",
+      "objetivos": null,
+      "estado": "En ejecución",
+      "avance": null,
+      "responsable": null,
+      "notas": null
+    },
+    {
+      "code": "PRY-23",
+      "name": "CRM",
+      "area": "Comercial",
+      "objetivos": null,
+      "estado": "Planificado",
+      "avance": null,
+      "responsable": null,
+      "notas": null
+    },
+    {
+      "code": "PRY-24",
+      "name": "SEO",
+      "area": "Comercial",
+      "objetivos": null,
+      "estado": "Planificado",
+      "avance": null,
+      "responsable": null,
+      "notas": null
+    },
+    {
+      "code": "PRY-25",
+      "name": "Encuestas NPS",
+      "area": "Comercial",
+      "objetivos": null,
+      "estado": "Planificado",
+      "avance": null,
+      "responsable": null,
+      "notas": null
+    },
+    {
+      "code": "PRY-27",
+      "name": "Matriz de competencias",
+      "area": "Personas",
+      "objetivos": null,
+      "estado": "Planificado",
+      "avance": null,
+      "responsable": null,
+      "notas": null
+    },
+    {
+      "code": "PRY-28",
+      "name": "Polivalencia",
+      "area": "Personas",
+      "objetivos": null,
+      "estado": "Desarrollo",
+      "avance": null,
+      "responsable": null,
+      "notas": null
+    },
+    {
+      "code": "PRY-30",
+      "name": "Paneles solares",
+      "area": "Ambiente",
+      "objetivos": null,
+      "estado": "Planificado",
+      "avance": null,
+      "responsable": null,
+      "notas": null
+    },
+    {
+      "code": "PRY-31",
+      "name": "Gestión de residuos",
+      "area": "Ambiente",
+      "objetivos": null,
+      "estado": "En ejecución",
+      "avance": null,
+      "responsable": null,
+      "notas": null
+    },
+    {
+      "code": "PRY-32",
+      "name": "Contingencia hídrica",
+      "area": "Ambiente",
+      "objetivos": null,
+      "estado": "En ejecución",
+      "avance": null,
+      "responsable": null,
+      "notas": null
+    },
+    {
+      "code": "PRY-33",
+      "name": "Forestación",
+      "area": "Ambiente",
+      "objetivos": null,
+      "estado": "Planificado",
+      "avance": null,
+      "responsable": null,
+      "notas": null
+    }
+  ],
+  "inversiones": [
+    {
+      "project": "Reach Stacker",
+      "area": "Operaciones",
+      "priority": "Alta",
+      "amount_usd": 520000.0,
+      "amount_label": null,
+      "estado": "En análisis",
+      "fecha_prevista": null,
+      "fecha_real": null,
+      "roi": null,
+      "notas": null
+    },
+    {
+      "project": "Robot NEO",
+      "area": "Tecnología",
+      "priority": "Media",
+      "amount_usd": 20000.0,
+      "amount_label": null,
+      "estado": "Pendiente",
+      "fecha_prevista": null,
+      "fecha_real": null,
+      "roi": null,
+      "notas": null
+    },
+    {
+      "project": "Paneles Solares",
+      "area": "Ambiente",
+      "priority": "Media",
+      "amount_usd": 50000.0,
+      "amount_label": null,
+      "estado": "Planificado",
+      "fecha_prevista": null,
+      "fecha_real": null,
+      "roi": null,
+      "notas": null
+    },
+    {
+      "project": "Red Hidrantes",
+      "area": "SST",
+      "priority": "Alta",
+      "amount_usd": 50000.0,
+      "amount_label": null,
+      "estado": "Pendiente",
+      "fecha_prevista": null,
+      "fecha_real": null,
+      "roi": null,
+      "notas": null
+    },
+    {
+      "project": "Odoo",
+      "area": "Administración",
+      "priority": "Alta",
+      "amount_usd": 10000.0,
+      "amount_label": null,
+      "estado": "En ejecución",
+      "fecha_prevista": null,
+      "fecha_real": null,
+      "roi": null,
+      "notas": null
+    },
+    {
+      "project": "Trinorma App",
+      "area": "Tecnología",
+      "priority": "Alta",
+      "amount_usd": null,
+      "amount_label": "Interno",
+      "estado": "Finalizado",
+      "fecha_prevista": null,
+      "fecha_real": null,
+      "roi": null,
+      "notas": null
+    }
+  ]
+}

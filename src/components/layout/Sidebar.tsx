@@ -34,6 +34,7 @@ function buildNav(openFindings: number, legalAlerts: number, role?: string): Nav
       subtitle: 'Ciclo anual + procedimientos',
       items: [
         { path: '/ciclo/2026',     label: 'Ciclo 2026 · DAG',     icon: <Workflow size={15} /> },
+        { path: '/revision-direccion', label: 'Revisión por la Dirección', icon: <ClipboardCheck size={15} /> },
         { path: '/mapa-procesos',  label: 'Mapa de Procesos',     icon: <Map size={15} /> },
         { path: '/procedimientos', label: 'Procedimientos',       icon: <BookOpen2 size={15} /> },
         { path: '/instructivos-app', label: 'Instructivos de la app', icon: <Smartphone size={15} /> },

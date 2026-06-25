@@ -15,6 +15,7 @@ const PactosAdmin         = lazy(() => import('@/pages/PactosAdmin'));
 const NovedadesAdmin      = lazy(() => import('@/pages/NovedadesAdmin'));
 const AgentSettings       = lazy(() => import('@/pages/AgentSettings'));
 const Ciclo2026           = lazy(() => import('@/pages/Ciclo2026'));
+const RevisionDireccion   = lazy(() => import('@/pages/RevisionDireccion'));
 const Organigrama         = lazy(() => import('@/pages/Organigrama'));
 const Puestos             = lazy(() => import('@/pages/Puestos'));
 const PuestoDetalle       = lazy(() => import('@/pages/PuestoDetalle'));
@@ -132,6 +133,7 @@ export default function App() {
               <Route path="/objetivos-historico" element={<Objetivos />} />
               <Route path="/proyectos"      element={<Proyectos />} />
               <Route path="/inversiones"    element={<Inversiones />} />
+              <Route path="/revision-direccion" element={<RevisionDireccion />} />
               <Route path="/cambios"        element={<Cambios />} />
               <Route path="/mapa-procesos"  element={<MapaProcesos />} />
               <Route path="/procedimientos" element={<Procedimientos />} />

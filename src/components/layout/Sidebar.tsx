@@ -6,7 +6,7 @@ import {
   CalendarDays, ChevronDown, ChevronRight, Star, Settings, X,
   Briefcase, Workflow, Target, GitMerge, BookOpen as BookOpen2,
   Megaphone, Inbox, Bot, ListChecks, FolderTree, Sparkles,
-  ClipboardCheck,
+  ClipboardCheck, Map, Smartphone,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -34,7 +34,9 @@ function buildNav(openFindings: number, legalAlerts: number, role?: string): Nav
       subtitle: 'Ciclo anual + procedimientos',
       items: [
         { path: '/ciclo/2026',     label: 'Ciclo 2026 · DAG',     icon: <Workflow size={15} /> },
+        { path: '/mapa-procesos',  label: 'Mapa de Procesos',     icon: <Map size={15} /> },
         { path: '/procedimientos', label: 'Procedimientos',       icon: <BookOpen2 size={15} /> },
+        { path: '/instructivos-app', label: 'Instructivos de la app', icon: <Smartphone size={15} /> },
         { path: '/calendario-nixa', label: 'Calendario NIXA',  icon: <CalendarDays size={15} /> },
         ...(isAdmin || isAuditor ? [{ path: '/inbox-nixa', label: 'Inbox NIXA', icon: <Inbox size={15} /> }] : []),
       ],

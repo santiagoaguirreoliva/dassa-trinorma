@@ -81,7 +81,8 @@ router.post('/', requireRole('master_admin', 'director', 'sgi_leader'), async (r
 router.patch('/:id', requireRole('master_admin', 'director', 'sgi_leader'), async (req, res) => {
   const ALLOWED = ['title', 'description', 'doc_type', 'norma', 'folder_id',
                    'status', 'responsible_id', 'approved_by', 'approved_at',
-                   'effective_date', 'review_date', 'file_url', 'file_name'];
+                   'effective_date', 'review_date', 'file_url', 'file_name',
+                   'content_md', 'proceso', 'parent_document_id', 'keywords', 'needs_source'];
   const updates = [];
   const params = [];
 

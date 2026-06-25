@@ -23,6 +23,8 @@ const MiPerfil            = lazy(() => import('@/pages/MiPerfil'));
 const Objetivos           = lazy(() => import('@/pages/Objetivos'));
 const Cambios             = lazy(() => import('@/pages/Cambios'));
 const Procedimientos      = lazy(() => import('@/pages/Procedimientos'));
+const Instructivos        = lazy(() => import('@/pages/Instructivos'));
+const MapaProcesos        = lazy(() => import('@/pages/MapaProcesos'));
 const RiesgosAMFE         = lazy(() => import('@/pages/RiesgosAMFE'));
 const NixaInbox           = lazy(() => import('@/pages/NixaInbox'));
 const BIOperativo         = lazy(() => import('@/pages/BIOperativo'));
@@ -123,7 +125,9 @@ export default function App() {
               <Route path="/mi-puesto-legacy" element={<MiPuesto />} />
               <Route path="/objetivos"      element={<Objetivos />} />
               <Route path="/cambios"        element={<Cambios />} />
+              <Route path="/mapa-procesos"  element={<MapaProcesos />} />
               <Route path="/procedimientos" element={<Procedimientos />} />
+              <Route path="/instructivos-app" element={<Instructivos />} />
               <Route path="/riesgos-amfe"   element={<RiesgosAMFE />} />
               <Route path="/inbox-nixa"     element={<NixaInbox />} />
               <Route path="/bi-operativo"   element={<BIOperativo />} />

@@ -32,7 +32,7 @@ send_alert() {
     -a santiago@dassa.com.ar \
     --to santiago@dassa.com.ar \
     --subject "$subject" \
-    --body-stdin >> "$LOG_FILE" 2>&1
+    --body-file - >> "$LOG_FILE" 2>&1
   if [ $? -eq 0 ]; then
     echo "$now" > "$STATE_FILE"
   else

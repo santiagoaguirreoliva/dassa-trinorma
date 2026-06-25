@@ -115,9 +115,15 @@ router.get('/puesto/:id', async (req, res) => {
              )) FROM job_profile_risks jpr JOIN risks r ON r.id=jpr.risk_id
                 WHERE jpr.profile_id = jp.id), '[]'::json) AS amfe_risks,
              COALESCE((SELECT json_agg(json_build_object(
-               'id', p.id, 'code', p.code, 'title', p.title, 'module', p.module
-             )) FROM job_profile_procedures jpp LEFT JOIN procedures p ON p.id=jpp.fk_procedure_id
-                WHERE jpp.profile_id = jp.id), '[]'::json) AS procedures,
+               'id', COALESCE(d.id, p.id), 'code', COALESCE(d.code, p.code),
+               'title', COALESCE(d.title, p.title), 'module', COALESCE(d.proceso, p.module),
+               'norma', d.norma, 'needs_source', d.needs_source, 'document_id', d.id
+             ) ORDER BY COALESCE(d.code, p.code))
+                FROM job_profile_procedures jpp
+                LEFT JOIN procedures p ON p.id = COALESCE(jpp.fk_procedure_id, jpp.procedure_id)
+                LEFT JOIN documents d ON d.id = jpp.document_id
+                WHERE jpp.profile_id = jp.id
+                  AND (d.id IS NOT NULL OR p.id IS NOT NULL)), '[]'::json) AS procedures,
              (SELECT json_build_object(
                'coverage_level', s.coverage_level,
                'primary_replacement_text', s.primary_replacement_text,

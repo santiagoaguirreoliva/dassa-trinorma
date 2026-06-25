@@ -1,6 +1,9 @@
 #!/usr/bin/env node
-// Dispara manualmente un job de Triny. Útil cuando un cron quedó atrás.
-// Uso: node scripts/triny-run-job.cjs <recordatorios_lunes|resumen_viernes|informe_mensual|intimacion_vencidas>
+// Dispara un job de Triny. Dos modos:
+//   manual (default):  node scripts/triny-run-job.cjs <key>              → force:true (corre aunque esté disabled, p/ test)
+//   programado:        node scripts/triny-run-job.cjs <key> --scheduled → respeta enabled/dry_run de triny_scheduled_jobs
+// El modo --scheduled lo usa el crontab del SO (ver `crontab -l`), inmune al bloqueo del event loop de dassa-sgi.
+// Uso: node scripts/triny-run-job.cjs <recordatorios_lunes|resumen_viernes|informe_mensual|intimacion_vencidas> [--scheduled]
 
 require('dotenv').config({ path: require('path').join(__dirname, '..', '.env') });
 const m = require('../server/services/triny-mailer.cjs');
@@ -18,10 +21,13 @@ if (!key || !JOBS[key]) {
   process.exit(1);
 }
 
+const scheduled = process.argv.includes('--scheduled');
+
 (async () => {
-  console.log(`[triny-run-job] disparando ${key}…`);
+  const stamp = new Date().toLocaleString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires' });
+  console.log(`[triny-run-job][${stamp}] disparando ${key} (modo=${scheduled ? 'scheduled' : 'manual/force'})…`);
   try {
-    const r = await JOBS[key]({ force: true });
+    const r = await JOBS[key](scheduled ? {} : { force: true });
     console.log('[triny-run-job] OK:', JSON.stringify(r));
     process.exit(0);
   } catch (e) {

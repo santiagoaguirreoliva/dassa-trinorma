@@ -35,15 +35,23 @@ router.post('/accept-pact', async (req, res) => {
   try {
     const ip = req.ip || req.connection.remoteAddress;
     const ua = req.get('user-agent') || null;
-    await query(
-      `INSERT INTO user_onboarding (user_id, pact_version, ip_address, user_agent)
-       VALUES ($1, $2, $3, $4)
+    // FIX 2026-06-25: este handler NUNCA seteaba accepted_at (ni en INSERT ni en
+    // ON CONFLICT), así que el pacto quedaba en NULL para siempre y la pantalla de
+    // Bienvenida reaparecía en cada visita (santiago la vio 131 veces). Ahora lo
+    // persiste en ambas ramas; COALESCE conserva la fecha de la primera firma.
+    const { rows } = await query(
+      `INSERT INTO user_onboarding (user_id, pact_version, ip_address, user_agent, accepted_at)
+       VALUES ($1, $2, $3, $4, NOW())
        ON CONFLICT (user_id) DO UPDATE
-         SET landing_seen_count = user_onboarding.landing_seen_count + 1,
-             last_seen_at = NOW()`,
+         SET accepted_at  = COALESCE(user_onboarding.accepted_at, NOW()),
+             pact_version = EXCLUDED.pact_version,
+             ip_address   = EXCLUDED.ip_address,
+             user_agent   = EXCLUDED.user_agent,
+             last_seen_at = NOW()
+       RETURNING accepted_at`,
       [req.user.id, '1.0', ip, ua]
     );
-    res.json({ ok: true, accepted_at: new Date().toISOString() });
+    res.json({ ok: true, accepted_at: rows[0]?.accepted_at });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }

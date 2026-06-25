@@ -41,37 +41,13 @@ import { checkOverdueTasks, sendBimonthlyDigest } from './services/email.js';
 import { query as dbQuery } from './db/db.js';
 import cron from 'node-cron';
 
-// CRON · TRINY mailer jobs (recordatorios lunes, resumen viernes, informe mensual, intimacion diaria)
-// Registro sincrónico (antes era IIFE async — fallaba silencioso si la promise rechazaba)
-const trinyMailer = require('./services/triny-mailer.cjs');
+// CRON · TRINY mailer jobs — MOVIDOS al crontab del SO el 2026-06-25.
+// node-cron in-process perdía disparos ("missed execution · Possible blocking IO or high CPU")
+// por saturación del event loop a la mañana → intimacion_vencidas (10h) y recordatorios_lunes (8h)
+// quedaban stale (resumen_viernes 16h sobrevivía por caer en ventana libre). Ahora los dispara el
+// crontab del usuario `dassa` con `scripts/triny-run-job.cjs <key> --scheduled` (proceso node
+// aparte, inmune al bloqueo del event loop). /api/health sigue leyendo triny_scheduled_jobs.
 const TZ_AR = 'America/Argentina/Buenos_Aires';
-const nowAR = () => new Date().toLocaleString('es-AR', { timeZone: TZ_AR, hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' });
-
-cron.schedule('0 8 * * 1', async () => {
-  console.log(`[triny][${nowAR()}] FIRE recordatorios_lunes`);
-  try { const r = await trinyMailer.jobRecordatoriosLunes(); console.log(`[triny] recordatorios_lunes done · users=${r.users_processed} · dry_run=${r.dry_run}`); }
-  catch (e) { console.error('[triny lunes ERR]', e.message, e.stack); }
-}, { timezone: TZ_AR });
-
-cron.schedule('0 16 * * 5', async () => {
-  console.log(`[triny][${nowAR()}] FIRE resumen_viernes`);
-  try { const r = await trinyMailer.jobResumenViernes(); console.log(`[triny] resumen_viernes done · recipients=${r.recipients} · dry_run=${r.dry_run}`); }
-  catch (e) { console.error('[triny viernes ERR]', e.message, e.stack); }
-}, { timezone: TZ_AR });
-
-cron.schedule('0 9 1 * *', async () => {
-  console.log(`[triny][${nowAR()}] FIRE informe_mensual`);
-  try { const r = await trinyMailer.jobInformeMensual(); console.log(`[triny] informe_mensual done · recipients=${r.recipients} · dry_run=${r.dry_run}`); }
-  catch (e) { console.error('[triny mensual ERR]', e.message, e.stack); }
-}, { timezone: TZ_AR });
-
-cron.schedule('0 10 * * *', async () => {
-  console.log(`[triny][${nowAR()}] FIRE intimacion_vencidas`);
-  try { const r = await trinyMailer.jobIntimacionVencidas(); console.log(`[triny] intimacion_vencidas done · users=${r.users_with_overdue} · dry_run=${r.dry_run}`); }
-  catch (e) { console.error('[triny intim ERR]', e.message, e.stack); }
-}, { timezone: TZ_AR });
-
-console.log('[triny] 4 cron jobs registrados (recordatorios L 8h · resumen V 16h · informe 1d 9h · intim diario 10h)');
 
 // CRON · Ronda de Inspecciones — genera instancias del período + marca vencidas (diario 06:00 AR)
 if (process.env.CRON_DISABLED !== '1') {

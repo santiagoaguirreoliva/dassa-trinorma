@@ -1,0 +1,50 @@
+{
+  "_meta": {
+    "ciclo": "2025-2026",
+    "fuente": "FODA curado por Dirección DASSA (2026-06-25), reemplaza el set generado por workflow",
+    "conteo": "9 fortalezas · 9 oportunidades · 9 debilidades · 8 amenazas = 35"
+  },
+  "fortaleza": [
+    {"category": "Operación", "description": "Habilitaciones diferenciales (Depósito Fiscal DGA + IMO/IMDG) que posicionan a DASSA en nichos de alto valor agregado.", "vinculo": "Obj. 15 (OEA) · Obj. 02/04 (IMPO premium) · habilitación IMO/DGA"},
+    {"category": "Operación", "description": "Especialización en mudanzas internacionales, mercancías peligrosas, cargas proyecto y operaciones especiales.", "vinculo": "Obj. 02/03 (volumen) · diferenciación de servicio"},
+    {"category": "Tecnología", "description": "Ecosistema tecnológico propio (DASSA 4.0) con aplicaciones desarrolladas a medida para la operación y trazabilidad.", "vinculo": "Obj. 16 (Odoo) · Obj. 01 (trazabilidad) · ISO 7.5"},
+    {"category": "Comercial", "description": "Portal Cliente con trazabilidad completa de las operaciones y documentación digital en tiempo real.", "vinculo": "Obj. 01 (satisfacción)"},
+    {"category": "SGI", "description": "Sistema Integrado de Gestión digital con enfoque Trinorma e incorporación de Inteligencia Artificial.", "vinculo": "Obj. 15 (OEA) · ISO 9001/14001/45001"},
+    {"category": "Personas", "description": "Equipo comprometido, polivalente y orientado a la mejora continua.", "vinculo": "Obj. 12/13 · ISO 7.2 (competencia)"},
+    {"category": "Finanzas", "description": "Estructura financiera sólida, activos propios y modelo de negocio con buena rentabilidad operativa.", "vinculo": "Obj. 14 (EBITDA)"},
+    {"category": "Tecnología", "description": "Capacidad de desarrollar e implementar soluciones tecnológicas propias con rapidez, sin depender de software estándar del mercado.", "vinculo": "Obj. 16 · diferenciación tecnológica no replicable"},
+    {"category": "Personas", "description": "Dirección con visión de innovación y fuerte inversión en mejora continua.", "vinculo": "Obj. 14 · ISO 10 (mejora) · liderazgo 5.1"}
+  ],
+  "oportunidad": [
+    {"category": "Mercado", "description": "Mayor actividad del comercio exterior y aprovechamiento de la capacidad operativa disponible.", "vinculo": "Obj. 02/04 (IMPO + mix)"},
+    {"category": "Comercial", "description": "Expandir servicios de alto valor agregado (IMO, Farma, Química, Mudanzas, Proyecto).", "vinculo": "Obj. 04 (mix) · Obj. 14 (rentabilidad)"},
+    {"category": "Comercial", "description": "Recuperar oportunidades comerciales mediante CRM, IA y seguimiento sistemático de leads.", "vinculo": "Obj. 02 (volumen) · Obj. 14"},
+    {"category": "Comercial", "description": "Diversificar la cartera de clientes y reducir la dependencia de grandes cuentas.", "vinculo": "Obj. 01/04 · resiliencia de ingresos"},
+    {"category": "Tecnología", "description": "Implementar ERP integrado (Odoo) con costos y rentabilidad por operación.", "vinculo": "Obj. 16 (ERP) · Obj. 14 (EBITDA)"},
+    {"category": "SGI", "description": "Potenciar la diferenciación mediante Trinorma, OEA y transformación digital.", "vinculo": "Obj. 15 (OEA)"},
+    {"category": "Comercial", "description": "Medir la satisfacción del cliente (NPS) para aumentar fidelización y ventas recurrentes.", "vinculo": "Obj. 01 (satisfacción) · ISO 9.1.2"},
+    {"category": "Personas", "description": "Fortalecer la gestión del talento, capacitación y polivalencia del personal.", "vinculo": "Obj. 12/13 · ISO 7.2"},
+    {"category": "Finanzas", "description": "Acceder a financiamiento e inversiones para acelerar la modernización tecnológica.", "vinculo": "Obj. 14/16"}
+  ],
+  "debilidad": [
+    {"category": "Personas", "description": "Baja digitalización de la gestión de capacitaciones, competencias y registros de SST.", "vinculo": "Obj. 12 · ISO 7.2 (competencia)"},
+    {"category": "Comercial", "description": "Alta concentración de ingresos en pocos clientes estratégicos.", "vinculo": "Obj. 04 · resiliencia de cartera"},
+    {"category": "Finanzas", "description": "Falta de información de costos y rentabilidad por operación para la toma de decisiones.", "vinculo": "Obj. 14 (EBITDA)"},
+    {"category": "SGI", "description": "Sistema documental avanzado, pero con baja carga de evidencias e indicadores.", "vinculo": "Obj. 15 · ISO 9.1 (seguimiento y medición)"},
+    {"category": "SGI", "description": "Seguimiento insuficiente de requisitos legales y vencimientos regulatorios.", "vinculo": "Obj. 15 · ISO 6.1.3 (requisitos legales)"},
+    {"category": "Personas", "description": "Información del personal incompleta y baja integración de terceros al SGI.", "vinculo": "Obj. 13 · ISO 7.2 (legajos)"},
+    {"category": "Comercial", "description": "Seguimiento comercial insuficiente y bajo aprovechamiento del CRM.", "vinculo": "Obj. 02 · Obj. 14"},
+    {"category": "Tecnología", "description": "Dependencia parcial de sistemas heredados y arquitectura tecnológica en transición.", "vinculo": "Obj. 16 (migración Odoo) · ISO 7.5"},
+    {"category": "Operación", "description": "Procesos operativos aún parcialmente manuales y planes de contingencia a fortalecer.", "vinculo": "Obj. 05/06 · ISO 8.1 (control operacional)"}
+  ],
+  "amenaza": [
+    {"category": "Mercado", "description": "Competidores de mayor escala con fuerte capacidad de inversión.", "vinculo": "diferenciación · resiliencia de ingresos"},
+    {"category": "Comercial", "description": "Pérdida de clientes estratégicos por fallas en la calidad del servicio.", "vinculo": "Obj. 01 (satisfacción) · Obj. 14"},
+    {"category": "SGI", "description": "Cambios regulatorios y riesgo de incumplimiento normativo.", "vinculo": "Obj. 15 · ISO 14001/45001 · 6.1.3"},
+    {"category": "Ambiente", "description": "Eventos climáticos extremos con impacto potencial sobre la operación.", "vinculo": "ISO 14001 (preparación ante emergencias) · continuidad operativa"},
+    {"category": "Finanzas", "description": "Inflación, costos crecientes e incertidumbre macroeconómica.", "vinculo": "Obj. 14 (rentabilidad)"},
+    {"category": "Mercado", "description": "Menor inversión y desaceleración del comercio exterior.", "vinculo": "Obj. 02/03 (volumen IMPO/EXPO)"},
+    {"category": "Tecnología", "description": "Ciberseguridad, obsolescencia tecnológica y dependencia de proveedores críticos.", "vinculo": "Obj. 15 (OEA) · ISO 7.5"},
+    {"category": "Tecnología", "description": "Riesgos derivados de la automatización y el uso de IA sin controles adecuados.", "vinculo": "gobierno de IA · ISO 7.5 · control de cambios"}
+  ]
+}

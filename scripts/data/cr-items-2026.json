@@ -1,0 +1,160 @@
+{
+  "CC-2026-01": [
+    {"action": "Relevar la matriz de requisitos legales aplicables y marcar los vencidos, priorizando CAA y ADR como hallazgo mayor", "verification": "Matriz de requisitos legales con estado de vigencia por ítem y los 2 vencidos identificados"},
+    {"action": "Asignar responsable y gestionar el trámite de renovación del Certificado Ambiental Anual (CAA) ante el organismo", "verification": "CAA renovado con vencimiento posterior a la auditoría de julio 2026"},
+    {"action": "Gestionar la renovación de la habilitación y curso ADR de mercancías peligrosas", "verification": "Certificado ADR vigente cargado en el SGI"},
+    {"action": "Cargar cada certificado renovado en el SGI y configurar alerta de renovación >60 días antes del vencimiento", "verification": "Alerta de renovación configurada >60 días antes del próximo vencimiento"},
+    {"action": "Verificar que la matriz de requisitos legales quede 10/10 vigentes con certificado cargado y 0 vencidos", "verification": "Matriz 10/10 vigentes, CAA y ADR sin vencidos, alerta activa"}
+  ],
+  "CC-2026-02": [
+    {"action": "Confirmar como precondición que CAA/ADR estén vigentes (CC-2026-01) y la trazabilidad WMS lista (CC-2026-15)", "verification": "100% requisitos legales CAA/ADR vigentes con evidencia cargada antes de la auditoría"},
+    {"action": "Armar el expediente de Certificación OEA apalancado en el SGI Trinorma y el registro de requisitos legales", "verification": "Expediente OEA completo con toda la documentación requerida"},
+    {"action": "Demostrar la trazabilidad de stock fiscal punta a punta exigida por aduana para el expediente OEA", "verification": "Trazabilidad de stock fiscal demostrable ante el auditor"},
+    {"action": "Presentar el expediente a la auditoría OEA y obtener la certificación (hito pasa/no-pasa)", "verification": "OEA certificada en 2026 (hito pasa/no-pasa superado)"}
+  ],
+  "CC-2026-03": [
+    {"action": "Cargar el current_value y la tendencia de los 16 objetivos 2026 (hoy vacío) en el tablero SGI", "verification": "16/16 objetivos con current_value cargado y tendencia visible"},
+    {"action": "Poblar context_strategies con las 8 líneas estratégicas FODA (hoy vacía)", "verification": "context_strategies con las 8 estrategias FODA registradas"},
+    {"action": "Registrar las change_requests 2026 (hoy todas son de 2024), ≥1 por estrategia", "verification": "≥1 change_request 2026 registrada por cada estrategia FODA"},
+    {"action": "Conectar el tablero EBITDA por operación a la Revisión por la Dirección trimestral con acta", "verification": "4/4 Revisiones por la Dirección con acta y tablero EBITDA presentado"}
+  ],
+  "CC-2026-04": [
+    {"action": "Armar el plan anual de capacitación con foco SySO, Dangerous Goods e IMO", "verification": "Plan anual de capacitación SySO/DG/IMO aprobado y publicado"},
+    {"action": "Dictar y registrar las sesiones con planilla de asistencia firmada, temario y evaluaciones", "verification": "Planillas firmadas + temario + evaluaciones por sesión dictada"},
+    {"action": "Cargar la evidencia auditable de cada capacitación (asistencia, temario, certificado del instructor) en el SGI", "verification": "Evidencia cargada en el SGI por cada capacitación del plan"},
+    {"action": "Verificar 100% de capacitaciones con evidencia, asistencia SySO +20% vs baseline y 0 sin registro a la auditoría", "verification": "100% capacitaciones con evidencia, asistencia +20%, 0 sin registro"}
+  ],
+  "CC-2026-05": [
+    {"action": "Documentar el plan de contingencia hídrica (rutas de evacuación de carga fiscal, bombeo, niveles de alerta, roles)", "verification": "Plan de contingencia hídrica documentado y aprobado"},
+    {"action": "Ejecutar y registrar 1 simulacro de anegamiento/inundación de efluentes", "verification": "1 simulacro ejecutado con registro de evidencia"},
+    {"action": "Formalizar el plan de mantenimiento edilicio con cronograma sobre la base de activos +30% (cubiertas, pisos, desagües)", "verification": "Plan de mantenimiento con 100% de tareas programadas"},
+    {"action": "Ejecutar las tareas de mantenimiento programadas del trimestre y registrar su cumplimiento", "verification": "≥90% de tareas de mantenimiento cumplidas en el trimestre"},
+    {"action": "Verificar 0 no conformidades mayores por preparación y respuesta ante emergencias", "verification": "Auditoría sin NC mayores por preparación ante emergencias"}
+  ],
+  "CC-2026-06": [
+    {"action": "Correr AUDIT del estándar dassa-blindaje-apps en cada app expuesta (Tráfico, Orden, Trinorma, portales, marketing)", "verification": "Auditoría dassa-blindaje-apps ejecutada en el 100% de apps expuestas"},
+    {"action": "Remediar los hallazgos P0/P1: rate-limit server-side, validación Zod, headers helmet+CSP+HSTS, CORS, secrets y cookies seguras", "verification": "0 hallazgos P0 abiertos tras remediación"},
+    {"action": "Activar RLS en todas las tablas con PII/datos fiscales y verificar heartbeat a Fortaleza", "verification": "RLS activo en 100% de tablas con PII/fiscales y heartbeat vivo en apps core"},
+    {"action": "Emitir el certificado de blindaje por cada app auditada y remediada", "verification": "Certificado emitido para el 100% de las apps expuestas"}
+  ],
+  "CC-2026-07": [
+    {"action": "Mapear los costos directos atribuibles por operación (energía kWh/m², plazoleta/forzoso, horas-cuadrilla, demoras, terceros)", "verification": "Catálogo de costos directos atribuibles definido por contenedor"},
+    {"action": "Construir la vista de margen que cruza ingreso facturado (Odoo/ctaccted) vs costos por operacion_id y por cliente sobre depofis_mirror/schema costos", "verification": "Vista de margen de contribución por operación y cliente operativa sin tocar SQL Server"},
+    {"action": "Publicar el ranking mensual de los 20 clientes por EBITDA estimado y actualizar current_value de OBJ-02/04/14", "verification": "Ranking top-20 por EBITDA publicado mensual y current_value OBJ-02/04/14 actualizado"},
+    {"action": "Verificar ≥95% de operaciones cerradas con margen calculado (≤5% sin costo atribuible) y EBITDA premium ≥30% sobre commodity", "verification": "≥95% operaciones con margen, ≤5% sin costo, premium ≥30% vs commodity"}
+  ],
+  "CC-2026-08": [
+    {"action": "Construir el tablero de pricing que muestra costo estimado (de CC-2026-07) y semáforo verde/amarillo/rojo según piso de contribución", "verification": "Tablero de pricing con semáforo por cotización operativo"},
+    {"action": "Definir con dirección el piso de margen de contribución y la política de indexación IPC/ICL + tarifa USD al TC del día", "verification": "Piso de margen y política de indexación aprobados por dirección"},
+    {"action": "Incorporar cláusula de ajuste IPC/ICL o USD-al-TC en contratos y cotizaciones de Liftvan/Top-7 y registrar excepciones bajo piso", "verification": "≥80% de la facturación bajo cláusula de indexación; excepciones registradas"},
+    {"action": "Verificar 100% de cotizaciones nuevas pasan por el semáforo, ≥90% en verde y +2 puntos de margen vs baseline Q1", "verification": "100% cotizaciones por semáforo, ≥90% en verde, margen +2 pts, 0 bajo piso sin excepción"}
+  ],
+  "CC-2026-09": [
+    {"action": "Instrumentar la captura automática del % de traslados en forzoso completados en término desde la app Orden/Tally y el espejo", "verification": "Forzoso en término medido automáticamente sobre el 100% de traslados"},
+    {"action": "Instrumentar la captura automática de los días de desconsolidación por contenedor", "verification": "Días de desconsolidación por contenedor capturados automáticamente"},
+    {"action": "Publicar el dashboard diario de ambos KPIs para Supervisión y Coordinación y alimentar el costeo con tiempo-cuadrilla real", "verification": "Dashboard diario de forzoso y desconsolidación en uso"},
+    {"action": "Verificar forzoso ≥97%, desconsolidación promedio <3 días y current_value de OBJ-05/06 actualizado semanal", "verification": "Forzoso ≥97%, desconsolidación <3 días, current_value OBJ-05/06 semanal"}
+  ],
+  "CC-2026-10": [
+    {"action": "Ampliar la ventana del job seguimientoComercial de COMEX al backlog histórico de las ~319 cotizaciones dormidas", "verification": "Job seguimientoComercial alcanzando las 319 cotizaciones dormidas"},
+    {"action": "Generar cada seguimiento como alerta HITL que el vendedor/supervisor aprueba antes de salir al cliente", "verification": "0 envíos externos sin aprobación HITL, auditable en agent_action_log"},
+    {"action": "Clasificar cada cotización en ganada/perdida-con-motivo/recotiza y cerrar los 35 leads abandonados de info@ en inbound_lead", "verification": "Disposición registrada por cotización y 35 leads de info@ cerrados"},
+    {"action": "Verificar ≥80% de las 319 con disposición registrada y ≥15% de reactivación a operación facturada al cierre de Q1", "verification": "≥80% con disposición, ≥15% reactivadas a facturación, 0 envíos sin HITL"}
+  ],
+  "CC-2026-11": [
+    {"action": "Deduplicar y normalizar la base CRM HubSpot (3.482 empresas, 6.382 contactos, 2.262 deals) antes de migrarla a Odoo", "verification": "Base CRM deduplicada y normalizada lista para migración"},
+    {"action": "Migrar la base higienizada a Odoo en Q2 con etapas y dueños consistentes", "verification": "100% de la base CRM migrada a Odoo en Q2"},
+    {"action": "Formalizar el circuito captura→asignación HITL→deal de cada lead de info@ capturado por monitorInfoProspectos", "verification": "0 prospectos de info@ sin deal asignado al cierre de cada mes"},
+    {"action": "Dejar dashboard de conversión por vendedor en Odoo y verificar conversión lead→deal ≥25% (vs 0/34)", "verification": "Conversión lead→deal ≥25% medible en Odoo"}
+  ],
+  "CC-2026-12": [
+    {"action": "Diseñar y embeber la encuesta NPS gatillada al cierre de operación/desconsolidación en el portal de clientes y el mudancera", "verification": "Módulo NPS embebido y disparándose al cierre en ambos portales"},
+    {"action": "Configurar la alerta inmediata al Gerente de Operaciones ante todo detractor con protocolo de contacto <24h", "verification": "Alerta de detractor activa con protocolo de contacto <24h definido"},
+    {"action": "Registrar cada caso de detractor como no conformidad y alimentar el current_value del OBJ-01 con dato real", "verification": "Detractores registrados como NC y current_value OBJ-01 cargado"},
+    {"action": "Verificar NPS medido en ≥60% de operaciones con satisfacción ≥97%/NPS ≥50 y 100% de detractores contactados en <24h", "verification": "NPS en ≥60% de ops, satisfacción ≥97%, 100% detractores contactados <24h"}
+  ],
+  "CC-2026-13": [
+    {"action": "Definir el producto premium: zona de segregación IMO por clase, control de temperatura farma y protocolo de trazabilidad documental sobre la trinorma", "verification": "Especificación del producto Depósito Premium DG/IMO/Farma documentada"},
+    {"action": "Construir la grilla de tarifa diferenciada con sobreprecio sobre la tarifa commodity y aprobarla", "verification": "Grilla de tarifa premium aprobada con sobreprecio ≥25% vs commodity"},
+    {"action": "Documentar la estrategia FO en context_strategies (vía CC-2026-03)", "verification": "Estrategia FO premium registrada en context_strategies"},
+    {"action": "Abrir los change_requests 2026 que habilitan el CAPEX de adecuación (segregación IMO + control de temperatura)", "verification": "≥2 change_requests 2026 abiertos (segregación IMO + control de temperatura)"}
+  ],
+  "CC-2026-14": [
+    {"action": "Armar el listado segmentado de prospects de forwarders y dadores de carga IMO/DG/farma de importación", "verification": "Listado segmentado de prospects DG/IMO/farma de IMPO"},
+    {"action": "Preparar la propuesta comercial con la grilla premium (CC-2026-13) y cargar las cuentas en pipeline activo", "verification": "≥15 cuentas DG/IMO/farma de IMPO en pipeline activo"},
+    {"action": "Hacer seguimiento semanal del pipeline para empujar el volumen IMPO mensual hacia ≥317 CNT/mes (ritmo 3.800/año)", "verification": "Volumen IMPO mensual saliendo de ~182 hacia ≥317 CNT/mes"},
+    {"action": "Cerrar cuentas DG/IMO/farma en el año y verificar mix IMPO ≥50% en H2 con rumbo a 55%", "verification": "≥6 cuentas cerradas y mix IMPO ≥50% en H2"}
+  ],
+  "CC-2026-15": [
+    {"action": "Negociar con DEPOFIS (Yamil/Gastón) un us_add propio tipo ORDEN_APP que reemplace al compartido us_add='dassa'", "verification": "us_add propio ORDEN_APP habilitado por DEPOFIS"},
+    {"action": "Envolver cada escritura en transacción serializable con registro en syncro.audit_log (origen, operador, payload, advisory lock 70071)", "verification": "100% de escrituras con fila en syncro.audit_log (origen+operador)"},
+    {"action": "Migrar las escrituras INSERT/UPDATE a depofis al us_add propio y eliminar el us_add='dassa' genérico", "verification": "0 altas con us_add='dassa' genérico"},
+    {"action": "Probar el camino de rollback en ambiente real con al menos una reversión exitosa documentada", "verification": "≥1 reversión exitosa documentada y rollback probado"}
+  ],
+  "CC-2026-16": [
+    {"action": "Empaquetar el diferencial Smart DASSA 4.0 (e-Tally/SuperTally, Cadena Madre, Portales) + TRINORMA en un dossier de venta premium apalancado en la landing Árbol de mensajes", "verification": "Dossier premium publicado"},
+    {"action": "Construir la demo cliente-facing navegable end-to-end con una operación de ejemplo (CCTV+Face ID, desconsolidación <3 días, satisfacción)", "verification": "Demo de trazabilidad navegable end-to-end publicada"},
+    {"action": "Preparar ≥1 caso/operación de exhibición por segmento (grandes marcas y farma-química)", "verification": "≥1 caso navegable por segmento disponible"},
+    {"action": "Verificar uso del dossier+demo en ≥80% de las reuniones comerciales con prospectos premium del trimestre", "verification": "Dossier+demo usados en ≥80% de reuniones con prospectos premium"}
+  ],
+  "CC-2026-17": [
+    {"action": "Relevar por colaborador los datos faltantes y emitir/actualizar la ficha de puesto vigente (rol, competencias, responsabilidades SySO)", "verification": "Ficha de puesto vigente por colaborador de la dotación"},
+    {"action": "Completar los registros RRHH: alta, ART, exámenes médicos periódicos y entrega de EPP firmada", "verification": "ART, examen médico vigente y EPP firmado cargados por legajo"},
+    {"action": "Vincular cada legajo con su matriz de capacitación (CC-2026-04)", "verification": "Legajos vinculados a la matriz de capacitación"},
+    {"action": "Verificar 100% de legajos completos sobre la dotación total y 0 datos faltantes en la muestra de auditoría", "verification": "100% legajos completos y 0 faltantes en la muestra de auditoría"}
+  ],
+  "CC-2026-18": [
+    {"action": "Definir el plan de desarrollo y bienestar por rol clave (Coordinación, Supervisor de Depósito, Plazoletero)", "verification": "Plan de desarrollo y bienestar por rol clave publicado"},
+    {"action": "Armar el mapa de sucesión identificando el riesgo de pérdida por persona, apoyado en legajos (CC-2026-17)", "verification": "Mapa de sucesión publicado con riesgo por rol clave"},
+    {"action": "Medir el índice de clima/bienestar y cargar el baseline", "verification": "Índice de clima/bienestar medido con baseline cargado"},
+    {"action": "Verificar rotación voluntaria de roles operativos clave = 0 en 2026", "verification": "Rotación voluntaria de roles clave = 0 en 2026"}
+  ],
+  "CC-2026-19": [
+    {"action": "Crear la vista interna de salud del cliente Top-7 (Liftvan primero) cruzando volumen CNT, días de desconsolidación, incidencias y uso del portal/tracking, con revenue/margen de CC-2026-07", "verification": "Tablero de Salud del Cliente Top-7 operativo con margen por cuenta"},
+    {"action": "Formalizar y agendar la reunión trimestral de servicio 1-a-1 con la mudancera ancla mostrando SLA cumplido", "verification": "Calendario de revisiones trimestrales 1-a-1 formalizado"},
+    {"action": "Ejecutar las 4 revisiones trimestrales con acta firmada por Liftvan y sostener desconsolidación <3 días", "verification": "4/4 revisiones con acta firmada por Liftvan; desconsolidación <3 días"},
+    {"action": "Verificar la retención del 100% del volumen CNT del Top-7 vs baseline 2025 (cero fuga al entrante)", "verification": "Retención 100% del volumen CNT del Top-7 vs baseline 2025"}
+  ],
+  "CC-2026-20": [
+    {"action": "Producir contenido/SEO de nicho importador PyME (guías de importación, free time, desconsolidación <3 días, depósito fiscal) con Marketing (Tincho+Luz, copy validado por brand-voice-checker)", "verification": "≥12 piezas de contenido SEO nicho importador PyME publicadas"},
+    {"action": "Captar y onboardear clientes nuevos fuera de Liftvan vía el Portal multi-tenant usando OEA como diferenciador", "verification": "≥10 clientes nuevos fuera de Liftvan onboarded vía Portal"},
+    {"action": "Medir el índice de concentración (HHI) y la participación de Liftvan y Top-7 vs baseline Q1", "verification": "HHI en descenso vs baseline Q1 con medición publicada"},
+    {"action": "Verificar participación de Liftvan ≤70% del tráfico (desde ~77%) y Top-7 ≤65% IMPO", "verification": "Liftvan ≤70% del tráfico y Top-7 ≤65% IMPO"}
+  ],
+  "CC-2026-21": [
+    {"action": "Identificar y postular a las líneas PyME a tasa subsidiada (MiPyME/SGR/BICE/leasing) para mitigaciones y capital de trabajo", "verification": "Postulaciones presentadas a líneas PyME subsidiadas"},
+    {"action": "Vincular el destino del financiamiento al CAPEX de mitigaciones de CC-2026-05 (bombeo/contingencia hídrica y edilicio) y eficiencia energética", "verification": "Plan de aplicación del financiamiento al CAPEX de mitigaciones documentado"},
+    {"action": "Gestionar la aprobación y el desembolso de al menos una línea cubriendo ≥70% del CAPEX de mitigaciones", "verification": "≥1 línea aprobada y desembolsada cubriendo ≥70% del CAPEX"},
+    {"action": "Verificar costo financiero ≤ tasa de referencia subsidiada y días de caja disponibles ≥ baseline", "verification": "Costo financiero ≤ tasa subsidiada y días de caja ≥ baseline"}
+  ],
+  "CC-2026-22": [
+    {"action": "Reactivar y formalizar el control de cambios del SGI registrando las change_requests 2026 antes de cada deploy tecnológico", "verification": "100% de cambios tecnológicos 2026 con change_request aprobado antes de deploy"},
+    {"action": "Documentar para FICO la ficha de puesto del agente, runbook y zonas de autonomía (verde/amarillo/rojo)", "verification": "Ficha+runbook+zonas de autonomía de FICO documentados"},
+    {"action": "Implementar el filtro de telemetría/heartbeats sin LLM y medir el costo IA del bus en agent_runs", "verification": "Costo IA del bus medido en agent_runs ≤ US$50/mes"},
+    {"action": "Promover FICO a bidireccional solo con tasa de acierto ≥90% en ensayo y change_request aprobado", "verification": "FICO bidireccional con tasa de acierto ≥90% y change_request aprobado"}
+  ],
+  "CC-2026-23": [
+    {"action": "Documentar que depofis_mirror (Node, 53 tablas) y depofis (Python, 21 tablas) NO son redundantes (ISO 7.5)", "verification": "Documentación de ambos espejos y su no-redundancia aprobada"},
+    {"action": "Definir el plan de cutover Depofis→Odoo con shadow-compare, criterios de paridad por conteos y rollback", "verification": "Plan de continuidad/cutover Depofis→Odoo documentado y aprobado"},
+    {"action": "Activar statement_timeout y monitoreo de drift en ambos espejos y correr shadow-compare en maestros antes de cada flip", "verification": "Shadow-compare con paridad ≥99% en maestros; timeout y monitoreo de drift activos"},
+    {"action": "Verificar 0 incidentes de pérdida de lectura/escritura a stock fiscal durante la migración", "verification": "0 incidentes de pérdida de lectura/escritura a stock fiscal en la migración"}
+  ],
+  "CC-2026-24": [
+    {"action": "Instrumentar el seguimiento de volumen EXPO desde la app Orden/Tráfico cruzado con el costeo (CC-2026-07) y el sistema de viaje E/remisión a puerto", "verification": "Tablero EXPO vivo con volumen mensual y current_value OBJ-03 cargado"},
+    {"action": "Fijar la meta de captación EXPO en el plan comercial apuntando a reducir la dependencia de Global Rover", "verification": "Meta de captación EXPO fijada en el plan comercial"},
+    {"action": "Captar cuentas EXPO nuevas para diversificar más allá de Global Rover (1 de cada 3 EXPO)", "verification": "≥3 cuentas EXPO nuevas captadas"},
+    {"action": "Verificar ritmo ≥260 CNT/mes (3.120/año) sostenido en el tablero EXPO", "verification": "Ritmo EXPO ≥260 CNT/mes con tablero vivo"}
+  ],
+  "CC-2026-25": [
+    {"action": "Instrumentar la medición mensual de consumo energético por kWh/m² alimentando el costeo (CC-2026-07)", "verification": "Consumo energético medido mensual por kWh/m² con baseline"},
+    {"action": "Digitalizar circuitos en papel apalancando e-Tally/portales existentes para bajar el consumo de papel", "verification": "Consumo de papel medido contra baseline con circuitos digitalizados"},
+    {"action": "Avanzar la solución alternativa de agua (perforación/reúso) financiada con la línea PyME de CC-2026-21", "verification": "Plan de eliminación de agua Aysa aprobado y en ejecución"},
+    {"action": "Verificar energía -10% kWh/m², papel -25% vs baseline y current_value de OBJ-07/08/09 cargado", "verification": "Energía -10%, papel -25%, agua Aysa eliminada/en plan, OBJ-07/08/09 cargado"}
+  ],
+  "CC-2026-26": [
+    {"action": "Instrumentar el registro de incidentes/accidentes y los índices de frecuencia y gravedad", "verification": "Registro de incidentes/accidentes con índices de frecuencia y gravedad activo"},
+    {"action": "Realizar la investigación de causa raíz y registrar la medida preventiva de cada incidente/accidente", "verification": "100% de incidentes/accidentes con causa raíz y medida preventiva registrada"},
+    {"action": "Apalancar el plan de capacitación SySO (CC-2026-04) y el de contingencia/mantenimiento (CC-2026-05) en medidas preventivas", "verification": "Medidas preventivas vinculadas a capacitación y contingencia/mantenimiento"},
+    {"action": "Verificar índice de frecuencia -15% vs baseline, días perdidos ≤ baseline y current_value de OBJ-10/11 cargado", "verification": "IF -15%, días perdidos ≤ baseline y current_value OBJ-10/11 actualizado"}
+  ]
+}

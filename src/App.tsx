@@ -61,6 +61,7 @@ const RondaDetalle        = lazy(() => import('@/pages/RondaDetalle'));
 const RondasConfig        = lazy(() => import('@/pages/RondasConfig'));
 const RondasMaquinaria    = lazy(() => import('@/pages/RondasMaquinaria'));
 const PublicChecklist     = lazy(() => import('@/pages/PublicChecklist'));
+const ProcedimientosPublico = lazy(() => import('@/pages/ProcedimientosPublico'));
 const ContactosExternos   = lazy(() => import('@/pages/ContactosExternos'));
 const Placeholder         = lazy(() => import('@/pages/Placeholder'));
 
@@ -98,6 +99,7 @@ export default function App() {
             <Route path="/signup-empresa" element={<SignupEmpresa />} />
             <Route path="/reporte-nc" element={<PublicNC />} />
             <Route path="/checklist-maquina" element={<PublicChecklist />} />
+            <Route path="/procedimientos-publico" element={<ProcedimientosPublico />} />
             <Route path="/"           element={<Navigate to="/login" replace />} />
             <Route path="/home"       element={<Navigate to="/bienvenida" replace />} />
             <Route path="/tasks"      element={<Navigate to="/mis-pendientes" replace />} />

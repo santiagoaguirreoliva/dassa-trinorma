@@ -18,7 +18,7 @@ let _client = null;
 function getClient() {
   if (_client) return _client;
   if (!process.env.ANTHROPIC_API_KEY) throw new Error('ANTHROPIC_API_KEY no configurada');
-  _client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+  _client = require('./llm-meter.cjs').meterClient(new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY }), require('path').basename(__filename, '.cjs'));
   return _client;
 }
 

@@ -38,7 +38,7 @@
   .hero-grid{display:grid;grid-template-columns:1.5fr 1fr;gap:28px;margin-top:34px;align-items:center}
   @media(max-width:760px){.hero-grid{grid-template-columns:1fr}}
   .gauge{background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.22);border-radius:20px;padding:24px;text-align:center}
-  .gauge .ring{--p:81;width:148px;height:148px;border-radius:50%;margin:4px auto 14px;
+  .gauge .ring{--p:83;width:148px;height:148px;border-radius:50%;margin:4px auto 14px;
     background:conic-gradient(var(--celeste) calc(var(--p)*1%), rgba(255,255,255,.18) 0);
     display:grid;place-items:center;position:relative}
   .gauge .ring::before{content:"";position:absolute;inset:14px;border-radius:50%;background:var(--red)}
@@ -175,9 +175,9 @@
     <div class="hero-grid">
       <p class="lead">Recorrido punto por punto del circuito del Sistema de Gestión, del mapa de procesos a los objetivos. Cada punto enlaza a su sección en la aplicación y muestra lo consolidado y lo que resta cerrar antes de la auditoría. Pensado para validar junto a Nixa.</p>
       <div class="gauge">
-        <div class="ring"><b id="gauge-num">81<span>%</span></b></div>
+        <div class="ring"><b id="gauge-num">83<span>%</span></b></div>
         <div class="glabel">Preparación general</div>
-        <div class="gsub">Actualizado 25/06 tras el build nativo · +5 puntos</div>
+        <div class="gsub">Actualizado 25/06 tras el build nativo · +7 puntos</div>
       </div>
     </div>
   </div>
@@ -197,6 +197,7 @@
       <li style="padding-left:18px;position:relative"><span style="position:absolute;left:0;color:var(--ok);font-weight:800">✓</span> Procedimientos del SGI <b>nativos</b> con árbol y buscador</li>
       <li style="padding-left:18px;position:relative"><span style="position:absolute;left:0;color:var(--ok);font-weight:800">✓</span> Menú desambiguado: instructivos de la app aparte</li>
       <li style="padding-left:18px;position:relative"><span style="position:absolute;left:0;color:var(--ok);font-weight:800">✓</span> Organigrama corregido (3 ajustes, 0 fichas sin nodo)</li>
+      <li style="padding-left:18px;position:relative"><span style="position:absolute;left:0;color:var(--ok);font-weight:800">✓</span> Fichas de puesto 25/25 en las tres normas ISO</li>
       <li style="padding-left:18px;position:relative"><span style="position:absolute;left:0;color:var(--ok);font-weight:800">✓</span> Pedidos a María enviados (contactos y capacitaciones)</li>
     </ul>
   </div>
@@ -324,26 +325,22 @@ const PUNTOS = [
     ],
   },
   {
-    n:2, estado:"partial", pct:94, titulo:"Fichas de puesto", iso:"ISO 9001/14001/45001 · 5.3 · 7.1.2 · 7.2 · 7.3",
+    n:2, estado:"done", pct:100, titulo:"Fichas de puesto", iso:"ISO 9001/14001/45001 · 5.3 · 7.1.2 · 7.2 · 7.3",
     ruta:"/puestos", rutaLabel:"Abrir Puestos / Fichas",
-    resumen:"Casi completo. Las 25 fichas activas provienen del Master DASSA v2026 (cero legacy en el set vivo) con 16 de 18 campos al 100%. El único hueco es la relación con dos normas en puestos administrativos: ISO 14001 (faltan 7) e ISO 45001 (faltan 4).",
+    resumen:"Completo (25/06). Las 25 fichas activas provienen del Master DASSA v2026 (cero legacy en el set vivo) y ahora tienen los 18 campos al 100%. Se cerró el único hueco: la relación con ISO 14001 y 45001 en los puestos administrativos quedó cargada — las 25 fichas están en las tres normas.",
     listo:[
       "25/25 fichas activas, todas con fuente Master DASSA v2026 (24 legacy correctamente desactivadas).",
-      "16/18 campos al 100%: misión, responsabilidades, objetivos, KPIs, autoridad, registros, riesgos, marco legal, formación y experiencia mínima.",
-      "PuestoDetalle muestra 13 secciones alineadas a las cláusulas ISO.",
-      "14 fichas marcadas como críticas; nivel de autonomía 1-5 por puesto.",
+      "18/18 campos al 100%: misión, responsabilidades, objetivos, KPIs, autoridad, registros, riesgos, marco legal, formación y experiencia mínima.",
+      "Las 25 fichas relacionadas con las TRES normas: ISO 9001 25/25, ISO 14001 25/25, ISO 45001 25/25.",
+      "PuestoDetalle muestra 13 secciones alineadas a las cláusulas ISO. 14 fichas críticas; autonomía 1-5 por puesto.",
     ],
     pendiente:[
-      "ISO 14001 sólo en 18/25: faltan 7 fichas (Administración/RRHH, Analista IA, Apuntador, Balancero, Facturación, Resp. Comercial, Resp. Tecnología).",
-      "ISO 45001 sólo en 21/25: faltan 4 fichas administrativas (Analista IA, Facturación, Resp. Comercial, Resp. Tecnología).",
-      "La ficha oculta la tarjeta ISO cuando el campo está vacío: el hueco no se ve, no avisa.",
+      "Validar con Nixa el contenido ISO 14001/45001 cargado en los 7 puestos administrativos (borradores aprobados por Santiago el 25/06).",
     ],
-    metricas:["25/25 activas","16/18 campos al 100%","ISO 14001: 18/25","ISO 45001: 21/25"],
+    metricas:["25/25 activas","18/18 campos al 100%","ISO 14001: 25/25","ISO 45001: 25/25"],
     reco:[
-      "Completar ISO 14001 en las 7 fichas faltantes (relación de cada puesto con residuos, energía, papel, derrames).",
-      "Completar ISO 45001 en las 4 fichas administrativas (ergonomía, pausas, evacuación).",
-      "Priorizar los 4 puestos que les faltan ambas normas: un lote deja 4 fichas completas de golpe.",
-      "Mostrar un aviso de campo pendiente en lugar de ocultar la tarjeta ISO vacía.",
+      "Recorrer con Nixa 1-2 fichas completas (13 secciones) como evidencia de 5.3 + 7.2.",
+      "Confirmar la redacción ISO de los puestos administrativos recién completados.",
     ],
   },
   {

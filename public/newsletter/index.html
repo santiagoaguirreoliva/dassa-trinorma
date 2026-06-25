@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Novedades de Trinorma · Junio 2026 — DASSA</title>
+<meta name="description" content="Portal del Empleado, tablero de Dirección en 3 niveles e Identidad DASSA. Novedades del Sistema de Gestión Integrado (TRINORMA).">
+<style>
+  :root{ --red:#BF1E2E; --red-deep:#A8121E; --celeste:#5BBDC9; --celeste-deep:#1F979C; --ink:#1A1A1A; --paper:#F4F6F8; }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Montserrat','Segoe UI',system-ui,sans-serif;color:var(--ink);background:var(--paper);line-height:1.6;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:860px;margin:0 auto;background:#fff}
+  /* Hero */
+  .hero{background:linear-gradient(135deg,var(--ink) 0%,#2a2a2a 100%);color:#fff;padding:48px 32px 40px;text-align:center;position:relative;overflow:hidden}
+  .hero::after{content:"";position:absolute;inset:0;background:radial-gradient(circle at 80% -10%,rgba(91,189,201,.18),transparent 55%),radial-gradient(circle at 0% 120%,rgba(191,30,46,.22),transparent 50%)}
+  .hero>*{position:relative;z-index:1}
+  .hero img{width:60px;height:60px;margin-bottom:14px}
+  .kicker{color:var(--celeste);font-size:13px;font-weight:700;letter-spacing:.22em;text-transform:uppercase}
+  .hero h1{font-size:34px;font-weight:800;margin:8px 0 6px;letter-spacing:-.5px}
+  .hero p{color:rgba(255,255,255,.78);font-size:16px;max-width:560px;margin:0 auto}
+  .hero .date{display:inline-block;margin-top:16px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.18);border-radius:999px;padding:6px 16px;font-size:13px;font-weight:600}
+  /* secciones */
+  section{padding:40px 32px;border-bottom:1px solid #eef1f4}
+  .tag{display:inline-block;font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;padding:4px 12px;border-radius:999px;margin-bottom:14px}
+  .tag.new{background:var(--red);color:#fff}
+  .tag.upd{background:var(--celeste-deep);color:#fff}
+  h2{font-size:25px;font-weight:800;letter-spacing:-.3px;margin-bottom:10px}
+  h2 .sub{display:block;font-size:14px;font-weight:600;color:#7a8794;margin-top:3px}
+  .lead{font-size:16px;color:#475563;margin-bottom:20px;max-width:680px}
+  /* shots */
+  .shots{display:flex;gap:14px;overflow-x:auto;padding:6px 0 14px;scroll-snap-type:x mandatory}
+  .shot{flex:0 0 auto;width:172px;scroll-snap-align:start;text-align:center}
+  .shot img{width:172px;border-radius:18px;border:6px solid var(--ink);box-shadow:0 12px 30px rgba(0,0,0,.16);display:block}
+  .shot span{display:block;font-size:12px;font-weight:700;color:#64748b;margin-top:8px}
+  /* feature list */
+  .feats{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:8px}
+  .feat{background:#fafbfc;border:1px solid #eef1f4;border-radius:14px;padding:14px 16px}
+  .feat b{display:block;font-size:14px;margin-bottom:2px}
+  .feat span{font-size:13px;color:#64748b}
+  .steps{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}
+  .step{flex:1;min-width:180px;background:linear-gradient(135deg,var(--celeste-deep),var(--celeste));color:#fff;border-radius:14px;padding:14px 16px}
+  .step b{font-size:22px;opacity:.55}
+  .step p{font-size:13px;font-weight:600;margin-top:2px}
+  /* cta */
+  .btn{display:inline-flex;align-items:center;gap:8px;background:var(--red);color:#fff;text-decoration:none;font-weight:700;font-size:15px;padding:13px 24px;border-radius:12px;margin-top:18px;transition:.15s}
+  .btn:hover{background:var(--red-deep)}
+  .btn.ghost{background:#fff;color:var(--ink);border:2px solid #e2e8f0}
+  .links{background:var(--ink);color:#fff;padding:36px 32px}
+  .links h3{font-size:13px;letter-spacing:.16em;text-transform:uppercase;color:var(--celeste);margin-bottom:14px}
+  .links a{display:flex;justify-content:space-between;align-items:center;color:#fff;text-decoration:none;padding:13px 0;border-bottom:1px solid rgba(255,255,255,.1);font-weight:600}
+  .links a span.u{color:rgba(255,255,255,.5);font-size:13px;font-weight:500}
+  .links a:hover span:first-child{color:var(--celeste)}
+  footer{background:#0f0f0f;color:rgba(255,255,255,.5);text-align:center;padding:26px;font-size:12px}
+  footer b{color:#fff}
+  @media(max-width:560px){.hero h1{font-size:27px}.feats{grid-template-columns:1fr}section{padding:32px 20px}.hero{padding:38px 20px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="hero">
+    <img src="/ds/logos/dassa-isotipo.png" alt="DASSA">
+    <div class="kicker">Trinorma · Sistema de Gestión Integrado</div>
+    <h1>Novedades de Trinorma</h1>
+    <p>Nuevo Portal del Empleado, tablero de Dirección en 3 niveles e Identidad DASSA integrada al sistema.</p>
+    <div class="date">📅 Junio 2026</div>
+  </div>
+
+  <!-- PORTAL DEL EMPLEADO -->
+  <section>
+    <span class="tag new">★ Nuevo</span>
+    <h2>Portal del Empleado<span class="sub">Acceso para todo el personal, desde el celular, sin instalar nada</span></h2>
+    <p class="lead">Cada persona de DASSA ahora tiene su propio acceso al sistema. Entra con un <b>link de primer ingreso</b>, crea su <b>PIN personal</b> y completa sus datos. Desde ahí ve su ficha, sus capacitaciones, el organigrama, los procedimientos y las comunicaciones de la empresa — todo pensado para usarse en la palma de la mano.</p>
+
+    <div class="shots">
+      <div class="shot"><img src="img/activacion.png" alt="Crear PIN"><span>1 · Crea su PIN</span></div>
+      <div class="shot"><img src="img/home.png" alt="Inicio"><span>2 · Su tablero</span></div>
+      <div class="shot"><img src="img/comunicaciones.png" alt="Comunicaciones"><span>3 · Comunicaciones</span></div>
+      <div class="shot"><img src="img/misdatos.png" alt="Mis datos"><span>4 · Sus datos</span></div>
+    </div>
+
+    <div class="feats">
+      <div class="feat"><b>🔑 PIN personal</b><span>Link de primer ingreso por persona; cada uno elige su PIN de 4 dígitos.</span></div>
+      <div class="feat"><b>📝 Onboarding guiado</b><span>Completa datos personales, contacto y contacto de emergencia la primera vez.</span></div>
+      <div class="feat"><b>📣 Comunicaciones con acuse</b><span>Lee los avisos de la empresa y confirma "Leí y entendí" (evidencia ISO 7.3).</span></div>
+      <div class="feat"><b>🎓 Mis capacitaciones</b><span>Estado y vencimientos de sus capacitaciones obligatorias.</span></div>
+      <div class="feat"><b>🗂️ Mi ficha y procedimientos</b><span>Su rol, responsabilidades y los procedimientos de su puesto.</span></div>
+      <div class="feat"><b>🧭 Organigrama e Identidad</b><span>Estructura DASSA, mapa de procesos, misión, visión y valores.</span></div>
+    </div>
+
+    <div class="steps">
+      <div class="step"><b>1</b><p>Recibe su link de acceso por WhatsApp o mail</p></div>
+      <div class="step"><b>2</b><p>Crea su PIN y completa sus datos</p></div>
+      <div class="step"><b>3</b><p>Entra siempre con su PIN, desde el celular</p></div>
+    </div>
+
+    <a class="btn" href="https://trinorma.dassa.com.ar/portal-empleado">Ver el Portal del Empleado →</a>
+  </section>
+
+  <!-- TABLERO 3 NIVELES -->
+  <section>
+    <span class="tag upd">Mejora</span>
+    <h2>Tablero de Dirección en 3 niveles<span class="sub">Objetivos · Proyectos estratégicos · Plan de inversiones</span></h2>
+    <p class="lead">Trinorma dejó de ser solo un repositorio de auditoría: ahora es el tablero de control de la Dirección. <b>10 objetivos estratégicos</b> con 61 indicadores (que se van activando a medida que se conectan a las fuentes de datos), <b>30 proyectos estratégicos</b> por área y el <b>plan de inversiones</b>. Sumamos también la <b>Revisión por la Dirección</b> (ISO 9.3), que compila sola las entradas de desempeño del año.</p>
+    <div class="feats">
+      <div class="feat"><b>🎯 Objetivos + KPIs</b><span>10 objetivos, 61 indicadores con metas y conexión a datos vivos.</span></div>
+      <div class="feat"><b>🚀 Proyectos estratégicos</b><span>30 proyectos por área con estado y avance.</span></div>
+      <div class="feat"><b>💰 Plan de inversiones</b><span>Inversiones priorizadas con monto y estado.</span></div>
+      <div class="feat"><b>📋 Revisión por la Dirección</b><span>Acta ISO 9.3 que compila desempeño, NC, legal y capacitaciones.</span></div>
+    </div>
+  </section>
+
+  <!-- IDENTIDAD + PREVIA -->
+  <section>
+    <span class="tag upd">Mejora</span>
+    <h2>Identidad DASSA y preparación de auditoría<span class="sub">Misión, visión, valores y política, al alcance de todos</span></h2>
+    <p class="lead">La Misión, Visión, Valores y Política de Gestión Integrada de DASSA ahora viven dentro del sistema — en el perfil de cada persona y en el Portal del Empleado. La página de <b>preparación de auditoría</b> resume el estado del circuito SGI con una <b>preparación del 87%</b> para validar con el equipo de calidad.</p>
+    <div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap">
+      <div class="shot" style="width:150px"><img src="img/identidad.png" alt="Identidad DASSA" style="width:150px"></div>
+      <div style="flex:1;min-width:220px">
+        <a class="btn ghost" href="https://trinorma.dassa.com.ar/previa-auditoria/">Ver preparación de auditoría →</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- LINKS -->
+  <div class="links">
+    <h3>🔗 Enlaces para revisar</h3>
+    <a href="https://trinorma.dassa.com.ar/portal-empleado"><span>Portal del Empleado</span><span class="u">/portal-empleado</span></a>
+    <a href="https://trinorma.dassa.com.ar/previa-auditoria/"><span>Preparación de auditoría</span><span class="u">/previa-auditoria</span></a>
+    <a href="https://trinorma.dassa.com.ar/"><span>Plataforma Trinorma (con cuenta)</span><span class="u">trinorma.dassa.com.ar</span></a>
+  </div>
+
+  <footer>
+    <b>DASSA</b> · Sistema de Gestión Integrado (TRINORMA) — ISO 9001 · 14001 · 45001<br>
+    Newsletter generado en junio de 2026.
+  </footer>
+
+</div>
+</body>
+</html>

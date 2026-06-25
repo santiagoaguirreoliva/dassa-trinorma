@@ -43,7 +43,7 @@ interface Employee {
 }
 
 // Botón + panel para generar el link de primer acceso al Portal del Empleado.
-function PortalLinkButton({ employeeId }: { employeeId: string }) {
+function PortalLinkButton({ employeeId, compact }: { employeeId: string; compact?: boolean }) {
   const [open, setOpen] = useState(false);
   const [data, setData] = useState<{ portal_invite_token: string; portal_activated_at: string | null; portal_onboarded_at: string | null; pin_set: boolean } | null>(null);
   const [busy, setBusy] = useState(false);
@@ -61,9 +61,11 @@ function PortalLinkButton({ employeeId }: { employeeId: string }) {
 
   return (
     <>
-      <button onClick={() => (data ? setOpen(true) : gen(false))} disabled={busy}
-        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-dassa-celeste/15 text-dassa-celeste-deep text-xs font-bold hover:bg-dassa-celeste/25 disabled:opacity-50">
-        {busy ? <Loader2 size={13} className="animate-spin" /> : <Link2 size={13} />} Link de acceso
+      <button onClick={() => (data ? setOpen(true) : gen(false))} disabled={busy} title="Link de primer acceso al portal"
+        className={compact
+          ? 'flex items-center gap-1 text-[10px] font-bold text-dassa-celeste-deep hover:text-dassa-celeste px-2 py-1 disabled:opacity-50'
+          : 'flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-dassa-celeste/15 text-dassa-celeste-deep text-xs font-bold hover:bg-dassa-celeste/25 disabled:opacity-50'}>
+        {busy ? <Loader2 size={compact ? 11 : 13} className="animate-spin" /> : <Link2 size={compact ? 11 : 13} />} {compact ? 'Acceso' : 'Link de acceso'}
       </button>
       {open && data && (
         <div className="fixed inset-0 bg-black/60 z-[60] flex items-center justify-center p-4" onClick={() => setOpen(false)}>
@@ -957,7 +959,7 @@ export default function Employees() {
                     <th className="th-cell hidden lg:table-cell">Sector</th>
                     <th className="th-cell hidden xl:table-cell">Contacto</th>
                     <th className="th-cell w-24">Estado</th>
-                    {isAdmin && <th className="th-cell w-28">Acciones</th>}
+                    {isAdmin && <th className="th-cell w-40">Acciones</th>}
                   </tr>
                 </thead>
                 <tbody>
@@ -1009,6 +1011,7 @@ export default function Employees() {
                       {isAdmin && (
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-1">
+                            <PortalLinkButton employeeId={emp.id} compact />
                             <button onClick={() => { setEditing(emp); setShowModal(true); }}
                               className="text-[10px] font-bold text-dassa-red hover:text-dassa-red-deep px-2 py-1">
                               Editar

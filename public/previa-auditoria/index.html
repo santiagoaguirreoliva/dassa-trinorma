@@ -38,7 +38,7 @@
   .hero-grid{display:grid;grid-template-columns:1.5fr 1fr;gap:28px;margin-top:34px;align-items:center}
   @media(max-width:760px){.hero-grid{grid-template-columns:1fr}}
   .gauge{background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.22);border-radius:20px;padding:24px;text-align:center}
-  .gauge .ring{--p:83;width:148px;height:148px;border-radius:50%;margin:4px auto 14px;
+  .gauge .ring{--p:87;width:148px;height:148px;border-radius:50%;margin:4px auto 14px;
     background:conic-gradient(var(--celeste) calc(var(--p)*1%), rgba(255,255,255,.18) 0);
     display:grid;place-items:center;position:relative}
   .gauge .ring::before{content:"";position:absolute;inset:14px;border-radius:50%;background:var(--red)}
@@ -175,7 +175,7 @@
     <div class="hero-grid">
       <p class="lead">Recorrido punto por punto del circuito del Sistema de Gestión, del mapa de procesos a los objetivos. Cada punto enlaza a su sección en la aplicación y muestra lo consolidado y lo que resta cerrar antes de la auditoría. Pensado para validar junto a Nixa.</p>
       <div class="gauge">
-        <div class="ring"><b id="gauge-num">83<span>%</span></b></div>
+        <div class="ring"><b id="gauge-num">87<span>%</span></b></div>
         <div class="glabel">Preparación general</div>
         <div class="gsub">Actualizado 25/06 tras el build nativo · +7 puntos</div>
       </div>
@@ -414,26 +414,21 @@ const PUNTOS = [
     ],
   },
   {
-    n:6, estado:"partial", pct:70, titulo:"Vista perfil del colaborador", iso:"ISO 9001/14001/45001 · 7.1.2 · 7.2 · 7.3 · 5.2 política",
+    n:6, estado:"done", pct:90, titulo:"Vista perfil del colaborador", iso:"ISO 9001/14001/45001 · 7.1.2 · 7.2 · 7.3 · 5.2 política",
     ruta:"/mi-perfil", rutaLabel:"Abrir Mi Perfil",
-    resumen:"Mi Perfil arma una vista 360 robusta (ficha, capacitaciones con estado y vencimientos, certificaciones, objetivos, sucesión, cumplimiento). De los 6 elementos pedidos, 4 están presentes. Faltan dos: los procedimientos del puesto no aparecen en el perfil, y la información de empresa (política, misión, valores) no se expone en ningún lado de la app.",
+    resumen:"CERRADO el 25/06. Mi Perfil ahora expone la Identidad DASSA (Misión, Visión, Valores y Política de Gestión Integrada, on-brand desde el PDF oficial) y los procedimientos del puesto del colaborador, sumados a la vista 360 que ya tenía (ficha, capacitaciones con estado, certificaciones, objetivos, sucesión, cumplimiento). Los 6 elementos pedidos están presentes. Queda un pendiente menor: subir la vinculación usuario↔empleado.",
     listo:[
-      "Ficha de puesto completa con todos los campos del Master.",
-      "Capacitaciones con estado y fechas (semáforo, último dictado y próximo programado).",
-      "Fechas clave: vencimientos de capacitaciones y certificaciones, con alertas.",
+      "Identidad DASSA expuesta en Mi Perfil: Misión, Visión, 6 Valores y Política de Gestión Integrada (7 principios) — 5.2 política y 7.3 toma de conciencia.",
+      "Procedimientos del puesto visibles en Mi Perfil (deduplicados de las fichas del colaborador).",
+      "Ficha de puesto completa + capacitaciones con estado y fechas (semáforo, vencimientos con alerta).",
       "Extras: objetivos del responsable, amonestaciones/felicitaciones, sucesión y cumplimiento.",
     ],
     pendiente:[
-      "Procedimientos: Mi Perfil no los muestra (sólo el detalle de la ficha). Hay 477 vínculos listos para exponer.",
-      "Información de empresa: política, misión, visión y manifiesto existen cargados pero no se exponen en ninguna pantalla (tabla huérfana).",
-      "Falta confirmar si la Política de Desarrollo 4.0 cubre la Política Integrada de la Trinorma (5.2).",
-      "Sólo 7 de 32 empleados tienen usuario vinculado para ver su perfil.",
+      "Subir la vinculación usuario↔empleado (hoy 7/32) coordinando con RRHH para que cada colaborador vea su perfil.",
     ],
-    metricas:["4/6 elementos presentes","3 documentos de empresa sin exponer","477 procedimientos sin mostrar en perfil","7/32 con usuario"],
+    metricas:["6/6 elementos presentes","Identidad DASSA on-brand","procedimientos del puesto en perfil","7/32 con usuario"],
     reco:[
-      "Agregar el bloque Mis procedimientos en Mi Perfil (el código del detalle de ficha se reutiliza).",
-      "Exponer la información de empresa (política, misión, visión, valores) en un bloque del perfil: los documentos ya están cargados.",
-      "Confirmar con Nixa la Política Integrada (5.2).",
+      "Validar con Nixa el contenido institucional ya expuesto (Política Integrada · 5.2).",
       "Aumentar la vinculación usuario↔empleado (hoy 7/32) coordinando con RRHH.",
     ],
   },
@@ -462,35 +457,34 @@ const PUNTOS = [
     ],
   },
   {
-    n:8, estado:"partial", pct:65, titulo:"Objetivos y proyectos 2025-2026", iso:"ISO 9001/14001/45001 · 6.2 objetivos · 9.1 medición · 10 mejora",
+    n:8, estado:"partial", pct:82, titulo:"Objetivos, proyectos e inversiones", iso:"ISO 9001/14001/45001 · 6.2 objetivos · 9.1 medición · 10 mejora",
     ruta:"/objetivos", rutaLabel:"Abrir Objetivos",
-    resumen:"Los 16 objetivos 2026 están bien planificados: responsable real, meta, métrica e indicador con frecuencia. El problema no es la planificación sino la medición y la mejora: el valor actual no se muestra, hay indicadores congelados, las acciones derivadas del FODA están vacías y las acciones de mejora son todas de 2024.",
+    resumen:"Gran avance. La capa de gestión quedó poblada (8 estrategias FODA, 26 proyectos de mejora CC-2026 y 106 acciones), el FODA fue homologado por la Dirección (23 ítems) y la app se reorganizó en un Sistema Integral de Gestión de 3 niveles —Objetivos, Proyectos e Inversiones— ya vivo. Lo que resta es operativo: poner al día el valor actual de las mediciones e ir activando los KPIs por conector (habilitación progresiva).",
     listo:[
-      "16 objetivos 2026 con responsable real, meta, métrica e indicador con frecuencia.",
-      "91 mediciones cargadas; los objetivos de Importación, Exportación y Mix están al día (may-2026).",
-      "FODA cargado: 47 puntos en los 4 cuadrantes, con flujo de validación.",
-      "Módulos de objetivos, cambios y contexto completos en la app.",
+      "Tablero de 3 niveles VIVO: 10 Objetivos estratégicos con 61 KPIs · 30 Proyectos de mejora · Plan de Inversiones (US$ 650.000).",
+      "Capa de gestión poblada: 8 estrategias FODA (context_strategies) + 26 proyectos CC-2026 (10 P0/13 P1/3 P2) + 106 acciones.",
+      "FODA homologado por la Dirección: 23 ítems validados, ciclo 2025-2026 cerrado.",
+      "91 mediciones preservadas; Importación, Exportación y Mix al día (may-2026). Cada KPI con su conector y estado de conexión.",
     ],
     pendiente:[
-      "El valor actual no se muestra en la pantalla de objetivos (no se calcula la última medición).",
-      "8 de 16 indicadores sin mediciones y 5 congelados desde ago-2025.",
-      "Acciones derivadas del FODA vacías pese a 29 puntos activos; 23/29 puntos en estado rechazado.",
-      "Las 14 acciones de mejora son todas de 2024, sin responsable, presupuesto ni aprobación.",
+      "Sincronizar el valor actual a la vista de objetivos (hoy se ve la última medición por indicador).",
+      "Activar los KPIs construibles conectándolos a su fuente (costeo/EBITDA, NPS de portales, KPIs de planta).",
+      "Cargar el registro manual de los KPIs ambientales y de SySO (habilitación progresiva).",
+      "Seguimiento mensual automático de TRINY (cron que junta métricas + resumen por mes cerrado) — planificado.",
     ],
-    metricas:["16 objetivos 2026 planificados","valor actual: 0/27 mostrado","FODA 47 puntos · 4 validados","acciones de mejora: 0 de 2026"],
+    metricas:["10 objetivos · 61 KPIs · 3 niveles","8 estrategias + 26 CR + 106 acciones","FODA homologado: 23 ítems","91 mediciones · activación progresiva"],
     reco:[
-      "Poner al día las mediciones de los indicadores congelados y abrir los que no tienen datos.",
-      "Mostrar el último valor medido por objetivo (avance vs meta) en la pantalla.",
-      "Cerrar y validar el FODA, y cargar al menos una acción por debilidad/amenaza crítica.",
-      "Crear el set de acciones de mejora 2026 con responsable, plazo y presupuesto.",
+      "Mostrar a Nixa el tablero de 3 niveles y la trazabilidad FODA → estrategia → proyecto de mejora.",
+      "Acordar el calendario de activación de KPIs por conector (arrancar por los vivos).",
+      "Dejar listo el primer informe mensual de objetivos para la Revisión por la Dirección.",
     ],
   },
 ];
 
 const BRECHAS = [
   ["p0","Evidencia de capacitaciones en cero (Punto 7 · 7.2)","La infraestructura está completa pero no hay asistencias registradas y las 6 sesiones 2026 están a futuro. Cargar la asistencia real de lo ya dictado con acta y conforme para que el semáforo muestre evidencia objetiva."],
-  ["p0","Política, misión y valores no accesibles (Punto 6 · 7.3 y 5.2)","Los documentos existen cargados pero no se exponen en ninguna pantalla. Mostrarlos en Mi Perfil y confirmar con Nixa si la Política 4.0 cubre la Política Integrada de la Trinorma."],
-  ["p0","Medición y mejora detenidas (Punto 8 · 6.2 / 9.1 / 10)","Valor actual sin mostrar, indicadores congelados, acciones del FODA vacías y mejoras todas de 2024. Poner objetivos al día, cerrar el FODA y cargar las acciones 2026."],
+  ["ok","Resuelto el 25/06 — Identidad DASSA accesible (Punto 6 · 7.3 y 5.2)","La Identidad DASSA (Misión, Visión, Valores y Política de Gestión Integrada) ahora se expone on-brand en Mi Perfil, junto con los procedimientos del puesto. Resta validar con Nixa el contenido institucional."],
+  ["p1","Medición y mejora en marcha (Punto 8 · 6.2 / 9.1 / 10)","Capa de gestión poblada (8 estrategias + 26 proyectos CC-2026 + 106 acciones), FODA homologado (23 ítems) y tablero de 3 niveles vivo. Resta sincronizar el valor actual y activar los KPIs por conector (habilitación progresiva) + el seguimiento mensual de TRINY."],
   ["p2","Trazabilidad de competencia rota por un huérfano (Punto 5 · 7.2)","CAP-081 es obligatoria de dos fichas pero no existe en el catálogo. Darla de alta y limpiar los duplicados del catálogo."],
   ["p1","Calibración de dispositivos sin procedimiento (Punto 0 · 7.1.5)","Es la única caja del mapa sin procedimiento. Crear el procedimiento de Control de Dispositivos de Seguimiento y Medición (balanza e instrumentos)."],
   ["ok","Resuelto el 25/06 (Punto 0 · 4.4)","El mapa de procesos ya se ve nativo en la app, los 4 circuitos quedaron separados marítimo/terrestre, los procedimientos del SGI son nativos con árbol y buscador, y se desambiguó el menú de instructivos."],
@@ -503,9 +497,9 @@ const ORDEN = [
   "<b>Punto 4 · Procedimientos por ficha (92%)</b> — defender la matriz aplica/responsable; mencionar como menor el modelo legacy.",
   "<b>Punto 0 · Mapa de procesos (55%)</b> — presentar el documento oficial, desambiguar menús y acordar el criterio de los 4 circuitos.",
   "<b>Punto 5 · Capacitaciones por ficha (85%)</b> — validar el catálogo y cerrar el huérfano CAP-081 antes de la previa.",
-  "<b>Punto 6 · Mi Perfil / toma de conciencia (70%)</b> — acordar exponer política y procedimientos en el perfil del colaborador.",
+  "<b>Punto 6 · Mi Perfil / toma de conciencia (90%)</b> — mostrar la Identidad DASSA y los procedimientos ya expuestos en el perfil; validar el contenido institucional.",
   "<b>Punto 7 · Registro de capacitaciones (70%)</b> — mostrar el flujo de carga con un caso real y acordar la evidencia mínima.",
-  "<b>Punto 8 · Objetivos y mejora (65%)</b> — cerrar con el plan de medición para la próxima revisión por la dirección.",
+  "<b>Punto 8 · Objetivos, proyectos e inversiones (82%)</b> — recorrer el tablero de 3 niveles y cerrar con el plan de medición/activación para la revisión por la dirección.",
 ];
 
 const LABEL = {done:"Completo", partial:"Parcial", todo:"Pendiente"};

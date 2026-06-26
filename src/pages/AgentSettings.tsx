@@ -103,7 +103,7 @@ export default function AgentSettings() {
     <PageContent>
       <Header
         title="🤖 Configurar Asistente IA"
-        subtitle="DASSA IA · agente unificado con Anthropic Claude · solo master_admin"
+        subtitle="TRINY · agente IA del SGI · Anthropic Claude · solo master_admin"
         icon={<Bot size={20} />}
       />
 

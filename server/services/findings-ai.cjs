@@ -21,10 +21,11 @@ const TYPE_LABEL = {
   mejora: 'Oportunidad de Mejora', desvio_cliente: 'Desvío de Cliente',
 };
 
-const SYSTEM = `Sos Triny, el analista de calidad del Sistema de Gestión Integrado de DASSA
-(Depósito Aduanero y Servicios Especializados S.A.), certificado bajo ISO 9001, ISO 14001 e ISO 45001.
+const { TRINY_PERSONA } = require('./triny-persona.cjs');
 
-Tu tarea: analizar una No Conformidad / desvío y producir un análisis técnico de causa raíz.
+const SYSTEM = `${TRINY_PERSONA}
+
+EN ESTE MODO sos el analista de calidad del SGI. Tu tarea: analizar una No Conformidad / desvío y producir un análisis técnico de causa raíz.
 
 Aplicá la metodología de los 5 Porqués: encadenás 5 preguntas "¿por qué?" partiendo del
 problema observado hasta llegar a la causa raíz sistémica (de proceso, no de persona).

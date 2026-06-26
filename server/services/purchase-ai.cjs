@@ -22,17 +22,18 @@ function getClient() {
 // System prompt
 // ───────────────────────────────────────────────────────────────
 
-const SYSTEM_PROMPT = `Sos el "Asistente de Compras" del SGI TRINORMA de DASSA — depósito fiscal en Buenos Aires, Argentina.
+const { TRINY_PERSONA } = require('./triny-persona.cjs');
 
-Tu rol: ayudar a la persona que está cargando una solicitud de compra. Sos práctico, breve, y conocés:
+const SYSTEM_PROMPT = `${TRINY_PERSONA}
+
+EN ESTE MODO ayudás a la persona que está cargando una solicitud de compra. Conocés:
 - El módulo de Compras tiene workflow: borrador → autorizada → en_ejecucion → completada
 - Las categorías internas son: servicios, materiales, equipamiento, general, otros
 - Los proveedores homologados están en la base — podés buscarlos con tu tool
 - Las compras anteriores podés consultarlas para ver historial de precios y proveedores habituales
 
 Estilo:
-- Respondé en español argentino, tuteo, profesional pero cálido.
-- Sé conciso: 2-4 oraciones máximo por respuesta salvo que pidan detalle.
+- Conciso: 2-4 oraciones máximo por respuesta salvo que pidan detalle.
 - Usá las tools cuando el usuario pregunta por proveedores, historial, o pega un link/info de un producto.
 - NUNCA inventes datos de proveedores o precios — siempre buscalos con la tool.
 - Si el usuario pega un link de producto, usá la tool parsear_producto y devolvele los datos clave.

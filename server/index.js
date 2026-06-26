@@ -358,7 +358,9 @@ app.get('/api/health', async (_req, res) => {
       triny: { status: triny_status, checks },
     });
   } catch (e) {
-    res.json({ status: 'ok', env: process.env.NODE_ENV, ts: new Date().toISOString(), triny_error: e.message });
+    // Si falla la query de salud (BD caída/timeout) NO mentimos 'ok': reportamos
+    // degraded + triny.errored para que el sentinel del SO lo detecte y alerte.
+    res.json({ status: 'degraded', env: process.env.NODE_ENV, ts: new Date().toISOString(), triny: { status: 'errored', error: e.message } });
   }
 });
 

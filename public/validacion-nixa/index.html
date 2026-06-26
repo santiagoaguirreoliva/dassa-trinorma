@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Validación del SGI · Dinámica DASSA ↔ NIXA — Trinorma</title>
+<meta name="description" content="Cómo validamos juntos el ciclo anual del SGI (TRINORMA): DASSA prepara cada etapa, NIXA valida, y el sistema desbloquea la siguiente en cadena.">
+<style>
+  :root{--red:#BF1E2E;--red-deep:#A8121E;--celeste:#5BBDC9;--celeste-deep:#1F979C;--ink:#1A1A1A;--paper:#F4F6F8}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Montserrat','Segoe UI',system-ui,sans-serif;color:var(--ink);background:var(--paper);line-height:1.6;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:880px;margin:0 auto;background:#fff}
+  .hero{background:linear-gradient(135deg,var(--ink),#2a2a2a);color:#fff;padding:46px 32px 38px;text-align:center;position:relative;overflow:hidden}
+  .hero::after{content:"";position:absolute;inset:0;background:radial-gradient(circle at 82% -10%,rgba(91,189,201,.18),transparent 55%),radial-gradient(circle at 0% 120%,rgba(191,30,46,.22),transparent 50%)}
+  .hero>*{position:relative;z-index:1}
+  .hero img{width:56px;height:56px;margin-bottom:12px}
+  .kicker{color:var(--celeste);font-size:12px;font-weight:700;letter-spacing:.22em;text-transform:uppercase}
+  .hero h1{font-size:31px;font-weight:800;margin:8px 0 6px;letter-spacing:-.4px}
+  .hero p{color:rgba(255,255,255,.8);font-size:15.5px;max-width:600px;margin:0 auto}
+  section{padding:36px 32px;border-bottom:1px solid #eef1f4}
+  h2{font-size:23px;font-weight:800;letter-spacing:-.3px;margin-bottom:8px}
+  h2 .n{color:var(--red);margin-right:8px}
+  .lead{font-size:15.5px;color:#475563;margin-bottom:18px;max-width:720px}
+  /* roles */
+  .roles{display:flex;gap:14px;flex-wrap:wrap}
+  .role{flex:1;min-width:240px;border-radius:16px;padding:20px;color:#fff}
+  .role.dassa{background:linear-gradient(135deg,var(--red),var(--red-deep))}
+  .role.nixa{background:linear-gradient(135deg,var(--celeste-deep),var(--celeste))}
+  .role b{font-size:17px;display:block;margin-bottom:6px}
+  .role ul{margin:8px 0 0;padding-left:18px;font-size:13.5px;line-height:1.6;opacity:.95}
+  /* estados */
+  .estados{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:6px}
+  .estado{display:flex;align-items:center;gap:10px;background:#fafbfc;border:1px solid #eef1f4;border-radius:12px;padding:12px 14px}
+  .dot{width:14px;height:14px;border-radius:50%;flex:0 0 auto}
+  .estado b{font-size:14px}.estado span{font-size:12.5px;color:#64748b}
+  /* cadena */
+  .chain{counter-reset:step;margin-top:8px}
+  .node{display:flex;gap:12px;align-items:flex-start;padding:9px 0}
+  .node .b{flex:0 0 28px;height:28px;border-radius:8px;background:var(--ink);color:#fff;font-weight:800;font-size:13px;display:flex;align-items:center;justify-content:center}
+  .node .t{flex:1}.node .t b{font-size:14.5px}.node .t span{font-size:12.5px;color:#64748b;display:block}
+  .dep{display:inline-block;font-size:11px;font-weight:700;color:var(--celeste-deep);background:var(--celeste-deep);background:#DDF2F3;border-radius:999px;padding:2px 9px;margin-top:3px}
+  /* pasos */
+  .step{display:flex;gap:14px;margin-bottom:14px}
+  .step .num{flex:0 0 34px;height:34px;border-radius:50%;background:var(--celeste-deep);color:#fff;font-weight:800;display:flex;align-items:center;justify-content:center}
+  .step .tx{flex:1;font-size:14.5px;padding-top:4px}
+  .shot{margin:18px 0;border-radius:14px;overflow:hidden;border:1px solid #e2e8f0;box-shadow:0 10px 26px rgba(0,0,0,.10)}
+  .shot img{width:100%;display:block}
+  .shot .cap{background:#fafbfc;border-top:1px solid #eef1f4;padding:8px 14px;font-size:12.5px;color:#64748b;font-weight:600}
+  .now{background:#FBE5E6;border-left:4px solid var(--red);border-radius:10px;padding:16px 18px;margin-top:6px}
+  .now b{color:var(--red-deep)}
+  .pill{display:inline-block;background:#fff;border:1px solid #f0c9cc;color:var(--red-deep);font-weight:700;font-size:12.5px;border-radius:999px;padding:3px 11px;margin:3px 4px 0 0}
+  footer{background:#0f0f0f;color:rgba(255,255,255,.5);text-align:center;padding:24px;font-size:12px}
+  footer b{color:#fff}
+  @media(max-width:560px){.hero h1{font-size:25px}.estados{grid-template-columns:1fr}section{padding:30px 20px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="hero">
+    <img src="/ds/logos/dassa-isotipo.png" alt="DASSA">
+    <div class="kicker">Trinorma · Sistema de Gestión Integrado</div>
+    <h1>Cómo validamos juntos el SGI</h1>
+    <p>La dinámica de trabajo entre <b>DASSA</b> y <b>NIXA</b> para revisar y validar todo el ciclo anual de la Trinorma, paso a paso.</p>
+  </div>
+
+  <section>
+    <h2><span class="n">1</span>La idea en una frase</h2>
+    <p class="lead">El ciclo anual del SGI es un <b>recorrido de 10 etapas encadenadas</b>. <b>DASSA prepara</b> cada etapa (carga y deja lista la información) y <b>NIXA la valida</b> (revisa y aprueba). Cada vez que NIXA aprueba una etapa, el sistema <b>desbloquea automáticamente la siguiente</b>. Así avanzamos en cadena, sin perder el hilo, hasta cerrar el ciclo con la Revisión por la Dirección.</p>
+    <div class="roles">
+      <div class="role dassa">
+        <b>🟥 DASSA (nosotros)</b>
+        Preparamos y dejamos lista cada etapa.
+        <ul><li>Cargamos la información de cada módulo (FODA, fichas, procedimientos, riesgos…).</li><li>Marcamos la etapa como <b>"Iniciar"</b> → queda <b>En revisión</b>.</li><li>Te avisamos que está lista para que la valides.</li></ul>
+      </div>
+      <div class="role nixa">
+        <b>🟦 NIXA (vos)</b>
+        Revisás y validás cada etapa.
+        <ul><li>Entrás a la etapa <b>En revisión</b>, revisás el contenido.</li><li><b>✓ Aprobás</b> (o ✗ Rechazás con un comentario).</li><li>Al aprobar, se <b>desbloquea la siguiente</b> automáticamente.</li></ul>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2><span class="n">2</span>Los 4 estados de cada etapa</h2>
+    <div class="estados">
+      <div class="estado"><span class="dot" style="background:#9CA3AF"></span><div><b>🔒 Bloqueada</b> <span>espera que se validen las etapas previas</span></div></div>
+      <div class="estado"><span class="dot" style="background:#F59E0B"></span><div><b>🟡 Lista para iniciar</b> <span>ya se puede empezar</span></div></div>
+      <div class="estado"><span class="dot" style="background:#3B82F6"></span><div><b>🔵 En revisión</b> <span>DASSA la preparó — lista para que NIXA valide</span></div></div>
+      <div class="estado"><span class="dot" style="background:#10B981"></span><div><b>🟢 Validada</b> <span>NIXA la aprobó — desbloquea la siguiente</span></div></div>
+    </div>
+  </section>
+
+  <section>
+    <h2><span class="n">3</span>El recorrido de las 10 etapas</h2>
+    <p class="lead">Cada etapa se habilita cuando las que tiene debajo (sus dependencias) están validadas.</p>
+    <div class="chain">
+      <div class="node"><div class="b">1</div><div class="t"><b>FODA</b><span>Análisis de contexto — es el punto de partida</span></div></div>
+      <div class="node"><div class="b">2</div><div class="t"><b>Fichas de Puesto</b><span class="dep">requiere FODA</span></div></div>
+      <div class="node"><div class="b">3</div><div class="t"><b>Procedimientos</b><span class="dep">requiere Fichas de Puesto</span></div></div>
+      <div class="node"><div class="b">4</div><div class="t"><b>AMFE · Riesgos</b><span class="dep">requiere FODA + Fichas + Procedimientos</span></div></div>
+      <div class="node"><div class="b">5</div><div class="t"><b>Requisitos Legales</b><span>independiente — se puede validar en cualquier momento</span></div></div>
+      <div class="node"><div class="b">6</div><div class="t"><b>Aspectos Ambientales</b><span class="dep">requiere Riesgos</span></div></div>
+      <div class="node"><div class="b">7</div><div class="t"><b>Objetivos</b><span class="dep">requiere Riesgos</span></div></div>
+      <div class="node"><div class="b">8</div><div class="t"><b>Gestión de Cambios</b><span class="dep">requiere Objetivos</span></div></div>
+      <div class="node"><div class="b">9</div><div class="t"><b>Auditoría Interna</b><span class="dep">requiere Riesgos + Procedimientos + Fichas</span></div></div>
+      <div class="node"><div class="b">10</div><div class="t"><b>Revisión por la Dirección</b><span class="dep">requiere todo lo anterior — cierra el ciclo</span></div></div>
+    </div>
+    <div class="shot"><img src="img/diagrama.png" alt="Diagrama de dependencias del Ciclo 2026"><div class="cap">Ciclo 2026 · Diagrama de dependencias — en azul lo que está listo para validar, en gris lo bloqueado.</div></div>
+  </section>
+
+  <section>
+    <h2><span class="n">4</span>Cómo validás una etapa (paso a paso)</h2>
+    <div class="step"><div class="num">1</div><div class="tx">Entrá a la plataforma en <b>trinorma.dassa.com.ar</b> con tu usuario.</div></div>
+    <div class="step"><div class="num">2</div><div class="tx">En el menú, abrí <b>Ciclo 2026 · DAG</b>.</div></div>
+    <div class="step"><div class="num">3</div><div class="tx">En la tabla de abajo, buscá la etapa <b>En revisión</b> (azul) y tocá <b>Ver</b>.</div></div>
+    <div class="step"><div class="num">4</div><div class="tx">Revisá el contenido. Si está todo bien, escribí una nota (opcional) y tocá <b>✓ Aprobar</b>. Si falta algo, tocá <b>✗ Rechazar</b> con un comentario para que DASSA lo corrija.</div></div>
+    <div class="step"><div class="num">5</div><div class="tx">Listo: la etapa queda <b>🟢 Validada</b> y la siguiente se <b>desbloquea sola</b>. Seguimos con la próxima.</div></div>
+    <div class="shot"><img src="img/validar.png" alt="Ventana de validación de una etapa"><div class="cap">La ventana de validación: datos de la etapa + Aprobar / Rechazar con notas.</div></div>
+  </section>
+
+  <section>
+    <h2><span class="n">5</span>Por dónde empezamos</h2>
+    <div class="now">
+      <p>Ahora mismo hay <b>2 etapas listas para que valides</b> (están en azul, "En revisión"):</p>
+      <span class="pill">① FODA</span><span class="pill">⑤ Requisitos Legales</span>
+      <p style="margin-top:10px;font-size:14px">Cuando valides <b>FODA</b>, se desbloquea <b>Fichas de Puesto</b>, y así seguimos la cadena. Vamos etapa por etapa, juntos: DASSA prepara y te avisa, vos validás. 💪</p>
+    </div>
+  </section>
+
+  <footer>
+    <b>DASSA</b> · Trinorma — Sistema de Gestión Integrado (ISO 9001 · 14001 · 45001)<br>
+    Cualquier duda, escribinos. ¡Gracias NIXA!
+  </footer>
+
+</div>
+</body>
+</html>

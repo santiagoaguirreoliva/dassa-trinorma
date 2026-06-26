@@ -49,7 +49,6 @@ import cron from 'node-cron';
 // quedaban stale (resumen_viernes 16h sobrevivía por caer en ventana libre). Ahora los dispara el
 // crontab del usuario `dassa` con `scripts/triny-run-job.cjs <key> --scheduled` (proceso node
 // aparte, inmune al bloqueo del event loop). /api/health sigue leyendo triny_scheduled_jobs.
-const TZ_AR = 'America/Argentina/Buenos_Aires';
 
 // CRON · Ronda de Inspecciones — genera instancias del período + marca vencidas (diario 06:00 AR)
 if (process.env.CRON_DISABLED !== '1') {
@@ -70,47 +69,11 @@ if (process.env.CRON_DISABLED !== '1') {
   console.log('[rondas] crons registrados (instancias diario 06h · rollup semanal L 06:30)');
 }
 
-// CRON · Informe mensual de NC y desvíos (Triny) — día 1, 08:00 AR
-cron.schedule('0 8 1 * *', async () => {
-  try {
-    const { createRequire: cr } = await import('module');
-    const reqCjs = cr(import.meta.url);
-    const findingsReport = reqCjs('./services/findings-report.cjs');
-    const out = await findingsReport.sendMonthlyFindingsReport();
-    console.log('[findings] informe mensual de NC enviado:', out.recipients, '·', out.period);
-  } catch (e) { console.error('[findings informe mensual]', e.message); }
-}, { timezone: 'America/Argentina/Buenos_Aires' });
-
-// CRON · Recordatorios de capacitaciones próximas — diario, 07:00 AR
-cron.schedule('0 7 * * *', async () => {
-  try {
-    const { createRequire: cr } = await import('module');
-    const reqCjs = cr(import.meta.url);
-    const tr = reqCjs('./services/trainings-reminders.cjs');
-    const r = await tr.runTrainingReminders();
-    console.log('[trainings] recordatorios:', JSON.stringify(r));
-  } catch (e) { console.error('[trainings recordatorios]', e.message); }
-}, { timezone: 'America/Argentina/Buenos_Aires' });
-
-// CRON · Recordatorios de verificación de eficacia de NC — diario, 09:00 AR
-cron.schedule('0 9 * * *', async () => {
-  try {
-    const { createRequire: cr } = await import('module');
-    const reqCjs = cr(import.meta.url);
-    const reminders = reqCjs('./services/findings-reminders.cjs');
-    const r = await reminders.runEfficacyReminders();
-    console.log('[findings] recordatorios de eficacia:', JSON.stringify(r));
-  } catch (e) { console.error('[findings recordatorios eficacia]', e.message); }
-}, { timezone: 'America/Argentina/Buenos_Aires' });
-
-// Cron OLA 5 · Wake-up notifications cada 6 horas
-cron.schedule('0 */6 * * *', async () => {
-  try {
-    const { generateWakeUpAlerts } = require('./services/ai-quality.cjs');
-    const stats = await generateWakeUpAlerts();
-    console.log('[wake-up]', stats);
-  } catch (e) { console.error('[wake-up] err:', e.message); }
-}, { timezone: TZ_AR });
+// CRON · TRINY proactivo — MOVIDOS al crontab del SO el 2026-06-26 (scripts/sgi-run-cron.cjs):
+//   findings_monthly (día 1 08h) · trainings_reminders (07h) · efficacy_reminders (09h) · wakeup (cada 6h).
+// Mismo motivo que el mailer (2026-06-25): el event loop de dassa-sgi se saturaba a la mañana y
+// node-cron descartaba disparos. Proceso node aparte = inmune. ⚠️ NO re-agregar cron.schedule de
+// estos 4 jobs acá (doble disparo). Los crons de Rondas (arriba) siguen in-process por ahora.
 import http from 'http';
 
 import documentsRouter      from './routes/documents.js';

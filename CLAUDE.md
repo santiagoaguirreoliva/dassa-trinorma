@@ -107,3 +107,10 @@ pm2 restart dassa-sgi
 - **Tablero de Dirección 3 niveles** (sesión previa, ya pusheado `fdcb728`→`fd89a94`): Objetivos estratégicos (10/61 KPIs, habilitación progresiva) · Proyectos (30) · Plan de Inversiones · Revisión por la Dirección (ISO 9.3). Previa auditoría `/previa-auditoria/` readiness 87%.
 - Gotchas portal: sesión **HMAC efímera** (`PORTAL_EMPLEADO_HMAC_SECRET`||`JWT_SECRET`), no tabla de sesiones; login por **PIN-solo** itera bcrypt sobre empleados con pin (unicidad garantizada al activar); el `/login` devuelve `onboarded` (reiniciar pm2 tras tocarlo). Capturas: inyectar `portal_empleado_session` en sessionStorage vía `evaluateOnNewDocument`. PINs/datos de prueba ya limpiados de la BD.
 - Pendiente: activar KPIs vivos + sync `current_value`; cron TRINY mensual; familia/grupo en legajo (no pedido aún); endurecer GET "solo mis datos" (deuda mono-tenant global ya documentada).
+
+## Estado al cierre 2026-06-26 · Portal (link en tabla) + Validación NIXA + TRINY voz propia
+- **Portal del Empleado**: botón "Acceso" (link de 1er ingreso) en cada fila de `/employees` (`5656fc0`). Mail instructivo de rollout enviado a María.
+- **Validación DASSA↔NIXA**: landing `/validacion-nixa/` explica la dinámica del Ciclo 2026 (DAG: validar una etapa desbloquea la siguiente). `24f3b56`. Mail tutorial a NIXA = BORRADOR en casilla de Santi (pendiente su OK para enviar a nixa.8908@gmail.com).
+- **TRINY voz propia** (`9d72ee1`): `server/services/triny-persona.cjs` = fuente única de identidad (voseo, 4 modos), prepended a los 5 system prompts. El chat (`POST /api/agent/chat`) dejó de ser "DASSA IA"/tuteo → ahora TRINY/voseo. Fix `/api/health`: en error de BD devuelve `degraded` (antes mentía `ok`).
+- **TRINY crons** (`8e4391d`): 4 jobs más al crontab del SO vía `scripts/sgi-run-cron.cjs` (findings_monthly, trainings_reminders, efficacy_reminders, wakeup). Los de Rondas siguen in-process.
+- ⚠️ Pendiente Santi: `UPDATE triny_policies SET alert_recipients (… nixa.8908@gmail.com) + dry_run=false` — el classifier lo frenó 2× (toca envíos autónomos a destino externo).

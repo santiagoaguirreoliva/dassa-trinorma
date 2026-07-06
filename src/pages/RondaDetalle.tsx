@@ -100,6 +100,10 @@ export default function RondaDetalle() {
   const [serverErr, setServerErr] = useState<string | null>(null);
   const skipPersistRef = useRef(true);
   const dirtyRef = useRef(false);
+  // Snapshot SIEMPRE actual de lo editable, para que el autosave por intervalo
+  // (cuyo closure se congela con deps [insp]) postee lo último y no el estado inicial.
+  const latestStateRef = useRef({ drafts, notes, signature, machineHours });
+  latestStateRef.current = { drafts, notes, signature, machineHours };
 
   const draftKey = id ? `insp-draft-${id}` : '';
 
@@ -189,14 +193,17 @@ export default function RondaDetalle() {
     if (serverSaving) return;
     setServerSaving(true);
     if (!silent) setServerErr(null);
+    // Leer del ref para tomar SIEMPRE el estado actual (el tick del intervalo tiene
+    // un closure viejo; las variables de render aquí serían el snapshot congelado).
+    const { drafts: curDrafts, notes: curNotes, signature: curSignature, machineHours: curHours } = latestStateRef.current;
     try {
-      const responses = insp.items.map(it => buildResponsePayload(it.id, drafts[it.id]));
+      const responses = insp.items.map(it => buildResponsePayload(it.id, curDrafts[it.id]));
       const body: any = {
         responses,
-        notes: notes || null,
-        signature_base64: signature, // se incluye si ya firmó pero no envió todavía
+        notes: curNotes || null,
+        signature_base64: curSignature, // se incluye si ya firmó pero no envió todavía
       };
-      if (insp.template_family === 'maquinaria' && machineHours) body.machine_hours = Number(machineHours);
+      if (insp.template_family === 'maquinaria' && curHours) body.machine_hours = Number(curHours);
       await api.post(`/inspections/${insp.id}/draft`, body);
       setServerSavedAt(Date.now());
       dirtyRef.current = false;

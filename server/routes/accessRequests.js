@@ -1,9 +1,16 @@
 import { Router } from 'express';
 import bcrypt from 'bcryptjs';
+import crypto from 'crypto';
 import { query } from '../db/db.js';
 import { authenticate, requireRole } from '../middleware/auth.js';
 
 const router = Router();
+
+// Password temporal aleatoria (el usuario la cambia al primer ingreso).
+function generateTempPassword(len = 12) {
+  const chars = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789abcdefghjkmnpqrstuvwxyz!@#%';
+  return Array.from(crypto.randomBytes(len)).map(b => chars[b % chars.length]).join('');
+}
 
 // POST /api/access-requests — público, sin auth
 router.post('/', async (req, res) => {
@@ -80,17 +87,24 @@ router.post('/:id/approve', requireRole('master_admin', 'director'), async (req,
     if (!rows[0]) return res.status(404).json({ error: 'Solicitud no encontrada o ya procesada' });
 
     const req_ = rows[0];
-    const finalPassword = password || 'Dassa2026x';
-    const hash = await bcrypt.hash(finalPassword, 10);
+
+    // No reactivar cuentas dadas de baja: si ya existe un usuario con ese email
+    // (activo o inactivo) se rechaza la aprobación en vez de sobrescribirlo.
+    const { rows: existing } = await query(
+      'SELECT id FROM users WHERE LOWER(email) = LOWER($1)', [req_.email]
+    );
+    if (existing.length > 0) {
+      return res.status(400).json({ error: 'Ya existe un usuario con ese email' });
+    }
+
+    // Password temporal aleatoria + must_change_password (no hardcodeada).
+    const tempPassword = password || generateTempPassword();
+    const hash = await bcrypt.hash(tempPassword, 10);
 
     // Crear usuario
     const { rows: newUser } = await query(
-      `INSERT INTO users (email, password_hash, full_name, role, position, department)
-       VALUES ($1,$2,$3,$4,$5,$6)
-       ON CONFLICT (email) DO UPDATE SET
-         full_name = EXCLUDED.full_name,
-         role = EXCLUDED.role,
-         is_active = true
+      `INSERT INTO users (email, password_hash, full_name, role, position, department, is_active, must_change_password)
+       VALUES ($1,$2,$3,$4,$5,$6,true,true)
        RETURNING id, email, full_name, role`,
       [req_.email, hash, req_.full_name, role, req_.position || null, req_.department || null]
     );
@@ -101,7 +115,21 @@ router.post('/:id/approve', requireRole('master_admin', 'director'), async (req,
       [req.user.id, req.params.id]
     );
 
-    res.json({ message: 'Usuario creado correctamente', user: newUser[0] });
+    // Enviar la password temporal por email (si no se pasó una explícita).
+    try {
+      const { createRequire } = await import('module');
+      const reqCjs = createRequire(import.meta.url);
+      const mailer = reqCjs('../services/mailer.cjs');
+      if (password) {
+        await mailer.sendAccessApproved(newUser[0]);
+      } else {
+        await mailer.sendPasswordChangedByAdmin(newUser[0], tempPassword);
+      }
+    } catch (mailErr) {
+      console.error('[access-requests/approve] mail error:', mailErr.message);
+    }
+
+    res.json({ message: 'Usuario creado correctamente', user: newUser[0], temp_password_emailed: !password });
   } catch (err) {
     if (err.code === '23505') return res.status(400).json({ error: 'Ya existe un usuario con ese email' });
     res.status(500).json({ error: err.message });

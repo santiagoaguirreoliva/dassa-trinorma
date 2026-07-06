@@ -106,6 +106,16 @@ router.patch('/:id', requireRole('master_admin', 'director', 'sgi_leader'), asyn
   if (req.params.id === req.user.id && req.body.role && req.body.role !== req.user.role) {
     return res.status(400).json({ error: 'No podés cambiar tu propio rol' });
   }
+  // role/is_active son campos privilegiados: solo master_admin/director.
+  // Evita que un sgi_leader se auto-escale o promueva otra cuenta.
+  const touchesPrivileged = req.body.role !== undefined || req.body.is_active !== undefined;
+  if (touchesPrivileged && !['master_admin', 'director'].includes(req.user.role)) {
+    return res.status(403).json({ error: 'No tenés permiso para cambiar rol o estado' });
+  }
+  // Solo master_admin puede asignar master_admin (evita escalada de director → master_admin).
+  if (req.body.role === 'master_admin' && req.user.role !== 'master_admin') {
+    return res.status(403).json({ error: 'Solo un master_admin puede asignar ese rol' });
+  }
   const ALLOWED = ['full_name', 'role', 'position', 'department', 'phone', 'is_active'];
   const updates = []; const values = []; let i = 1;
   for (const f of ALLOWED) {

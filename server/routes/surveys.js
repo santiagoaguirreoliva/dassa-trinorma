@@ -560,38 +560,12 @@ router.get('/employees/:id', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// POST /api/surveys/employees — create employee
-router.post('/employees', async (req, res) => {
-  try {
-    const { full_name, email, phone, sector, position, evaluator_id, secondary_evaluator_id, user_id } = req.body;
-    if (!full_name) return res.status(400).json({ error: 'Nombre es requerido' });
-    const { rows: [emp] } = await query(
-      `INSERT INTO employees (full_name, email, phone, sector, position, evaluator_id, secondary_evaluator_id, user_id)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *`,
-      [full_name, email || null, phone || null, sector || null, position || null,
-       evaluator_id || null, secondary_evaluator_id || null, user_id || null]);
-    res.status(201).json(emp);
-  } catch (err) { res.status(500).json({ error: err.message }); }
-});
-
-// PATCH /api/surveys/employees/:id
-router.patch('/employees/:id', async (req, res) => {
-  try {
-    const ALLOWED = ['full_name', 'email', 'phone', 'sector', 'position',
-                     'evaluator_id', 'secondary_evaluator_id', 'user_id', 'is_active'];
-    const updates = []; const values = []; let i = 1;
-    for (const f of ALLOWED) {
-      if (req.body[f] !== undefined) { updates.push(`${f} = $${i++}`); values.push(req.body[f]); }
-    }
-    if (!updates.length) return res.status(400).json({ error: 'Sin campos' });
-    updates.push('updated_at = NOW()');
-    values.push(req.params.id);
-    const { rows: [emp] } = await query(
-      `UPDATE employees SET ${updates.join(', ')} WHERE id = $${i} RETURNING *`, values);
-    if (!emp) return res.status(404).json({ error: 'Empleado no encontrado' });
-    res.json(emp);
-  } catch (err) { res.status(500).json({ error: err.message }); }
-});
+// NOTA: los antiguos POST/PATCH /api/surveys/employees (crear/editar la nómina
+// sin gate de rol) se retiraron por seguridad — cualquier autenticado podía
+// alterar `employees` por la puerta de atrás. El CRUD canónico con requireRole
+// (master_admin/director/sgi_leader) vive en routes/employees.js. El front no
+// usaba estos endpoints. La lectura GET /employees y /employees/:id de este
+// módulo se conserva (solo lectura para el armado de campañas).
 
 // ─── CONTACT LISTS ───────────────────────────────────────
 

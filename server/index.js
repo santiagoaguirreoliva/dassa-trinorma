@@ -5,7 +5,10 @@ const authExtraRouter = require('./routes/auth-extra.cjs');
 const usersExtraRouter = require('./routes/users-extra.cjs');
 const auditorRouter = require('./routes/auditor.cjs');
 const tasksMineRouter = require('./routes/tasks-mine.cjs');
-const profilesRouter = require('./routes/profiles.cjs');
+// profiles.cjs DESMONTADO (2026-07-06): handlers async sin try/catch → un error
+// de BD tumbaba el proceso (unhandled rejection). Usa el modelo viejo
+// (job_profiles.user_id/reports_to) y el front no llama /api/profiles.
+// El archivo queda en disco fuera del árbol de ejecución.
 
 const { startScheduler: startAuditorScheduler } = require('./services/auditor-cron.cjs');
 
@@ -278,7 +281,7 @@ app.use('/api/ai-quality', aiQualityRouter);
 app.use('/api/calendar', calendarNixaRouter);
 app.use('/api/tenants', tenantsAdminRouter);
 app.use('/api/auditor', auditorRouter);
-app.use('/api/profiles', profilesRouter);
+// app.use('/api/profiles', profilesRouter); — DESMONTADO (ver nota arriba)
 
 // Umbrales: max horas desde last_run_at antes de marcar como "stale".
 // Para jobs semanales/mensuales, tolerancia generosa para no avisar fuera de su ventana.

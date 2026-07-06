@@ -11,13 +11,23 @@ const { sendPasswordChangedByAdmin, sendAccessApproved, sendAccessRejected } = r
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 const router = express.Router();
 
-function authenticate(req, res, next) {
+// Auth con re-lectura de BD en cada request (no confía en los claims del JWT):
+// valida is_active y role vigentes para que un admin desactivado/degradado deje
+// de operar de inmediato (no espera 7 días a que expire el token).
+async function authenticate(req, res, next) {
   const h = req.header('Authorization');
   if (!h) return res.status(401).json({ error: 'Token no proporcionado' });
   const jwt = require('jsonwebtoken');
   try {
     const decoded = jwt.verify(h.replace('Bearer ', ''), process.env.JWT_SECRET);
-    req.user = { id: decoded.userId, role: decoded.role };
+    const { rows } = await pool.query(
+      'SELECT id, role, is_active FROM users WHERE id = $1',
+      [decoded.userId]
+    );
+    if (!rows[0] || !rows[0].is_active) {
+      return res.status(401).json({ error: 'Usuario no válido o inactivo' });
+    }
+    req.user = { id: rows[0].id, role: rows[0].role };
     next();
   } catch (e) {
     res.status(401).json({ error: 'Token inválido' });

@@ -15,6 +15,14 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
     body: body ? JSON.stringify(body) : undefined,
   });
 
+  // Token vencido/ inválido: el backend responde 401. Si había sesión abierta
+  // (token presente) y no es el propio endpoint de login, deslogueamos y
+  // redirigimos en vez de dejar la app en un estado muerto.
+  if (res.status === 401 && token && !path.startsWith('/auth/login')) {
+    localStorage.removeItem('dassa_token');
+    if (window.location.pathname !== '/login') window.location.assign('/login');
+  }
+
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: res.statusText }));
     throw new Error(err.error || `HTTP ${res.status}`);

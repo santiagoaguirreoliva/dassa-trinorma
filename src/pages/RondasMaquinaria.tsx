@@ -51,7 +51,7 @@ export default function RondasMaquinaria() {
   const index: Record<string, Record<string, Inspection>> = {};
   for (const it of items) {
     if (!it.machine_id) continue;
-    (index[it.machine_id] ||= {})[it.scheduled_date] = it;
+    (index[it.machine_id] ||= {})[it.scheduled_date.slice(0, 10)] = it;
   }
 
   function cell(insp?: Inspection) {

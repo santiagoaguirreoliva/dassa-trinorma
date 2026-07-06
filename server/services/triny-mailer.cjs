@@ -104,7 +104,7 @@ function taskRow(task, urgency) {
 async function jobRecordatoriosLunes(opts = {}) {
   const job = await getJob('recordatorios_lunes');
   if (!job?.enabled && !opts.force) return { skipped: 'job disabled' };
-  const dryRun = (job?.dry_run !== false) && !opts.force_send;
+  const dryRun = opts.force_dry === true ? true : (job?.dry_run !== false) && !opts.force_send;
 
   // Obtener todos los users activos
   const usersR = await pool.query("SELECT id, email, full_name, role FROM users WHERE is_active = true AND email LIKE '%@%'");
@@ -187,22 +187,22 @@ async function jobRecordatoriosLunes(opts = {}) {
 async function jobResumenViernes(opts = {}) {
   const job = await getJob('resumen_viernes');
   if (!job?.enabled && !opts.force) return { skipped: 'job disabled' };
-  const dryRun = (job?.dry_run !== false) && !opts.force_send;
+  const dryRun = opts.force_dry === true ? true : (job?.dry_run !== false) && !opts.force_send;
   const pol = await getPolicies();
   const recipients = pol?.direccion_recipients || ['santiago@dassa.com.ar'];
 
   // KPIs de la semana
   const week = await pool.query(`
     SELECT
-      (SELECT COUNT(*)::int FROM findings WHERE status='abierta')              AS ncs_abiertas,
-      (SELECT COUNT(*)::int FROM findings WHERE status='cerrada' AND updated_at > NOW() - INTERVAL '7 days') AS ncs_cerradas,
+      (SELECT COUNT(*)::int FROM findings WHERE status <> 'cerrado')            AS ncs_abiertas,
+      (SELECT COUNT(*)::int FROM findings WHERE status='cerrado' AND updated_at > NOW() - INTERVAL '7 days') AS ncs_cerradas,
       (SELECT COUNT(*)::int FROM tasks WHERE status='pendiente')               AS tareas_pendientes,
       (SELECT COUNT(*)::int FROM tasks WHERE status='completada' AND completed_at > NOW() - INTERVAL '7 days') AS tareas_completadas,
       (SELECT COUNT(*)::int FROM tasks WHERE status='pendiente' AND due_date < CURRENT_DATE) AS tareas_vencidas,
       (SELECT COUNT(*)::int FROM trainings WHERE scheduled_date > NOW() - INTERVAL '7 days') AS capacitaciones_semana,
       (SELECT COUNT(*)::int FROM incidents WHERE created_at > NOW() - INTERVAL '7 days')   AS incidentes_semana,
       (SELECT COUNT(*)::int FROM committee_meetings WHERE meeting_date > NOW() - INTERVAL '7 days') AS reuniones_semana
-  `).catch(() => ({ rows: [{}] }));
+  `);
   const k = week.rows[0] || {};
 
   // Top users con tareas vencidas
@@ -256,7 +256,7 @@ async function jobResumenViernes(opts = {}) {
 async function jobInformeMensual(opts = {}) {
   const job = await getJob('informe_mensual');
   if (!job?.enabled && !opts.force) return { skipped: 'job disabled' };
-  const dryRun = (job?.dry_run !== false) && !opts.force_send;
+  const dryRun = opts.force_dry === true ? true : (job?.dry_run !== false) && !opts.force_send;
   const pol = await getPolicies();
   const recipients = pol?.direccion_recipients || ['santiago@dassa.com.ar'];
 
@@ -264,14 +264,14 @@ async function jobInformeMensual(opts = {}) {
   const m = await pool.query(`
     SELECT
       (SELECT COUNT(*)::int FROM findings WHERE created_at > NOW() - INTERVAL '30 days') AS ncs_mes,
-      (SELECT COUNT(*)::int FROM findings WHERE status='cerrada' AND updated_at > NOW() - INTERVAL '30 days') AS ncs_cerradas_mes,
+      (SELECT COUNT(*)::int FROM findings WHERE status='cerrado' AND updated_at > NOW() - INTERVAL '30 days') AS ncs_cerradas_mes,
       (SELECT COUNT(*)::int FROM tasks WHERE completed_at > NOW() - INTERVAL '30 days') AS tasks_done_mes,
       (SELECT COUNT(*)::int FROM tasks WHERE status='pendiente') AS tasks_pendientes,
       (SELECT COUNT(*)::int FROM trainings WHERE scheduled_date > NOW() - INTERVAL '30 days') AS caps_mes,
       (SELECT COUNT(*)::int FROM incidents WHERE created_at > NOW() - INTERVAL '30 days') AS incidentes_mes,
       (SELECT COUNT(*)::int FROM committee_meetings WHERE meeting_date > NOW() - INTERVAL '30 days') AS reuniones_mes,
       (SELECT COUNT(*)::int FROM risks WHERE created_at > NOW() - INTERVAL '30 days') AS riesgos_nuevos_mes
-  `).catch(() => ({ rows: [{}] }));
+  `);
   const k = m.rows[0] || {};
 
   // Rondas de Inspección — agrega los 4 rollups semanales del mes pasado
@@ -377,7 +377,7 @@ async function jobInformeMensual(opts = {}) {
 async function jobIntimacionVencidas(opts = {}) {
   const job = await getJob('intimacion_vencidas');
   if (!job?.enabled && !opts.force) return { skipped: 'job disabled' };
-  const dryRun = (job?.dry_run !== false) && !opts.force_send;
+  const dryRun = opts.force_dry === true ? true : (job?.dry_run !== false) && !opts.force_send;
 
   // Users con tareas vencidas > 7 días
   const overdue = await pool.query(`
@@ -430,11 +430,12 @@ async function jobIntimacionVencidas(opts = {}) {
 
 // ─── Preview · genera el HTML sin mandar mail ─────────────────────────────
 async function previewJob(jobKey, _userIdHint) {
-  // Hacemos un mini fake-send setting dryRun=true
-  if (jobKey === 'recordatorios_lunes') return jobRecordatoriosLunes({ force: true });
-  if (jobKey === 'resumen_viernes')     return jobResumenViernes({ force: true });
-  if (jobKey === 'informe_mensual')     return jobInformeMensual({ force: true });
-  if (jobKey === 'intimacion_vencidas') return jobIntimacionVencidas({ force: true });
+  // Preview: NUNCA envía. force para saltar el gate de "job disabled",
+  // force_dry para garantizar dryRun=true aunque el job tenga dry_run=false en BD.
+  if (jobKey === 'recordatorios_lunes') return jobRecordatoriosLunes({ force: true, force_dry: true });
+  if (jobKey === 'resumen_viernes')     return jobResumenViernes({ force: true, force_dry: true });
+  if (jobKey === 'informe_mensual')     return jobInformeMensual({ force: true, force_dry: true });
+  if (jobKey === 'intimacion_vencidas') return jobIntimacionVencidas({ force: true, force_dry: true });
   throw new Error('Job desconocido: ' + jobKey);
 }
 

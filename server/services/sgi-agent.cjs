@@ -102,7 +102,7 @@ const ALL_TOOLS = [
     input_schema: {
       type: 'object',
       properties: {
-        estado:    { type: 'string', enum: ['abierta','en_analisis','accion_implementada','verificacion','cerrada','todas'] },
+        estado:    { type: 'string', enum: ['abierto','analisis','plan_accion','en_ejecucion','verificacion','cerrado','todas'] },
         severidad: { type: 'string', enum: ['leve','moderada','grave','muy_grave','todas'] },
         categoria: { type: 'string', enum: ['NC','desvio','mejora','oportunidad','todas'] },
         usuario_email: { type: 'string' },
@@ -348,7 +348,7 @@ async function h_crear_hallazgo({ titulo, descripcion, categoria, severidad: _se
   if (!ctx?.userId) return { error: 'Necesito el contexto del usuario para crear el hallazgo' };
   const { rows } = await pool.query(
     `INSERT INTO findings (title, description, finding_type, area, status, reported_by)
-     VALUES ($1,$2,$3,$4,'abierta',$5) RETURNING code, id, title, finding_type, status`,
+     VALUES ($1,$2,$3,$4,'abierto',$5) RETURNING code, id, title, finding_type, status`,
     [titulo, descripcion, categoria, area || null, ctx.userId]
   );
   return { ok: true, finding: rows[0], message: `Hallazgo ${rows[0].code} creado en estado borrador. Revisalo en /findings y completá los datos faltantes.` };
@@ -422,8 +422,8 @@ async function h_historial_compras({ query, solo_completadas }) {
 
 async function h_resumen_dashboard() {
   const [nc, riesgos, leg, tareas, inc, cap] = await Promise.all([
-    pool.query(`SELECT COUNT(*) FILTER (WHERE status = 'abierta') AS abiertas,
-                       COUNT(*) FILTER (WHERE status NOT IN ('cerrada','cancelada')) AS pendientes,
+    pool.query(`SELECT COUNT(*) FILTER (WHERE status <> 'cerrado') AS abiertas,
+                       COUNT(*) FILTER (WHERE status NOT IN ('cerrado','verificacion')) AS pendientes,
                        COUNT(*) FILTER (WHERE created_at >= NOW() - INTERVAL '30 days') AS ultimos_30
                   FROM findings`),
     pool.query(`SELECT COUNT(*) FILTER (WHERE risk_level = 'alto' AND is_active) AS criticos,

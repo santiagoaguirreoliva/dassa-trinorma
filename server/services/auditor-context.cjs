@@ -32,14 +32,14 @@ async function buildUserContext(userId) {
 
   // NCs/findings asignadas
   const findingsQ = await pool.query(
-    `SELECT id, title, status, severity, area, due_date,
+    `SELECT id, title, status, finding_type, area, due_date,
             EXTRACT(DAY FROM (NOW() - created_at))::int AS days_open
      FROM findings
      WHERE assigned_to = $1
-       AND status NOT IN ('cerrada', 'verificada', 'cancelada')
+       AND status NOT IN ('cerrado', 'verificacion')
      ORDER BY created_at`,
     [userId]
-  ).catch(() => ({ rows: [] }));
+  ).catch((e) => { console.error('[auditor-context] findings query failed:', e.message); return { rows: [] }; });
 
   // Capacitaciones donde es organizador o participante
   const trainingsQ = await pool.query(
@@ -58,24 +58,24 @@ async function buildUserContext(userId) {
 
   // Requisitos legales donde es responsable
   const legalQ = await pool.query(
-    `SELECT id, title, fecha_vencimiento, status, area
+    `SELECT id, title, expiration_date, status, area
      FROM legal_requirements
      WHERE responsible_id = $1
-       AND (fecha_vencimiento IS NULL OR fecha_vencimiento >= CURRENT_DATE - INTERVAL '30 days')
-     ORDER BY fecha_vencimiento NULLS LAST
+       AND (expiration_date IS NULL OR expiration_date >= CURRENT_DATE - INTERVAL '30 days')
+     ORDER BY expiration_date NULLS LAST
      LIMIT 30`,
     [userId]
-  ).catch(() => ({ rows: [] }));
+  ).catch((e) => { console.error('[auditor-context] legal query failed:', e.message); return { rows: [] }; });
 
   // Documentos donde es responsable y necesitan revisión
   const docsQ = await pool.query(
-    `SELECT id, title, last_review_date AS last_review, next_review_date
+    `SELECT id, title, review_date
      FROM documents
      WHERE responsible_id = $1
-       AND (next_review_date IS NULL OR next_review_date <= CURRENT_DATE + INTERVAL '60 days')
+       AND (review_date IS NULL OR review_date <= CURRENT_DATE + INTERVAL '60 days')
      LIMIT 20`,
     [userId]
-  ).catch(() => ({ rows: [] }));
+  ).catch((e) => { console.error('[auditor-context] documents query failed:', e.message); return { rows: [] }; });
 
   // Job profile (responsabilidades)
   const profileQ = await pool.query(
@@ -107,11 +107,11 @@ async function buildUserContext(userId) {
  */
 async function buildGlobalContext() {
   const [ncsOpen, ncsStale, trainingsPending, legal30d, docsOld, tasksOverdue, topOverloaded] = await Promise.all([
-    pool.query(`SELECT COUNT(*)::int AS c FROM findings WHERE status NOT IN ('cerrada','verificada','cancelada')`).catch(() => ({ rows: [{ c: 0 }] })),
-    pool.query(`SELECT COUNT(*)::int AS c FROM findings WHERE status NOT IN ('cerrada','verificada','cancelada') AND created_at < NOW() - INTERVAL '30 days'`).catch(() => ({ rows: [{ c: 0 }] })),
+    pool.query(`SELECT COUNT(*)::int AS c FROM findings WHERE status NOT IN ('cerrado','verificacion')`).catch((e) => { console.error('[auditor-context] ncsOpen query failed:', e.message); return { rows: [{ c: 0 }] }; }),
+    pool.query(`SELECT COUNT(*)::int AS c FROM findings WHERE status NOT IN ('cerrado','verificacion') AND created_at < NOW() - INTERVAL '30 days'`).catch((e) => { console.error('[auditor-context] ncsStale query failed:', e.message); return { rows: [{ c: 0 }] }; }),
     pool.query(`SELECT COUNT(*)::int AS c FROM trainings WHERE status IN ('programada','pendiente')`).catch(() => ({ rows: [{ c: 0 }] })),
-    pool.query(`SELECT COUNT(*)::int AS c FROM legal_requirements WHERE fecha_vencimiento BETWEEN CURRENT_DATE AND CURRENT_DATE + INTERVAL '30 days'`).catch(() => ({ rows: [{ c: 0 }] })),
-    pool.query(`SELECT COUNT(*)::int AS c FROM documents WHERE last_review_date < NOW() - INTERVAL '18 months'`).catch(() => ({ rows: [{ c: 0 }] })),
+    pool.query(`SELECT COUNT(*)::int AS c FROM legal_requirements WHERE expiration_date BETWEEN CURRENT_DATE AND CURRENT_DATE + INTERVAL '30 days'`).catch((e) => { console.error('[auditor-context] legal30d query failed:', e.message); return { rows: [{ c: 0 }] }; }),
+    pool.query(`SELECT COUNT(*)::int AS c FROM documents WHERE review_date < NOW() - INTERVAL '18 months'`).catch((e) => { console.error('[auditor-context] docsOld query failed:', e.message); return { rows: [{ c: 0 }] }; }),
     pool.query(`SELECT COUNT(*)::int AS c FROM tasks WHERE due_date < CURRENT_DATE AND status NOT IN ('completada','cancelada')`),
     pool.query(`
       SELECT u.full_name AS name, COUNT(t.id)::int AS count

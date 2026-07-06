@@ -154,7 +154,7 @@ router.get('/preview/:job', async (req, res) => {
         'informe_mensual':     mailer.jobInformeMensual,
         'intimacion_vencidas': mailer.jobIntimacionVencidas,
       };
-      await fnMap[jobKey]({ force: true });
+      await fnMap[jobKey]({ force: true, force_dry: true });
       row = (await query(
         `SELECT recipient_email, recipient_name, subject, body_html, body_text, sent_at
            FROM triny_comms_log

@@ -68,7 +68,7 @@ router.post('/', requireRole('master_admin', 'director', 'sgi_leader'), async (r
          $1,$2,$3::doc_type,$4,$5,$6,$7,$8,$9,$10
        ) RETURNING *`,
       [title, description || null, doc_type, norma || null, folder_id || null,
-       responsible_id || null, review_date || null, file_url || null, file_name || null, req.userId]
+       responsible_id || null, review_date || null, file_url || null, file_name || null, req.user.id]
     );
     res.status(201).json(rows[0]);
   } catch (error) {

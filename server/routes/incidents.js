@@ -70,7 +70,7 @@ router.post('/', requireRole('master_admin', 'director', 'sgi_leader', 'area_res
       [incident_type, date, time || null, area || null, severity || 'leve',
        description, injured_person || null, witness || null,
        immediate_cause || null, root_cause || null, corrective_action || null,
-       req.userId, responsible_id || null, art_reported || false, lost_time_days || 0]
+       req.user.id, responsible_id || null, art_reported || false, lost_time_days || 0]
     );
     res.status(201).json(rows[0]);
   } catch (error) {

@@ -27,7 +27,7 @@ router.get('/:code', authenticate, async (req, res) => {
   try {
     const { code } = req.params;
     const result = await query(
-      `SELECT b.*, u.name AS updated_by_name
+      `SELECT b.*, u.full_name AS updated_by_name
        FROM sgi_biblioteca b
        LEFT JOIN users u ON u.id = b.updated_by
        WHERE b.code = $1 AND b.is_active = true`,

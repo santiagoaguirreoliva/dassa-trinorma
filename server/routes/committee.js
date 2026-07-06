@@ -1,7 +1,20 @@
 import { Router } from 'express';
 import { readFileSync } from 'node:fs';
-import { query } from '../db/db.js';
+import { createRequire } from 'module';
+import { query, getClient } from '../db/db.js';
 import { authenticate } from '../middleware/auth.js';
+
+const require = createRequire(import.meta.url);
+
+// Cliente Anthropic meterado (llm-meter) — patrón de los services vivos (url-importer.cjs)
+let _anthropic = null;
+function getAnthropic() {
+  if (_anthropic) return _anthropic;
+  const Anthropic = require('@anthropic-ai/sdk');
+  const { meterClient } = require('../services/llm-meter.cjs');
+  _anthropic = meterClient(new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY }), 'committee-process-ai');
+  return _anthropic;
+}
 
 const router = Router();
 router.use(authenticate);
@@ -147,22 +160,13 @@ Respondé SOLO con JSON válido sin markdown:
 ACTA:
 ${rows[0].minutes}`;
 
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 2000,
-        ...(DEPOFIS_CONTEXT ? { system: [{ type: 'text', text: DEPOFIS_CONTEXT, cache_control: { type: 'ephemeral' } }] } : {}),
-        messages: [{ role: 'user', content: prompt }],
-      }),
+    const aiData = await getAnthropic().messages.create({
+      model: process.env.FINDINGS_AI_MODEL || 'claude-sonnet-4-5',
+      max_tokens: 2000,
+      ...(DEPOFIS_CONTEXT ? { system: [{ type: 'text', text: DEPOFIS_CONTEXT, cache_control: { type: 'ephemeral' } }] } : {}),
+      messages: [{ role: 'user', content: prompt }],
     });
 
-    const aiData = await response.json();
     const text = aiData.content?.[0]?.text;
     if (!text) return res.status(500).json({ error: 'La IA no respondió' });
 
@@ -273,7 +277,7 @@ router.post('/wizard', async (req, res) => {
   if (!meeting_date || !Array.isArray(attendees) || attendees.length === 0) {
     return res.status(400).json({ error: 'meeting_date y attendees requeridos' });
   }
-  const client = await req.app.locals.pool?.connect() || (await import('pg').then(m => new m.Pool({connectionString: process.env.DATABASE_URL}).connect()));
+  const client = await getClient();
   try {
     await client.query('BEGIN');
     // Crear reunión
@@ -334,7 +338,7 @@ router.get('/:id/pending-from-previous', async (req, res) => {
         AND t.status IN ('pendiente','en_curso')
         -- todas las vivas, sin filtrar por meeting
       ORDER BY cm.meeting_date NULLS FIRST, t.task_number
-    `, [req.params.id]);
+    `);
     res.json(r.rows);
   } catch (e) {
     console.error('[pending-from-previous]', e);

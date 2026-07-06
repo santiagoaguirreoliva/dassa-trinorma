@@ -1,6 +1,10 @@
 import { Router } from 'express';
+import { createRequire } from 'module';
 import { query } from '../db/db.js';
 import { authenticate, requireRole } from '../middleware/auth.js';
+
+const require = createRequire(import.meta.url);
+const { parseProductInfo } = require('../services/url-importer.cjs');
 
 const router = Router();
 router.use(authenticate);

@@ -81,7 +81,7 @@ async function generateWakeUpAlerts() {
     await pool.query(`
       INSERT INTO notifications (user_id, title, message, type, source_module)
       VALUES ($1, $2, $3, 'warning', 'reviews')
-      ON CONFLICT DO NOTHING
+      ON CONFLICT (user_id, title, source_module) DO NOTHING
     `, [r.reviewer_id, `⏰ Revisión "${r.entity_type}" lleva 7+ días sin iniciar`,
         'Está destrabada pero nadie la inició. Andá a /ciclo/2026 e iniciála para no atrasar el ciclo.']);
     stats.alertas_creadas++;
@@ -100,7 +100,7 @@ async function generateWakeUpAlerts() {
     for (const a of admins) {
       await pool.query(`
         INSERT INTO notifications (user_id, title, message, type, source_module)
-        VALUES ($1, $2, $3, 'warning', 'risks') ON CONFLICT DO NOTHING
+        VALUES ($1, $2, $3, 'warning', 'risks') ON CONFLICT (user_id, title, source_module) DO NOTHING
       `, [a.id, `⚠ ${criticalRisks.length} riesgos significativos sin acción`,
           `Tenés ${criticalRisks.length} riesgos NPR ≥16 que no tienen recommended_action cargado. Ej: ${criticalRisks[0].code}`]);
       stats.alertas_creadas++;
@@ -119,7 +119,7 @@ async function generateWakeUpAlerts() {
   for (const l of legalAlerts) {
     await pool.query(`
       INSERT INTO notifications (user_id, title, message, type, source_module)
-      VALUES ($1, $2, $3, 'warning', 'legal') ON CONFLICT DO NOTHING
+      VALUES ($1, $2, $3, 'warning', 'legal') ON CONFLICT (user_id, title, source_module) DO NOTHING
     `, [l.responsible_id, `⚖ Requisito legal vence: ${l.code}`,
         `${l.title} · vence ${l.expiration_date}. Revisá si corresponde renovar o actualizar.`]);
     stats.alertas_creadas++;
@@ -142,7 +142,7 @@ async function generateWakeUpAlerts() {
     for (const a of admins) {
       await pool.query(`
         INSERT INTO notifications (user_id, title, message, type, source_module)
-        VALUES ($1, $2, $3, 'info', 'objectives') ON CONFLICT DO NOTHING
+        VALUES ($1, $2, $3, 'info', 'objectives') ON CONFLICT (user_id, title, source_module) DO NOTHING
       `, [a.id, `📊 ${idleObjectives.length} objetivos sin medición reciente`,
           `Estos objetivos no tienen datos de los últimos 60 días: ${idleObjectives.slice(0, 3).map(o => o.code).join(', ')}`]);
       stats.alertas_creadas++;

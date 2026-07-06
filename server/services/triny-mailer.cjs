@@ -44,7 +44,12 @@ async function sendWithSignature({ to, name, subject, bodyHtml, bodyText, jobTyp
   const fullHtml = `<div style="font-family:system-ui,sans-serif;color:#1f2937;line-height:1.6">${bodyHtml}${sig}</div>`;
   const fullText = `${bodyText}${sigT}`;
 
-  if (dryRun) {
+  // dryRun efectivo = dryRun del job (arg) OR dry_run global de políticas (kill-switch).
+  // Con triny_policies.dry_run=false (migración 064) esto NO cambia el comportamiento actual;
+  // ponerlo en true frena TODO envío de TRINY de forma global.
+  const dryRunEffective = dryRun || pol?.dry_run === true;
+
+  if (dryRunEffective) {
     await logComm({ job_type: jobType, tone, recipient_email: to, recipient_name: name, subject: `[DRY_RUN] ${subject}`, body_html: fullHtml, body_text: fullText, success: true, error_message: null, meta: { ...(meta || {}), dry_run: true } });
     return { dry_run: true };
   }

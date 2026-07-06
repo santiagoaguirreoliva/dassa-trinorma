@@ -8,7 +8,7 @@
 - Backend: Express 4 (`server/index.js`)
 - Frontend: React 18 + Vite 5 + TypeScript + Tailwind + lucide-react + recharts + react-router 6 + @tanstack/react-query
 - DB: Postgres `dassa_sgi` (local) — migraciones propias
-- IA: `@anthropic-ai/sdk` (Claude) + Gemini + Ollama fallback
+- IA: sólo Claude (`@anthropic-ai/sdk`) vía `server/services/llm-meter.cjs`. **No hay fallback Gemini/Ollama implementado** (existió un router legacy Ollama/Gemini, hoy archivado en `_archive/`; sólo quedan menciones en comentarios)
 - Auth: JWT propio + SSO con Smart DASSA Apps
 - Cron: `node-cron`
 - Mailer: nodemailer (auto@dassa.com.ar)
@@ -19,7 +19,7 @@
 - Start: `pm2 start ecosystem.config.cjs`
 
 ## Base de datos
-- Postgres local `dassa_sgi`. Schema en `server/db/schema.sql`.
+- Postgres local `dassa_sgi`. **Fuente de verdad del schema = las migraciones** en `server/db/migrations/` (aplicadas en orden por el runner). `server/db/schema.sql` es el snapshot inicial (idéntico a `001_schema.sql`) y está drifteado ~60 migraciones — NO es el schema actual. Para un canónico real: `pg_dump --schema-only`.
 - Migrador propio: `server/db/migrate.js` (lee `server/db/migrations/`).
 - Tablas clave: empleados, puestos, organigrama, nc (no conformidades), auditorías, rondas, capacitaciones, comité, agentes_iso, contactos_externos, comunicaciones_iso.
 - Centro de Comunicaciones replicado desde SDA por HMAC.
@@ -31,11 +31,12 @@
 - SMTP: SMTP_HOST, SMTP_PORT, SMTP_SECURE, SMTP_USER, SMTP_PASS, SMTP_FROM, MAIL_BCC
 - Cron: CRON_SECRET
 - SSO: DASSA_APPS_SSO_URL, DASSA_APPS_SSO_SECRET
-- IA: ANTHROPIC_API_KEY, GEMINI_API_KEY, FINDINGS_AI_MODEL (opt), FINDINGS_ALERT_TO (opt), DEPOFIS_CONTEXT_PATH (opt), OLLAMA_URL, OLLAMA_MODEL
+- IA: ANTHROPIC_API_KEY, FINDINGS_AI_MODEL (opt), FINDINGS_ALERT_TO (opt), DEPOFIS_CONTEXT_PATH (opt)
+  - Legacy / no implementadas (no las lee ningún código vivo): GEMINI_API_KEY, OLLAMA_URL, OLLAMA_MODEL. `GEMINI_API_KEY` sigue presente en `.env` — credencial huérfana, decidir rotar/borrar.
 
 ## Archivos críticos
 - `server/db/migrations/` — migraciones SQL ordenadas (solo aplicar con confirmación)
-- `server/db/schema.sql` — schema canónico
+- `server/db/schema.sql` — snapshot inicial (= `001_schema.sql`), drifteado; el schema canónico son las migraciones (ver sección Base de datos)
 - `server/db/migrate.js` — runner (`npm run db:migrate`, `db:migrate:dry`)
 - `ecosystem.config.cjs` — no renombrar el proceso
 - `docs/SPEC-RONDA-INSPECCIONES.md` + `docs/ESTADO-RONDA-INSPECCIONES.md` — módulo Ronda de Inspecciones

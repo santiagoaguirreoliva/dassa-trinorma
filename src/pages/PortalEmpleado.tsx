@@ -213,12 +213,12 @@ export default function PortalEmpleado() {
 }
 
 // ═══════════════════════════ PIN PAD compartido (login y crear/confirmar) ═══
-function PinKeypad({ pin, onPress, onDel, busy }: { pin: string; onPress: (d: string) => void; onDel: () => void; busy: boolean }) {
+function PinKeypad({ pin, onPress, onDel, busy, len = 6 }: { pin: string; onPress: (d: string) => void; onDel: () => void; busy: boolean; len?: number }) {
   return (
     <>
-      <div className="flex gap-3 mb-3">
-        {[0, 1, 2, 3].map(i => (
-          <div key={i} className={`w-12 h-14 rounded-xl flex items-center justify-center text-2xl font-black border-2 transition
+      <div className="flex gap-2 mb-3">
+        {Array.from({ length: len }, (_, i) => (
+          <div key={i} className={`w-10 h-13 rounded-xl flex items-center justify-center text-2xl font-black border-2 transition py-3
             ${pin.length > i ? 'border-dassa-celeste bg-dassa-celeste/15 text-white' : 'border-white/20 text-white/30'}`}>{pin.length > i ? '•' : ''}</div>
         ))}
       </div>
@@ -236,23 +236,31 @@ function PinKeypad({ pin, onPress, onDel, busy }: { pin: string; onPress: (d: st
 
 // ═══════════════════════════ LOGIN por PIN ═══
 function PinScreen({ onOk }: { onOk: (t: string, e: Emp, onboarded: boolean) => void }) {
-  const [pin, setPin] = useState(''); const [err, setErr] = useState(''); const [busy, setBusy] = useState(false);
-  const submit = useCallback(async (value: string) => {
+  const [dni, setDni] = useState(''); const [pin, setPin] = useState('');
+  const [err, setErr] = useState(''); const [busy, setBusy] = useState(false);
+  const dniOk = /^\d{7,8}$/.test(dni);
+  const submit = useCallback(async (documento: string, value: string) => {
     setBusy(true); setErr('');
     try {
-      const r = await fetch(`${API}/login`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ pin: value }) });
+      const r = await fetch(`${API}/login`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ documento, pin: value }) });
       const j = await r.json();
       if (!r.ok) { setErr(j.error || 'Error'); setPin(''); setBusy(false); return; }
       onOk(j.session, j.employee, j.onboarded);
     } catch { setErr('Sin conexión. Reintentá.'); setPin(''); setBusy(false); }
   }, [onOk]);
-  const press = (d: string) => { if (busy) return; setErr(''); const n = (pin + d).slice(0, 4); setPin(n); if (n.length === 4) submit(n); };
+  const press = (d: string) => { if (busy || !dniOk) return; setErr(''); const n = (pin + d).slice(0, 6); setPin(n); if (n.length === 6) submit(dni, n); };
   return (
     <div className="min-h-screen bg-dassa-ink flex flex-col items-center justify-center px-6 font-sans">
       <img src="/ds/logos/dassa-isotipo.png" alt="DASSA" className="w-16 h-16 mb-4" />
       <h1 className="text-white font-extrabold text-xl">Portal del Empleado</h1>
-      <p className="text-white/60 text-sm mt-1 mb-7 flex items-center gap-1.5"><Lock size={14} /> Ingresá tu PIN de 4 dígitos</p>
-      <PinKeypad pin={pin} onPress={press} onDel={() => !busy && setPin(p => p.slice(0, -1))} busy={busy} />
+      <p className="text-white/60 text-sm mt-1 mb-4 flex items-center gap-1.5"><Lock size={14} /> Ingresá tu DNI y tu PIN de 6 dígitos</p>
+      <input
+        type="tel" inputMode="numeric" autoComplete="off" value={dni}
+        onChange={e => { setErr(''); setDni(e.target.value.replace(/\D/g, '').slice(0, 8)); }}
+        placeholder="DNI (sin puntos)"
+        className="w-full max-w-[300px] mb-5 rounded-2xl bg-white/10 border-2 border-white/20 focus:border-dassa-celeste outline-none text-white text-center text-xl font-bold tracking-wider px-4 py-3 placeholder:text-white/30 placeholder:text-base placeholder:font-normal placeholder:tracking-normal" />
+      <PinKeypad pin={pin} onPress={press} onDel={() => !busy && setPin(p => p.slice(0, -1))} busy={busy || !dniOk} />
+      {!dniOk && <p className="text-white/40 text-[12px] mt-2">Primero ingresá tu DNI.</p>}
       <div className="h-6 mt-3">{busy ? <Loader2 className="animate-spin text-dassa-celeste" size={20} /> : err ? <span className="text-red-300 text-sm font-semibold">{err}</span> : null}</div>
       <p className="text-white/40 text-[12px] mt-6 text-center max-w-xs">¿No tenés PIN? Pedí tu link de acceso a tu supervisor o a SGI.</p>
     </div>
@@ -284,10 +292,10 @@ function ActivateScreen({ token, onOk, onUseLogin }: { token: string; onOk: (t: 
     } catch { setErr('Sin conexión. Reintentá.'); setBusy(false); }
   }, [token, onOk]);
 
-  const pressCreate = (d: string) => { setErr(''); const n = (pin1 + d).slice(0, 4); setPin1(n); if (n.length === 4) setStep('confirm'); };
+  const pressCreate = (d: string) => { setErr(''); const n = (pin1 + d).slice(0, 6); setPin1(n); if (n.length === 6) setStep('confirm'); };
   const pressConfirm = (d: string) => {
-    setErr(''); const n = (pin2 + d).slice(0, 4); setPin2(n);
-    if (n.length === 4) { if (n === pin1) finish(n); else { setErr('Los PIN no coinciden. Probá de nuevo.'); setPin1(''); setPin2(''); setStep('create'); } }
+    setErr(''); const n = (pin2 + d).slice(0, 6); setPin2(n);
+    if (n.length === 6) { if (n === pin1) finish(n); else { setErr('Los PIN no coinciden. Probá de nuevo.'); setPin1(''); setPin2(''); setStep('create'); } }
   };
 
   return (
@@ -308,7 +316,7 @@ function ActivateScreen({ token, onOk, onUseLogin }: { token: string; onOk: (t: 
           )}
           <h1 className="text-white font-extrabold text-xl text-center">¡Hola, {info.full_name?.split(' ')[0]}! 👋</h1>
           <p className="text-white/60 text-sm mt-1 mb-7 flex items-center gap-1.5">
-            <KeyRound size={14} /> {step === 'create' ? 'Creá tu PIN de 4 dígitos' : 'Repetí tu PIN para confirmar'}
+            <KeyRound size={14} /> {step === 'create' ? 'Creá tu PIN de 6 dígitos' : 'Repetí tu PIN para confirmar'}
           </p>
           {step === 'create'
             ? <PinKeypad pin={pin1} onPress={pressCreate} onDel={() => setPin1(p => p.slice(0, -1))} busy={busy} />

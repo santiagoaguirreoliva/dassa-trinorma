@@ -1,5 +1,5 @@
 // Router público — Portal del Empleado (externo, QR + PIN).
-// Sin auth de la app: el operario escanea el QR de planta, ingresa su PIN de 4 dígitos
+// Sin auth de la app: el operario escanea el QR de planta, ingresa su DNI + PIN de 6 dígitos
 // (bcrypt) y obtiene una sesión HMAC efímera para ver, en read-only:
 //   · LO SUYO        → ficha de puesto + capacitaciones + habilitaciones (por employee_id)
 //   · INSTITUCIONAL  → organigrama + identidad DASSA (misión/visión/valores/política)
@@ -9,7 +9,7 @@
 // en vez de por user_id (estos operarios no tienen cuenta en la app).
 //
 // Endpoints:
-//   POST /api/public/portal/login          { pin }              → sesión efímera + empleado
+//   POST /api/public/portal/login          { documento, pin }   → sesión efímera + empleado
 //   GET  /api/public/portal/me             (x-portal-session)   → ficha + capacitaciones
 //   GET  /api/public/portal/institucional  (x-portal-session)   → organigrama + identidad
 import { Router } from 'express';
@@ -66,30 +66,64 @@ const readLimiter = rateLimit({
   standardHeaders: true, legacyHeaders: false,
 });
 
-// ─── 1. Login por PIN ──────────────────────────────────────────────
+// ─── 1. Login por DNI + PIN ────────────────────────────────────────
+// El PIN se valida SOLO contra el empleado cuyo DNI matchea (un bcrypt.compare, no se
+// itera sobre todos). El DNI se deriva del CUIL cargado (bloque central de 7-8 dígitos).
+// Lockout por empleado tras N fallos + rate-limit por IP (defensa en capas).
+const LOCKOUT_THRESHOLD = 5;                 // fallos consecutivos antes de bloquear
+const LOCKOUT_MS = 15 * 60 * 1000;           // 15 minutos de bloqueo
+const GENERIC_LOGIN_ERR = 'DNI o PIN incorrectos';  // no revela si el DNI existe
+
+// DNI a partir del texto ingresado o del CUIL guardado: dejamos solo dígitos y, si son
+// 11 (CUIL completo), extraemos el bloque central (posiciones 3..10 → 7-8 dígitos de DNI).
+function dniFromRaw(raw) {
+  const d = String(raw || '').replace(/\D/g, '');
+  if (!d) return '';
+  return d.length === 11 ? d.slice(2, 10) : d;
+}
+
 router.post('/login', loginLimiter, async (req, res) => {
-  const { pin } = req.body || {};
-  if (typeof pin !== 'string' || !/^\d{4}$/.test(pin)) {
-    return res.status(400).json({ error: 'El PIN debe tener 4 dígitos' });
+  const { documento, pin } = req.body || {};
+  const dni = dniFromRaw(documento);
+  if (!/^\d{7,8}$/.test(dni)) return res.status(400).json({ error: 'DNI inválido' });
+  if (typeof pin !== 'string' || !/^\d{6}$/.test(pin)) {
+    return res.status(400).json({ error: 'El PIN debe tener 6 dígitos' });
   }
   try {
+    // Resolvemos al empleado por DNI derivado del CUIL (normalizado sin guiones).
     const { rows } = await query(
-      `SELECT id, full_name, position, sector, portal_pin_hash,
+      `SELECT id, full_name, position, sector, portal_pin_hash, portal_locked_until,
               (portal_onboarded_at IS NOT NULL) AS onboarded
          FROM employees
-        WHERE is_active = TRUE AND portal_pin_hash IS NOT NULL`);
-    let matched = null;
-    for (const e of rows) {
-      // PINs únicos garantizados al generarlos → el primer match es el empleado correcto.
-      if (await bcrypt.compare(pin, e.portal_pin_hash)) { matched = e; break; }
+        WHERE is_active = TRUE AND portal_pin_hash IS NOT NULL
+          AND substring(regexp_replace(cuil, '\\D', '', 'g') from 3 for 8) = $1`, [dni]);
+    const emp = rows[0];
+    // DNI inexistente o sin PIN → mismo error genérico (no filtra si el DNI existe).
+    if (!emp) return res.status(401).json({ error: GENERIC_LOGIN_ERR });
+    if (emp.portal_locked_until && new Date(emp.portal_locked_until) > new Date()) {
+      return res.status(429).json({ error: 'Cuenta bloqueada por intentos fallidos. Esperá unos minutos.' });
     }
-    if (!matched) return res.status(401).json({ error: 'PIN incorrecto' });
-    await query('UPDATE employees SET portal_last_login_at = NOW() WHERE id = $1', [matched.id]);
-    const session = signSession({ eid: matched.id, exp: Date.now() + SESSION_TTL_MS });
+    if (!(await bcrypt.compare(pin, emp.portal_pin_hash))) {
+      // Suma un fallo; al llegar al umbral, bloquea a este empleado por LOCKOUT_MS.
+      await query(
+        `UPDATE employees
+            SET portal_failed_attempts = portal_failed_attempts + 1,
+                portal_locked_until = CASE WHEN portal_failed_attempts + 1 >= $2
+                                           THEN NOW() + ($3 || ' milliseconds')::interval
+                                           ELSE portal_locked_until END
+          WHERE id = $1`, [emp.id, LOCKOUT_THRESHOLD, String(LOCKOUT_MS)]);
+      return res.status(401).json({ error: GENERIC_LOGIN_ERR });
+    }
+    // Acierto → resetea contador/bloqueo y registra el login.
+    await query(
+      `UPDATE employees SET portal_last_login_at = NOW(),
+              portal_failed_attempts = 0, portal_locked_until = NULL
+        WHERE id = $1`, [emp.id]);
+    const session = signSession({ eid: emp.id, exp: Date.now() + SESSION_TTL_MS });
     res.json({
       session,
-      employee: { id: matched.id, full_name: matched.full_name, position: matched.position, sector: matched.sector },
-      onboarded: matched.onboarded,
+      employee: { id: emp.id, full_name: emp.full_name, position: emp.position, sector: emp.sector },
+      onboarded: emp.onboarded,
       expires_in: Math.floor(SESSION_TTL_MS / 1000),
     });
   } catch (err) {
@@ -124,14 +158,21 @@ async function pinTaken(pin, exceptId) {
   for (const e of rows) if (await bcrypt.compare(pin, e.portal_pin_hash)) return true;
   return false;
 }
-const TRIVIAL_PINS = new Set(['0000', '1111', '2222', '3333', '4444', '5555', '6666', '7777', '8888', '9999', '1234', '4321', '1212', '0123']);
+// PINs triviales de 6 dígitos (repetidos o secuencias) — bloqueados en la activación.
+function isTrivialPin(pin) {
+  if (/^(\d)\1{5}$/.test(pin)) return true;              // 000000, 111111, …
+  if ('0123456789'.includes(pin)) return true;          // 012345 … 456789
+  if ('9876543210'.includes(pin)) return true;          // 987654 … 543210
+  if (pin === '123456' || pin === '654321') return true;
+  return false;
+}
 
 // ─── 1c. Primer acceso · crear PIN propio ──────────────────────────
 router.post('/activate', loginLimiter, async (req, res) => {
   const { token, pin } = req.body || {};
   if (typeof token !== 'string' || !UUID_RE.test(token)) return res.status(404).json({ error: 'Link inválido' });
-  if (typeof pin !== 'string' || !/^\d{4}$/.test(pin)) return res.status(400).json({ error: 'El PIN debe tener 4 dígitos' });
-  if (TRIVIAL_PINS.has(pin)) return res.status(400).json({ error: 'Elegí un PIN menos obvio (no 1234, 0000, etc.)' });
+  if (typeof pin !== 'string' || !/^\d{6}$/.test(pin)) return res.status(400).json({ error: 'El PIN debe tener 6 dígitos' });
+  if (isTrivialPin(pin)) return res.status(400).json({ error: 'Elegí un PIN menos obvio (no 123456, 000000, etc.)' });
   try {
     const { rows } = await query(
       `SELECT id, full_name, position, sector, (portal_onboarded_at IS NOT NULL) AS onboarded

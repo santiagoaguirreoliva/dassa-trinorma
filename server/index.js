@@ -29,6 +29,7 @@ import publicNcRouter       from './routes/public-nc.js';  // router público de
 import publicChecklistRouter from './routes/public-checklist.js';  // checklist maquinaria QR+PIN
 import publicProcedimientosRouter from './routes/public-procedimientos.js';  // árbol público de procedimientos del SGI
 import publicPortalRouter    from './routes/public-portal.js';  // portal del empleado (QR+PIN)
+import publicProveedoresRouter from './routes/public-proveedores.js';  // acuse de requisitos proveedores/contratistas
 import dashboardRouter      from './routes/dashboard.js';
 import findingsRouter       from './routes/findings.js';
 import purchasesRouter      from './routes/purchases.js';
@@ -87,6 +88,7 @@ import incidentsRouter      from './routes/incidents.js';
 // satisfactionRouter removed — unified into surveys module
 import sistemaGestionRouter from './routes/sistema-gestion.js';
 import suppliersRouter      from './routes/suppliers.js';
+import proveedoresRouter    from './routes/proveedores.js';  // acuses de requisitos (autenticado)
 import contextRouter        from './routes/context.js';
 import bibliotecaRouter     from './routes/biblioteca.js';
 import surveysRouter        from './routes/surveys.js';
@@ -230,6 +232,7 @@ app.use('/api/public',          publicNcRouter);  // solo POST /nc — desacopla
 app.use('/api/public/checklist', publicChecklistRouter);  // checklist maquinaria QR+PIN
 app.use('/api/public/procedimientos', publicProcedimientosRouter);  // árbol público de procedimientos del SGI
 app.use('/api/public/portal',    publicPortalRouter);  // portal del empleado (QR+PIN)
+app.use('/api/public/proveedores', publicProveedoresRouter);  // acuse de requisitos proveedores/contratistas
 app.use('/api/users',           usersRouter);
 app.use('/api/risks',           risksRouter);
 app.use('/api/legal',           legalRouter);
@@ -263,6 +266,7 @@ app.use('/api/incidents',       incidentsRouter);
 // /api/satisfaction removed — unified into /api/surveys
 app.use('/api/sistema-gestion', sistemaGestionRouter);
 app.use('/api/suppliers',       suppliersRouter);
+app.use('/api/proveedores',     proveedoresRouter);  // acuses de requisitos (autenticado)
 app.use('/api/context',         contextRouter);
 app.use('/api/biblioteca',      bibliotecaRouter);
 app.use('/api/surveys',         surveysRouter);

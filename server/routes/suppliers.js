@@ -7,19 +7,29 @@ router.use(authenticate);
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
+// Trae cada proveedor con el resultado de su última evaluación F-TRI-17
+// (para que el front derive el estado: homologado/en evaluación/suspendido).
+const SELECT_WITH_EVAL = `
+  SELECT s.*, ev.result AS latest_eval_result, ev.year AS latest_eval_year
+    FROM suppliers s
+    LEFT JOIN LATERAL (
+      SELECT result, year FROM supplier_evaluations
+       WHERE supplier_id = s.id ORDER BY year DESC LIMIT 1
+    ) ev ON true`;
+
 // GET /api/suppliers
 router.get('/', async (req, res) => {
   const { search, category, active } = req.query;
   const where = ['1=1'];
   const params = [];
   let i = 1;
-  if (search)   { where.push(`name ILIKE $${i++}`); params.push(`%${search}%`); }
-  if (category) { where.push(`category = $${i++}`); params.push(category); }
-  if (active !== undefined) { where.push(`is_active = $${i++}`); params.push(active === 'true'); }
+  if (search)   { where.push(`s.name ILIKE $${i++}`); params.push(`%${search}%`); }
+  if (category) { where.push(`s.category = $${i++}`); params.push(category); }
+  if (active !== undefined) { where.push(`s.is_active = $${i++}`); params.push(active === 'true'); }
 
   try {
     const { rows } = await query(
-      `SELECT * FROM suppliers WHERE ${where.join(' AND ')} ORDER BY name ASC`, params
+      `${SELECT_WITH_EVAL} WHERE ${where.join(' AND ')} ORDER BY s.name ASC`, params
     );
     res.json(rows);
   } catch (err) { res.status(500).json({ error: err.message }); }
@@ -28,7 +38,7 @@ router.get('/', async (req, res) => {
 // GET /api/suppliers/:id
 router.get('/:id', async (req, res) => {
   try {
-    const { rows } = await query('SELECT * FROM suppliers WHERE id = $1', [req.params.id]);
+    const { rows } = await query(`${SELECT_WITH_EVAL} WHERE s.id = $1`, [req.params.id]);
     if (!rows[0]) return res.status(404).json({ error: 'Proveedor no encontrado' });
     res.json(rows[0]);
   } catch (err) { res.status(500).json({ error: err.message }); }

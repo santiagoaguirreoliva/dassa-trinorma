@@ -11,10 +11,11 @@ import { Spinner, KPICard, PageContent, Avatar } from '@/components/ui';
 
 // ─── Tipos ──────────────────────────────────────────────────
 interface Supplier {
-  id: string; name: string; cuit?: string; type?: string;
-  contact_name?: string; email?: string; phone?: string;
-  address?: string; status: string; notes?: string;
-  is_critical?: boolean;
+  id: string; name: string; cuit?: string; category?: string;
+  contact_name?: string; contact_email?: string; contact_phone?: string;
+  address?: string; is_active?: boolean; is_homologated?: boolean;
+  notes?: string; is_critical?: boolean;
+  latest_eval_result?: string; latest_eval_year?: number;
   created_at: string;
 }
 
@@ -33,17 +34,28 @@ interface Acuse {
 }
 
 // ─── Constantes ─────────────────────────────────────────────
+// Estado del proveedor DERIVADO del modelo real (no un campo manual):
+// alta/baja (is_active) + homologación + resultado de la última evaluación F-TRI-17.
 const STATUS_CONFIG: Record<string, { label: string; bg: string; color: string }> = {
-  activo:     { label: 'Activo',      bg: 'bg-emerald-100', color: 'text-emerald-700' },
-  evaluacion: { label: 'Evaluación',  bg: 'bg-amber-100',   color: 'text-amber-700' },
-  suspendido: { label: 'Suspendido',  bg: 'bg-red-100',     color: 'text-red-700' },
-  inactivo:   { label: 'Inactivo',    bg: 'bg-gray-100',   color: 'text-gray-500' },
+  homologado: { label: 'Homologado',    bg: 'bg-emerald-100', color: 'text-emerald-700' },
+  evaluacion: { label: 'En evaluación', bg: 'bg-blue-100',    color: 'text-blue-700' },
+  suspendido: { label: 'Suspendido',    bg: 'bg-amber-100',   color: 'text-amber-700' },
+  no_apto:    { label: 'No apto',        bg: 'bg-red-100',     color: 'text-red-700' },
+  inactivo:   { label: 'Inactivo',       bg: 'bg-gray-100',    color: 'text-gray-500' },
 };
 
-const TYPES = ['productos', 'servicios', 'transporte', 'tecnologia', 'mantenimiento', 'otros'];
-const TYPE_LABELS: Record<string, string> = {
-  productos: 'Productos', servicios: 'Servicios', transporte: 'Transporte',
-  tecnologia: 'Tecnología', mantenimiento: 'Mantenimiento', otros: 'Otros',
+function estadoDe(s: Supplier): keyof typeof STATUS_CONFIG {
+  if (s.is_active === false) return 'inactivo';
+  if (s.latest_eval_result === 'no_apto') return 'no_apto';
+  if (s.latest_eval_result === 'suspendido') return 'suspendido';
+  if (s.latest_eval_result === 'apto' || s.is_homologated) return 'homologado';
+  return 'evaluacion';
+}
+
+const CATEGORIES = ['servicios', 'mantenimiento', 'transporte', 'insumos', 'tecnologia', 'otros'];
+const CATEGORY_LABELS: Record<string, string> = {
+  servicios: 'Servicios', mantenimiento: 'Mantenimiento', transporte: 'Transporte',
+  insumos: 'Insumos', tecnologia: 'Tecnología', otros: 'Otros',
 };
 
 // F-TRI-17 · escala por criterio y resultado por puntaje total
@@ -81,23 +93,24 @@ function SupplierModal({ supplier, onClose }: { supplier?: Supplier; onClose: ()
   const [form, setForm] = useState({
     name: supplier?.name ?? '',
     cuit: supplier?.cuit ?? '',
-    type: supplier?.type ?? 'servicios',
+    category: supplier?.category ?? 'servicios',
     contact_name: supplier?.contact_name ?? '',
-    email: supplier?.email ?? '',
-    phone: supplier?.phone ?? '',
+    contact_email: supplier?.contact_email ?? '',
+    contact_phone: supplier?.contact_phone ?? '',
     address: supplier?.address ?? '',
-    status: supplier?.status ?? 'activo',
     notes: supplier?.notes ?? '',
   });
+  const [isActive, setIsActive] = useState(supplier?.is_active ?? true);
   const [isCritical, setIsCritical] = useState(supplier?.is_critical ?? false);
   const [error, setError] = useState('');
   const set = (k: string, v: string) => setForm(p => ({ ...p, [k]: v }));
 
   const mutation = useMutation({
     mutationFn: () => {
+      const payload = { ...form, is_active: isActive, is_critical: isCritical };
       return isEdit
-        ? api.patch(`/suppliers/${supplier!.id}`, { ...form, is_critical: isCritical })
-        : api.post('/suppliers', { ...form, is_critical: isCritical });
+        ? api.patch(`/suppliers/${supplier!.id}`, payload)
+        : api.post('/suppliers', payload);
     },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['suppliers'] }); onClose(); },
     onError: (e: any) => setError(e.message),
@@ -123,9 +136,9 @@ function SupplierModal({ supplier, onClose }: { supplier?: Supplier; onClose: ()
                 placeholder="XX-XXXXXXXX-X" className="input-field" />
             </div>
             <div>
-              <label className="label-field">Tipo</label>
-              <select value={form.type} onChange={e => set('type', e.target.value)} className="input-field">
-                {TYPES.map(t => <option key={t} value={t}>{TYPE_LABELS[t]}</option>)}
+              <label className="label-field">Rubro</label>
+              <select value={form.category} onChange={e => set('category', e.target.value)} className="input-field">
+                {CATEGORIES.map(t => <option key={t} value={t}>{CATEGORY_LABELS[t]}</option>)}
               </select>
             </div>
           </div>
@@ -137,12 +150,12 @@ function SupplierModal({ supplier, onClose }: { supplier?: Supplier; onClose: ()
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="label-field">Email</label>
-              <input type="email" value={form.email} onChange={e => set('email', e.target.value)}
+              <input type="email" value={form.contact_email} onChange={e => set('contact_email', e.target.value)}
                 placeholder="email@proveedor.com" className="input-field" />
             </div>
             <div>
               <label className="label-field">Teléfono</label>
-              <input value={form.phone} onChange={e => set('phone', e.target.value)}
+              <input value={form.contact_phone} onChange={e => set('contact_phone', e.target.value)}
                 placeholder="+54 11 ..." className="input-field" />
             </div>
           </div>
@@ -152,21 +165,23 @@ function SupplierModal({ supplier, onClose }: { supplier?: Supplier; onClose: ()
               placeholder="Dirección del proveedor" className="input-field" />
           </div>
           <div>
-            <label className="label-field">Estado</label>
-            <select value={form.status} onChange={e => set('status', e.target.value)} className="input-field">
-              {Object.entries(STATUS_CONFIG).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
-            </select>
-          </div>
-          <div>
             <label className="label-field">Notas</label>
             <textarea value={form.notes} onChange={e => set('notes', e.target.value)}
               rows={2} placeholder="Observaciones sobre el proveedor" className="input-field resize-none" />
           </div>
           <label className="flex items-center gap-2 text-xs font-semibold text-gray-700 cursor-pointer">
+            <input type="checkbox" checked={isActive} onChange={e => setIsActive(e.target.checked)}
+              className="rounded border-gray-300" />
+            Proveedor activo (dado de alta)
+          </label>
+          <label className="flex items-center gap-2 text-xs font-semibold text-gray-700 cursor-pointer">
             <input type="checkbox" checked={isCritical} onChange={e => setIsCritical(e.target.checked)}
               className="rounded border-gray-300" />
             Proveedor crítico (incidencia en la calidad del servicio — P-TRI-11)
           </label>
+          <p className="text-[11px] text-gray-400">
+            La condición <b>Homologado / Suspendido / No apto</b> se define con la evaluación anual F-TRI-17, no acá.
+          </p>
           {error && <p className="text-xs text-red-500 bg-red-50 px-3 py-2 rounded-lg">{error}</p>}
         </div>
         <div className="px-6 pb-5 flex justify-end gap-2">
@@ -342,17 +357,19 @@ export default function Suppliers() {
   const qc = useQueryClient();
 
   const { data: suppliers = [], isLoading } = useQuery<Supplier[]>({
-    queryKey: ['suppliers', search, filterStatus, filterType],
+    queryKey: ['suppliers', search, filterType],
     queryFn: () => {
       const params = new URLSearchParams();
       if (search) params.set('search', search);
-      if (filterStatus) params.set('status', filterStatus);
-      if (filterType) params.set('type', filterType);
+      if (filterType) params.set('category', filterType);
       const qs = params.toString();
       return api.get(`/suppliers${qs ? `?${qs}` : ''}`);
     },
     refetchInterval: 30_000,
   });
+
+  // Estado es derivado (no filtrable en el server) → filtro client-side.
+  const visibles = filterStatus ? suppliers.filter(s => estadoDe(s) === filterStatus) : suppliers;
 
   // Acuses de requisitos firmados en la landing pública (F-TRI-18 / F-TRI-52)
   const { data: acusesData } = useQuery<{ items: Acuse[] }>({
@@ -368,9 +385,9 @@ export default function Suppliers() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['suppliers'] }),
   });
 
-  const activos = suppliers.filter(s => s.status === 'activo').length;
-  const enEval = suppliers.filter(s => s.status === 'evaluacion').length;
-  const suspendidos = suppliers.filter(s => s.status === 'suspendido').length;
+  const activos = suppliers.filter(s => s.is_active !== false).length;
+  const enEval = suppliers.filter(s => estadoDe(s) === 'evaluacion').length;
+  const suspendidos = suppliers.filter(s => ['suspendido', 'no_apto'].includes(estadoDe(s))).length;
   const criticos = suppliers.filter(s => s.is_critical).length;
 
   return (
@@ -437,8 +454,8 @@ export default function Suppliers() {
               </select>
               <select value={filterType} onChange={e => setFilterType(e.target.value)}
                 className="border border-gray-200 rounded-lg px-2.5 py-1.5 text-xs focus:outline-none">
-                <option value="">Todos los tipos</option>
-                {TYPES.map(t => <option key={t} value={t}>{TYPE_LABELS[t]}</option>)}
+                <option value="">Todos los rubros</option>
+                {CATEGORIES.map(t => <option key={t} value={t}>{CATEGORY_LABELS[t]}</option>)}
               </select>
               {(search || filterStatus || filterType) && (
                 <button onClick={() => { setSearch(''); setFilterStatus(''); setFilterType(''); }}
@@ -446,7 +463,7 @@ export default function Suppliers() {
                   <X size={12} /> Limpiar
                 </button>
               )}
-              <span className="ml-auto text-xs text-gray-400">{suppliers.length} proveedores</span>
+              <span className="ml-auto text-xs text-gray-400">{visibles.length} proveedores</span>
             </div>
 
             {/* Table */}
@@ -456,7 +473,7 @@ export default function Suppliers() {
                   <tr>
                     <th className="th-cell">Proveedor</th>
                     <th className="th-cell hidden md:table-cell w-28">CUIT</th>
-                    <th className="th-cell hidden md:table-cell w-24">Tipo</th>
+                    <th className="th-cell hidden md:table-cell w-24">Rubro</th>
                     <th className="th-cell hidden lg:table-cell">Contacto</th>
                     <th className="th-cell hidden xl:table-cell">Dirección</th>
                     <th className="th-cell w-24">Estado</th>
@@ -464,8 +481,8 @@ export default function Suppliers() {
                   </tr>
                 </thead>
                 <tbody>
-                  {suppliers.map(s => {
-                    const sc = STATUS_CONFIG[s.status] ?? STATUS_CONFIG.activo;
+                  {visibles.map(s => {
+                    const sc = STATUS_CONFIG[estadoDe(s)];
                     return (
                       <tr key={s.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
                         <td className="px-4 py-3">
@@ -490,18 +507,18 @@ export default function Suppliers() {
                           <span className="text-[10px] text-gray-500 font-mono">{s.cuit || '—'}</span>
                         </td>
                         <td className="px-4 py-3 hidden md:table-cell">
-                          <span className="text-[10px] text-gray-500">{TYPE_LABELS[s.type ?? ''] || s.type || '—'}</span>
+                          <span className="text-[10px] text-gray-500">{CATEGORY_LABELS[s.category ?? ''] || s.category || '—'}</span>
                         </td>
                         <td className="px-4 py-3 hidden lg:table-cell">
                           <div className="flex flex-col gap-0.5">
-                            {s.email && (
+                            {s.contact_email && (
                               <span className="text-[10px] text-gray-400 flex items-center gap-1">
-                                <Mail size={9} />{s.email}
+                                <Mail size={9} />{s.contact_email}
                               </span>
                             )}
-                            {s.phone && (
+                            {s.contact_phone && (
                               <span className="text-[10px] text-gray-400 flex items-center gap-1">
-                                <Phone size={9} />{s.phone}
+                                <Phone size={9} />{s.contact_phone}
                               </span>
                             )}
                           </div>
@@ -543,7 +560,7 @@ export default function Suppliers() {
                   })}
                 </tbody>
               </table>
-              {suppliers.length === 0 && (
+              {visibles.length === 0 && (
                 <div className="text-center py-12 text-gray-400">
                   <Truck size={28} className="mx-auto mb-2 opacity-30" />
                   <p className="text-sm">Sin proveedores registrados</p>

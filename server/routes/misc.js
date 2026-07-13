@@ -85,17 +85,23 @@ risksRouter.get('/', async (req, res) => {
 
 risksRouter.post('/', requireRole('master_admin','sgi_leader','seguridad_higiene'), async (req, res) => {
   const { code, activity, hazard, risk_factor, activity_type, impact,
-          probability, severity, legal_req, current_controls, responsible_id } = req.body;
+          probability, severity, legal_req, current_controls, responsible_id,
+          area, condition, control_status, recommended_action, start_date, end_date,
+          residual_probability, residual_severity } = req.body;
   if (!activity || !hazard || !probability || !severity) {
     return res.status(400).json({ error: 'Campos requeridos: activity, hazard, probability, severity' });
   }
   try {
     const { rows } = await query(
       `INSERT INTO risks (code, activity, hazard, risk_factor, activity_type, impact,
-         probability, severity, legal_req, current_controls, responsible_id)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING *`,
+         probability, severity, legal_req, current_controls, responsible_id,
+         area, condition, control_status, recommended_action, start_date, end_date,
+         residual_probability, residual_severity)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19) RETURNING *`,
       [code || `R-${Date.now()}`, activity, hazard, risk_factor, activity_type, impact,
-       probability, severity, legal_req || false, current_controls, responsible_id || null]
+       probability, severity, legal_req || false, current_controls, responsible_id || null,
+       area || null, condition || null, control_status ?? 0, recommended_action || null,
+       start_date || null, end_date || null, residual_probability || null, residual_severity || null]
     );
     res.status(201).json(rows[0]);
   } catch (err) { res.status(500).json({ error: err.message }); }
@@ -104,7 +110,8 @@ risksRouter.post('/', requireRole('master_admin','sgi_leader','seguridad_higiene
 risksRouter.patch('/:id', requireRole('master_admin','sgi_leader','seguridad_higiene'), async (req, res) => {
   const allowed = ['activity','hazard','risk_factor','activity_type','impact','probability',
     'severity','legal_req','current_controls','responsible_id','control_status',
-    'residual_probability','residual_severity','is_active'];
+    'residual_probability','residual_severity','is_active',
+    'area','condition','recommended_action','start_date','end_date'];
   const updates = []; const values = []; let i = 1;
   for (const f of allowed) {
     if (req.body[f] !== undefined) { updates.push(`${f} = $${i++}`); values.push(req.body[f]); }

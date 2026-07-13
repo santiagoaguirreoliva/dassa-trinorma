@@ -19,8 +19,10 @@ interface Risk {
   probability: number; severity: number; ir?: number;
   legal_req: boolean; current_controls?: string;
   responsible_id?: string; responsible_name?: string;
-  control_status?: string;
+  control_status?: number;
   residual_probability?: number; residual_severity?: number;
+  area?: string; condition?: string; recommended_action?: string;
+  start_date?: string; end_date?: string;
   is_active: boolean; created_at: string;
 }
 
@@ -53,12 +55,15 @@ const ACTIVITY_LABELS: Record<string, string> = {
   rutinaria: 'Rutinaria', no_rutinaria: 'No Rutinaria', emergencia: 'Emergencia'
 };
 
-const CONTROL_STATUS: Record<string, { label: string; bg: string; color: string }> = {
-  implementado:    { label: 'Implementado',    bg: 'bg-emerald-100', color: 'text-emerald-700' },
-  en_progreso:     { label: 'En Progreso',     bg: 'bg-dassa-red-tint',    color: 'text-dassa-red-deep' },
-  pendiente:       { label: 'Pendiente',       bg: 'bg-amber-100',   color: 'text-amber-700' },
-  no_aplica:       { label: 'No Aplica',       bg: 'bg-gray-100',   color: 'text-gray-500' },
+// Estado 0-4 del template general (0 No requerido · 1 Planificado · 2 En curso · 3 Cerrado · 4 Verificado)
+const ESTADO: Record<number, { label: string; bg: string; color: string }> = {
+  0: { label: 'No requerido', bg: 'bg-gray-100',       color: 'text-gray-500' },
+  1: { label: 'Planificado',  bg: 'bg-amber-100',      color: 'text-amber-700' },
+  2: { label: 'En curso',     bg: 'bg-dassa-red-tint', color: 'text-dassa-red-deep' },
+  3: { label: 'Cerrado',      bg: 'bg-sky-100',        color: 'text-sky-700' },
+  4: { label: 'Verificado',   bg: 'bg-emerald-100',    color: 'text-emerald-700' },
 };
+const CONDITION: Record<string, string> = { normal: 'Normal', anormal: 'Anormal', emergencia: 'Emergencia' };
 
 // ─── IR Badge ────────────────────────────────────────────────
 function IRBadge({ ir }: { ir: number }) {
@@ -132,22 +137,31 @@ function RiskModal({ risk, users, onClose }: { risk?: Risk; users: User[]; onClo
   const qc = useQueryClient();
   const isEdit = !!risk;
   const [form, setForm] = useState({
+    area: risk?.area ?? '',
     activity: risk?.activity ?? '',
     hazard: risk?.hazard ?? '',
     risk_factor: risk?.risk_factor ?? '',
     activity_type: risk?.activity_type ?? 'rutinaria',
+    condition: risk?.condition ?? '',
     impact: risk?.impact ?? '',
     probability: String(risk?.probability ?? 3),
     severity: String(risk?.severity ?? 3),
     legal_req: risk?.legal_req ?? false,
     current_controls: risk?.current_controls ?? '',
+    recommended_action: risk?.recommended_action ?? '',
     responsible_id: risk?.responsible_id ?? '',
-    control_status: risk?.control_status ?? 'pendiente',
+    control_status: String(risk?.control_status ?? 1),
+    start_date: risk?.start_date?.slice(0, 10) ?? '',
+    end_date: risk?.end_date?.slice(0, 10) ?? '',
+    residual_probability: risk?.residual_probability ? String(risk.residual_probability) : '',
+    residual_severity: risk?.residual_severity ? String(risk.residual_severity) : '',
   });
   const [error, setError] = useState('');
   const set = (k: string, v: any) => setForm(p => ({ ...p, [k]: v }));
 
   const ir = parseInt(form.probability) * parseInt(form.severity);
+  const residualIr = form.residual_probability && form.residual_severity
+    ? parseInt(form.residual_probability) * parseInt(form.residual_severity) : 0;
 
   const mutation = useMutation({
     mutationFn: () => {
@@ -155,7 +169,14 @@ function RiskModal({ risk, users, onClose }: { risk?: Risk; users: User[]; onClo
         ...form,
         probability: parseInt(form.probability),
         severity: parseInt(form.severity),
+        control_status: parseInt(form.control_status),
         responsible_id: form.responsible_id || null,
+        condition: form.condition || null,
+        area: form.area || null,
+        start_date: form.start_date || null,
+        end_date: form.end_date || null,
+        residual_probability: form.residual_probability ? parseInt(form.residual_probability) : null,
+        residual_severity: form.residual_severity ? parseInt(form.residual_severity) : null,
       };
       return isEdit
         ? api.patch(`/risks/${risk!.id}`, payload)
@@ -174,38 +195,52 @@ function RiskModal({ risk, users, onClose }: { risk?: Risk; users: User[]; onClo
         </div>
         <div className="p-6 space-y-4 max-h-[75vh] overflow-y-auto">
           <div>
+            <label className="label-field">Área</label>
+            <input value={form.area} onChange={e => set('area', e.target.value)}
+              placeholder="Ej: Depósito, Producción, Administración" className="input-field" />
+          </div>
+          <div>
             <label className="label-field">Actividad / Proceso <span className="text-red-500">*</span></label>
             <input value={form.activity} onChange={e => set('activity', e.target.value)}
               placeholder="Ej: Operación de autoelevador" className="input-field" />
           </div>
           <div>
-            <label className="label-field">Peligro / Fuente <span className="text-red-500">*</span></label>
+            <label className="label-field">Peligro / Aspecto <span className="text-red-500">*</span></label>
             <input value={form.hazard} onChange={e => set('hazard', e.target.value)}
-              placeholder="Ej: Atropellamiento, caída de carga" className="input-field" />
-          </div>
-          <div>
-            <label className="label-field">Factor de Riesgo</label>
-            <input value={form.risk_factor} onChange={e => set('risk_factor', e.target.value)}
-              placeholder="Ej: Mecánico, Ergonómico, Químico" className="input-field" />
-          </div>
-          <div>
-            <label className="label-field">Impacto</label>
-            <textarea value={form.impact} onChange={e => set('impact', e.target.value)}
-              rows={2} placeholder="Descripción del impacto potencial" className="input-field resize-none" />
+              placeholder="Ej: Atropellamiento, derrame, humos" className="input-field" />
           </div>
           <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="label-field">Factor de Riesgo</label>
+              <input value={form.risk_factor} onChange={e => set('risk_factor', e.target.value)}
+                placeholder="Ej: Mecánico, Químico" className="input-field" />
+            </div>
             <div>
               <label className="label-field">Tipo de Actividad</label>
               <select value={form.activity_type} onChange={e => set('activity_type', e.target.value)} className="input-field">
                 {ACTIVITY_TYPES.map(t => <option key={t} value={t}>{ACTIVITY_LABELS[t]}</option>)}
               </select>
             </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="label-field">Estado del Control</label>
-              <select value={form.control_status} onChange={e => set('control_status', e.target.value)} className="input-field">
-                {Object.entries(CONTROL_STATUS).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
+              <label className="label-field">Condición</label>
+              <select value={form.condition} onChange={e => set('condition', e.target.value)} className="input-field">
+                <option value="">— Sin definir —</option>
+                {Object.entries(CONDITION).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
               </select>
             </div>
+            <div className="flex items-center gap-2 pt-6">
+              <input type="checkbox" checked={form.legal_req}
+                onChange={e => set('legal_req', e.target.checked)}
+                className="w-4 h-4 rounded border-gray-300 text-dassa-red" />
+              <label className="text-xs text-gray-600 font-semibold">Requisito Legal Asociado</label>
+            </div>
+          </div>
+          <div>
+            <label className="label-field">Impacto / Consecuencia</label>
+            <textarea value={form.impact} onChange={e => set('impact', e.target.value)}
+              rows={2} placeholder="Descripción del impacto potencial" className="input-field resize-none" />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
@@ -230,20 +265,55 @@ function RiskModal({ risk, users, onClose }: { risk?: Risk; users: User[]; onClo
             <textarea value={form.current_controls} onChange={e => set('current_controls', e.target.value)}
               rows={2} placeholder="Medidas de control implementadas" className="input-field resize-none" />
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="label-field">Acción de Mitigación</label>
+            <textarea value={form.recommended_action} onChange={e => set('recommended_action', e.target.value)}
+              rows={2} placeholder="Acción para reducir el riesgo (requisitos legales a cumplir)" className="input-field resize-none" />
+          </div>
+          <div className="grid grid-cols-3 gap-3">
             <div>
-              <label className="label-field">Responsable</label>
-              <select value={form.responsible_id} onChange={e => set('responsible_id', e.target.value)} className="input-field">
-                <option value="">Sin asignar</option>
-                {users.map(u => <option key={u.id} value={u.id}>{u.full_name}</option>)}
+              <label className="label-field">Estado</label>
+              <select value={form.control_status} onChange={e => set('control_status', e.target.value)} className="input-field">
+                {Object.entries(ESTADO).map(([k, v]) => <option key={k} value={k}>{k} — {v.label}</option>)}
               </select>
             </div>
-            <div className="flex items-center gap-2 pt-6">
-              <input type="checkbox" checked={form.legal_req}
-                onChange={e => set('legal_req', e.target.checked)}
-                className="w-4 h-4 rounded border-gray-300 text-dassa-red" />
-              <label className="text-xs text-gray-600 font-semibold">Requisito Legal Asociado</label>
+            <div>
+              <label className="label-field">Fecha inicio</label>
+              <input type="date" value={form.start_date} onChange={e => set('start_date', e.target.value)} className="input-field" />
             </div>
+            <div>
+              <label className="label-field">Fecha cierre</label>
+              <input type="date" value={form.end_date} onChange={e => set('end_date', e.target.value)} className="input-field" />
+            </div>
+          </div>
+          <div className="rounded-lg border border-dashed border-gray-200 p-3 space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-gray-500">Riesgo Residual (post-mitigación)</span>
+              {residualIr > 0 && <IRBadge ir={residualIr} />}
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="label-field">Prob. residual</label>
+                <select value={form.residual_probability} onChange={e => set('residual_probability', e.target.value)} className="input-field">
+                  <option value="">—</option>
+                  {[1,2,3,4,5].map(n => <option key={n} value={n}>{n}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="label-field">Sev. residual</label>
+                <select value={form.residual_severity} onChange={e => set('residual_severity', e.target.value)} className="input-field">
+                  <option value="">—</option>
+                  {[1,2,3,4,5].map(n => <option key={n} value={n}>{n}</option>)}
+                </select>
+              </div>
+            </div>
+          </div>
+          <div>
+            <label className="label-field">Responsable</label>
+            <select value={form.responsible_id} onChange={e => set('responsible_id', e.target.value)} className="input-field">
+              <option value="">Sin asignar</option>
+              {users.map(u => <option key={u.id} value={u.id}>{u.full_name}</option>)}
+            </select>
           </div>
           {error && <p className="text-xs text-red-500 bg-red-50 px-3 py-2 rounded-lg">{error}</p>}
         </div>
@@ -403,6 +473,7 @@ export default function Risks() {
                     <th className="th-cell w-14 text-center">P</th>
                     <th className="th-cell w-14 text-center">S</th>
                     <th className="th-cell w-28">IR</th>
+                    <th className="th-cell w-24 hidden xl:table-cell">R. Residual</th>
                     <th className="th-cell hidden lg:table-cell">Controles</th>
                     <th className="th-cell hidden md:table-cell w-24">Estado</th>
                     <th className="th-cell hidden lg:table-cell">Responsable</th>
@@ -411,7 +482,7 @@ export default function Risks() {
                 </thead>
                 <tbody>
                   {filtered.map(r => {
-                    const cs = CONTROL_STATUS[r.control_status ?? 'pendiente'] ?? CONTROL_STATUS.pendiente;
+                    const cs = ESTADO[r.control_status ?? 0] ?? ESTADO[0];
                     return (
                       <tr key={r.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
                         <td className="px-4 py-3">
@@ -423,6 +494,12 @@ export default function Risks() {
                         <td className="px-4 py-3 max-w-[260px]">
                           <p className="text-xs font-semibold text-gray-800 truncate">{r.activity}</p>
                           <p className="text-[10px] text-gray-400 truncate">{r.hazard}</p>
+                          {(r.area || r.condition) && (
+                            <div className="flex gap-1 mt-0.5">
+                              {r.area && <span className="text-[9px] bg-gray-100 text-gray-500 px-1 py-0.5 rounded font-semibold">{r.area}</span>}
+                              {r.condition && <span className="text-[9px] bg-dassa-navy/10 text-dassa-navy px-1 py-0.5 rounded font-semibold">{CONDITION[r.condition] ?? r.condition}</span>}
+                            </div>
+                          )}
                         </td>
                         <td className="px-4 py-3 text-center">
                           <span className="text-xs font-bold text-gray-700">{r.probability}</span>
@@ -431,6 +508,11 @@ export default function Risks() {
                           <span className="text-xs font-bold text-gray-700">{r.severity}</span>
                         </td>
                         <td className="px-4 py-3"><IRBadge ir={r.ir!} /></td>
+                        <td className="px-4 py-3 hidden xl:table-cell">
+                          {r.residual_probability && r.residual_severity
+                            ? <IRBadge ir={r.residual_probability * r.residual_severity} />
+                            : <span className="text-[10px] text-gray-300">—</span>}
+                        </td>
                         <td className="px-4 py-3 hidden lg:table-cell max-w-[180px]">
                           <p className="text-[10px] text-gray-500 truncate">{r.current_controls || '—'}</p>
                         </td>

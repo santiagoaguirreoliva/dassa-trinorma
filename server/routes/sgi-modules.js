@@ -256,7 +256,9 @@ risksAmfeRouter.get('/', async (req, res) => {
       SELECT id, code, activity, hazard, risk_factor, severity, probability, detection,
              ir, npr, npr_level, current_controls, current_controls_text,
              causes, recommended_action, opportunity, process, affected_parties,
-             plazo, resultado_acciones, eficacia_verificada
+             plazo, resultado_acciones, eficacia_verificada,
+             ro_type, responsible_text, residual_severity, residual_probability, residual_detection,
+             matrix_version, matrix_date
       FROM risks WHERE ${conds.join(' AND ')}
       ORDER BY npr DESC NULLS LAST, ir DESC LIMIT 100
     `, params);

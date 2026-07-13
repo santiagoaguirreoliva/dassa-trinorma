@@ -6,7 +6,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import {
   Target, ChevronDown, ChevronRight, Zap, Snowflake, Wrench, Hand,
-  Power, Database, GitBranch, Wallet, CheckCircle2, Circle, TrendingUp,
+  Power, Database, GitBranch, Wallet, CheckCircle2, Circle,
 } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
@@ -33,8 +33,6 @@ const CONN: Record<string, { label: string; variant: 'green'|'amber'|'blue'|'gra
   manual:      { label: 'Manual',      variant: 'gray',  icon: Hand },
 };
 const MES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
-const fmtMeas = (m?: Measurement | null) =>
-  m ? `${Number(m.value).toLocaleString('es-AR')} · ${MES[parseInt(m.period.slice(5,7),10)-1]} ${m.period.slice(2,4)}` : null;
 
 const CONN_CLS: Record<string, string> = {
   green: 'bg-emerald-100 text-emerald-700', amber: 'bg-amber-100 text-amber-700',
@@ -109,9 +107,9 @@ function ObjetivoCard({ obj, canEdit }: { obj: Objective; canEdit: boolean }) {
           {isLoading ? <div className="py-4 flex justify-center"><Spinner /></div> : (
             <div className="space-y-1.5">
               {indicators.map(ind => {
-                const last = fmtMeas(ind.last_measurement);
+                const m = ind.last_measurement;
                 return (
-                  <div key={ind.id} className={`flex items-center gap-2 rounded-lg border p-2 ${ind.enabled ? 'bg-white border-dassa-celeste/30' : 'bg-white border-gray-100'}`}>
+                  <div key={ind.id} className={`flex items-center gap-3 rounded-lg border p-2.5 ${ind.enabled ? 'bg-white border-dassa-celeste/30' : 'bg-white border-gray-100'}`}>
                     <div className="w-7 h-7 rounded-md bg-gray-100 text-gray-500 flex items-center justify-center shrink-0">
                       {ind.enabled ? <CheckCircle2 size={14} className="text-dassa-celeste-deep" /> : <Circle size={14} />}
                     </div>
@@ -120,11 +118,16 @@ function ObjetivoCard({ obj, canEdit }: { obj: Objective; canEdit: boolean }) {
                       <div className="flex items-center gap-2 text-[10px] text-gray-500 flex-wrap">
                         {ind.target_text && <span>meta {ind.target_text}</span>}
                         {ind.unit && <span className="text-gray-400">· {ind.unit}</span>}
-                        {ind.connector_source && <span className="text-gray-400 truncate">· {ind.connector_source}</span>}
+                        {canEdit && ind.connector_source && <span className="text-gray-400 truncate">· {ind.connector_source}</span>}
                       </div>
                     </div>
-                    {last && <span className="text-[10px] font-bold text-emerald-700 shrink-0 inline-flex items-center gap-1"><TrendingUp size={10} />{last}</span>}
-                    <ConnBadge status={ind.connection_status} />
+                    {m ? (
+                      <div className="text-right shrink-0">
+                        <div className="text-sm font-extrabold text-gray-900 leading-none">{Number(m.value).toLocaleString('es-AR')}</div>
+                        <div className="text-[9px] text-gray-400 mt-0.5">{MES[parseInt(m.period.slice(5,7),10)-1]} {m.period.slice(2,4)}</div>
+                      </div>
+                    ) : <span className="text-[10px] text-gray-300 shrink-0">sin dato</span>}
+                    {canEdit && <ConnBadge status={ind.connection_status} />}
                     {canEdit && <Toggle on={ind.enabled} onClick={() => toggleKpi.mutate({ indId: ind.id, enabled: !ind.enabled })} disabled={toggleKpi.isPending} />}
                   </div>
                 );
@@ -168,14 +171,6 @@ export default function ObjetivosEstrategicos() {
         <KPICard label="KPIs definidos" value={totKpis} sub={`${totEnabled} activos`} />
         <KPICard label="KPIs con datos" value={totData} sub="medición real" />
         <KPICard label="Habilitación" value={`${totKpis ? Math.round(totEnabled / totKpis * 100) : 0}%`} sub="activación progresiva" />
-      </div>
-
-      <div className="mb-3 text-[11px] text-gray-500 bg-dassa-celeste/10 border border-dassa-celeste/20 rounded-lg px-3 py-2">
-        Habilitación progresiva: los KPIs se cargan todos pero se <b>activan de a poco</b> a medida que se conecta el dato.
-        Estado del conector: <ConnBadge status="vivo" /> al día ·
-        <ConnBadge status="congelado" /> con histórico ·
-        <ConnBadge status="construible" /> hay fuente ·
-        <ConnBadge status="manual" /> carga asistida.
       </div>
 
       <div className="space-y-2.5">

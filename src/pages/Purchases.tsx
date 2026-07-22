@@ -28,12 +28,18 @@ interface Purchase {
   executed_by?: string; executed_by_name?: string;
   status: string; approval_notes?: string;
   deferred_until?: string; payment_method?: string;
+  requesting_area?: string;
   created_at: string; approved_at?: string;
   // CAPA 1 · Compras 2.0
   source_url?: string;
   long_description?: string;
   item_specs?: Record<string, any> | null;
   photo_urls?: string[] | null;
+  // Canal público (link /solicitud-compra)
+  channel?: string;
+  requester_name?: string;
+  requester_email?: string;
+  quantity?: number | null;
 }
 
 interface Perms { can_request: boolean; can_authorize: boolean; can_execute: boolean; }
@@ -503,9 +509,19 @@ function PurchaseDetailModal({ purchaseId, onClose }: { purchaseId: string; onCl
           {/* Datos clave grid */}
           <div className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
             <div><span className="text-[11px] text-gray-400 uppercase tracking-wide block">Solicitante</span>
-              <span className="font-semibold text-gray-700">{purchase.requested_by_name}</span></div>
+              <span className="font-semibold text-gray-700">
+                {purchase.requested_by_name}
+                {purchase.channel === 'publica' && <span className="ml-1.5 px-1.5 py-0.5 rounded text-[9px] font-extrabold bg-sky-100 text-sky-700 align-middle">LINK PÚBLICO</span>}
+              </span>
+              {purchase.channel === 'publica' && purchase.requester_email && (
+                <span className="text-[10px] text-gray-400 block">{purchase.requester_email}</span>
+              )}</div>
             <div><span className="text-[11px] text-gray-400 uppercase tracking-wide block">Categoría</span>
               <span className="font-semibold text-gray-700">{CAT_LABELS[purchase.category] || purchase.category}</span></div>
+            <div><span className="text-[11px] text-gray-400 uppercase tracking-wide block">Cantidad</span>
+              <span className="font-semibold text-gray-700">{purchase.quantity || '—'}</span></div>
+            <div><span className="text-[11px] text-gray-400 uppercase tracking-wide block">Sector</span>
+              <span className="font-semibold text-gray-700">{purchase.requesting_area || '—'}</span></div>
             <div><span className="text-[11px] text-gray-400 uppercase tracking-wide block">Monto estimado</span>
               <span className="font-semibold text-gray-700">{fmtMoney(purchase.estimated_budget)}</span></div>
             <div><span className="text-[11px] text-gray-400 uppercase tracking-wide block">Monto final</span>
@@ -789,6 +805,17 @@ export default function Purchases() {
             >
               <Download size={14} /> CSV
             </button>
+            <button
+              onClick={() => {
+                const url = `${window.location.origin}/solicitud-compra`;
+                navigator.clipboard?.writeText(url);
+                alert(`Link público de solicitud de compra copiado:\n${url}\n\nCompartilo con el equipo — no requiere usuario.`);
+              }}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-200 text-gray-700 rounded-lg text-xs font-bold hover:bg-gray-50"
+              title="Copiar link público para cargar solicitudes sin usuario"
+            >
+              <ExternalLink size={13} /> Link público
+            </button>
             {myPerms?.can_request && (
               <button onClick={() => setShowNew(true)}
                 className="flex items-center gap-1.5 px-3 py-1.5 bg-dassa-red-deep text-white rounded-lg text-xs font-bold hover:bg-dassa-red">
@@ -874,7 +901,10 @@ export default function Purchases() {
                           </div>
                         </td>
                         <td className="px-4 py-3 max-w-[240px]">
-                          <p className="text-xs font-semibold text-gray-800 truncate">{p.description}</p>
+                          <p className="text-xs font-semibold text-gray-800 truncate">
+                            {p.quantity && p.quantity > 1 ? <span className="font-extrabold">{p.quantity}× </span> : null}
+                            {p.description}
+                          </p>
                           {p.purpose && <p className="text-[10px] text-gray-400 truncate">{p.purpose}</p>}
                         </td>
                         <td className="px-4 py-3 hidden lg:table-cell">
@@ -898,6 +928,10 @@ export default function Purchases() {
                           <div className="flex items-center gap-1.5">
                             <Avatar name={p.requested_by_name} size={20} />
                             <span className="text-[10px] text-gray-600 truncate max-w-[80px]">{p.requested_by_name}</span>
+                            {p.channel === 'publica' && (
+                              <span title="Cargada desde el link público de solicitud de compra"
+                                className="px-1.5 py-0.5 rounded text-[8px] font-extrabold bg-sky-100 text-sky-700">QR</span>
+                            )}
                           </div>
                         </td>
                         <td className="px-4 py-3 hidden xl:table-cell">

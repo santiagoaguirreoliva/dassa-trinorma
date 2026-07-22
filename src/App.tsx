@@ -54,6 +54,7 @@ const Suppliers           = lazy(() => import('@/pages/Suppliers'));
 const Context             = lazy(() => import('@/pages/Context'));
 const Calendar            = lazy(() => import('@/pages/Calendar'));
 const PublicNC            = lazy(() => import('@/pages/PublicNC'));
+const PublicCompra        = lazy(() => import('@/pages/PublicCompra'));
 const SignupEmpresa       = lazy(() => import('@/pages/SignupEmpresa'));
 const ForgotPassword      = lazy(() => import('@/pages/ForgotPassword'));
 const ResetPassword       = lazy(() => import('@/pages/ResetPassword'));
@@ -103,6 +104,7 @@ export default function App() {
             <Route path="/register"   element={<Register />} />
             <Route path="/signup-empresa" element={<SignupEmpresa />} />
             <Route path="/reporte-nc" element={<PublicNC />} />
+            <Route path="/solicitud-compra" element={<PublicCompra />} />
             <Route path="/checklist-maquina" element={<PublicChecklist />} />
             <Route path="/procedimientos-publico" element={<ProcedimientosPublico />} />
             <Route path="/portal-empleado" element={<PortalEmpleado />} />

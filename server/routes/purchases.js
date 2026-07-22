@@ -72,7 +72,7 @@ router.get('/', async (req, res) => {
   try {
     const { rows } = await query(
       `SELECT p.*,
-              req.full_name  AS requested_by_name,
+              COALESCE(req.full_name, p.requester_name) AS requested_by_name,
               apr.full_name  AS approved_by_name,
               exe.full_name  AS executed_by_name,
               (SELECT COUNT(*) FROM purchase_comments pc WHERE pc.purchase_id = p.id)::int AS comments_count
@@ -160,7 +160,7 @@ router.get('/:id', async (req, res) => {
   try {
     const { rows } = await query(
       `SELECT p.*,
-              req.full_name AS requested_by_name,
+              COALESCE(req.full_name, p.requester_name) AS requested_by_name,
               apr.full_name AS approved_by_name,
               exe.full_name AS executed_by_name
          FROM purchases p
@@ -191,7 +191,7 @@ router.post('/', async (req, res) => {
 
   const { description, category, priority, estimated_budget,
           required_date, purpose, recommended_supplier, requesting_area,
-          source_url, long_description, item_specs, photo_urls } = req.body;
+          source_url, long_description, item_specs, photo_urls, quantity } = req.body;
   if (!description) return res.status(400).json({ error: 'Descripción requerida' });
 
   try {
@@ -199,15 +199,16 @@ router.post('/', async (req, res) => {
       `INSERT INTO purchases
          (description, category, priority, estimated_budget, required_date,
           purpose, recommended_supplier, requesting_area, requested_by, status,
-          source_url, long_description, item_specs, photo_urls)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,'borrador',$10,$11,$12,$13)
+          source_url, long_description, item_specs, photo_urls, quantity)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,'borrador',$10,$11,$12,$13,$14)
        RETURNING *`,
       [description, category || 'general', priority || 'media',
        estimated_budget || null, required_date || new Date().toISOString().split('T')[0],
        purpose || null, recommended_supplier || null, requesting_area || null, req.user.id,
        source_url || null, long_description || null,
        item_specs ? JSON.stringify(item_specs) : null,
-       photo_urls && Array.isArray(photo_urls) ? photo_urls : null]
+       photo_urls && Array.isArray(photo_urls) ? photo_urls : null,
+       Number.isInteger(Number(quantity)) && Number(quantity) > 0 ? Number(quantity) : null]
     );
 
     // Notificar a usuarios con permiso de autorizar
@@ -264,7 +265,7 @@ router.post('/import-from-url', async (req, res) => {
 router.patch('/:id', async (req, res) => {
   const FIELDS = ['description','category','priority','estimated_budget',
                   'required_date','purpose','recommended_supplier','requesting_area',
-                  'source_url','long_description','item_specs','photo_urls'];
+                  'source_url','long_description','item_specs','photo_urls','quantity'];
   const updates = []; const values = []; let i = 1;
   for (const f of FIELDS) {
     if (req.body[f] !== undefined) {

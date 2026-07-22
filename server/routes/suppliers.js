@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { query } from '../db/db.js';
 import { authenticate, requireRole } from '../middleware/auth.js';
+import { saveBase64File } from '../services/uploads.js';
 
 const router = Router();
 router.use(authenticate);
@@ -158,6 +159,57 @@ router.post('/:id/evaluations', requireRole('master_admin', 'director', 'sgi_lea
     console.error('suppliers/evaluations POST error:', err.message);
     res.status(500).json({ error: 'Error interno' });
   }
+});
+
+// GET /api/suppliers/:id/documents — adjuntos del proveedor
+router.get('/:id/documents', async (req, res) => {
+  if (!UUID_RE.test(req.params.id)) return res.status(400).json({ error: 'ID inválido' });
+  try {
+    const { rows } = await query(
+      `SELECT d.*, u.full_name AS uploaded_by_name
+         FROM supplier_documents d
+         LEFT JOIN users u ON u.id = d.uploaded_by
+        WHERE d.supplier_id = $1
+        ORDER BY d.created_at DESC`,
+      [req.params.id]
+    );
+    res.json(rows);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// POST /api/suppliers/:id/documents — subir uno o varios adjuntos (base64: pdf/jpg/png/webp)
+router.post('/:id/documents', async (req, res) => {
+  if (!UUID_RE.test(req.params.id)) return res.status(400).json({ error: 'ID inválido' });
+  const files = Array.isArray(req.body.files) ? req.body.files.slice(0, 10) : [];
+  if (!files.length) return res.status(400).json({ error: 'Sin archivos para subir' });
+  try {
+    const saved = [];
+    for (const f of files) {
+      if (!f?.base64 || !f?.name) continue;
+      const url = saveBase64File(f.base64, 'proveedor-doc');
+      if (!url) continue;  // tipo no permitido
+      const { rows } = await query(
+        `INSERT INTO supplier_documents (supplier_id, name, url, uploaded_by)
+         VALUES ($1,$2,$3,$4) RETURNING *`,
+        [req.params.id, String(f.name).slice(0, 200), url, req.user.id]
+      );
+      saved.push(rows[0]);
+    }
+    if (!saved.length) return res.status(400).json({ error: 'Ningún archivo válido (permitidos: PDF, JPG, PNG, WEBP · máx 5MB)' });
+    res.status(201).json(saved);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// DELETE /api/suppliers/:id/documents/:docId
+router.delete('/:id/documents/:docId', requireRole('master_admin', 'director', 'sgi_leader'), async (req, res) => {
+  try {
+    const { rowCount } = await query(
+      'DELETE FROM supplier_documents WHERE id = $1 AND supplier_id = $2',
+      [req.params.docId, req.params.id]
+    );
+    if (rowCount === 0) return res.status(404).json({ error: 'Documento no encontrado' });
+    res.json({ message: 'Documento eliminado' });
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 // DELETE /api/suppliers/:id

@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Plus, X, Loader2, Truck, Search, CheckCircle2,
-  XCircle, Phone, Mail, MapPin, AlertTriangle, ClipboardCheck
+  XCircle, Phone, Mail, MapPin, AlertTriangle, ClipboardCheck,
+  Paperclip, Upload, FileText, Trash2, ExternalLink
 } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
@@ -297,6 +298,112 @@ function EvaluationModal({ supplier, onClose }: { supplier: Supplier; onClose: (
 }
 
 // ─── Acuses de requisitos (landing pública) ──────────────────
+// ─── Documents Modal — múltiples adjuntos por proveedor ──────
+interface SupplierDoc {
+  id: string; name: string; url: string;
+  uploaded_by_name?: string; created_at: string;
+}
+
+function DocsModal({ supplier, onClose }: { supplier: Supplier; onClose: () => void }) {
+  const qc = useQueryClient();
+  const [error, setError] = useState('');
+  const [uploading, setUploading] = useState(false);
+
+  const { data: docs = [], isLoading } = useQuery<SupplierDoc[]>({
+    queryKey: ['supplier-docs', supplier.id],
+    queryFn: () => api.get(`/suppliers/${supplier.id}/documents`),
+  });
+
+  async function handleFiles(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+    setError('');
+    const tooBig = files.find(f => f.size > 5 * 1024 * 1024);
+    if (tooBig) { setError(`"${tooBig.name}" supera los 5MB`); return; }
+    setUploading(true);
+    try {
+      const payload = await Promise.all(files.map(f => new Promise<{ name: string; base64: string }>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve({ name: f.name, base64: reader.result as string });
+        reader.onerror = reject;
+        reader.readAsDataURL(f);
+      })));
+      await api.post(`/suppliers/${supplier.id}/documents`, { files: payload });
+      qc.invalidateQueries({ queryKey: ['supplier-docs', supplier.id] });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error al subir');
+    } finally {
+      setUploading(false);
+      e.target.value = '';
+    }
+  }
+
+  const delMut = useMutation({
+    mutationFn: (docId: string) => api.delete(`/suppliers/${supplier.id}/documents/${docId}`),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['supplier-docs', supplier.id] }),
+    onError: (e: Error) => setError(e.message || 'No se pudo eliminar'),
+  });
+
+  return (
+    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4" onClick={onClose}>
+      <div className="bg-white rounded-2xl shadow-xl max-w-lg w-full max-h-[85vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+          <div>
+            <h3 className="text-sm font-extrabold text-gray-900 flex items-center gap-2">
+              <Paperclip size={15} className="text-dassa-red" /> Documentos — {supplier.name}
+            </h3>
+            <p className="text-[11px] text-gray-400 mt-0.5">Certificados, pólizas, habilitaciones, constancias… (PDF/JPG/PNG · máx 5MB c/u)</p>
+          </div>
+          <button onClick={onClose} aria-label="Cerrar" className="text-gray-400 hover:text-gray-600 p-1"><X size={18} /></button>
+        </div>
+
+        <div className="p-5 space-y-4">
+          <label className={`w-full border-2 border-dashed border-gray-200 rounded-xl py-5 flex flex-col items-center gap-1.5 cursor-pointer hover:border-red-300 hover:bg-dassa-red-tint transition-colors ${uploading ? 'opacity-60 pointer-events-none' : ''}`}>
+            <input type="file" multiple accept=".pdf,.jpg,.jpeg,.png,.webp" onChange={handleFiles} className="hidden" />
+            {uploading ? <Loader2 size={18} className="text-gray-400 animate-spin" /> : <Upload size={18} className="text-gray-400" />}
+            <span className="text-xs text-gray-500">{uploading ? 'Subiendo…' : 'Tocá para subir uno o varios archivos'}</span>
+          </label>
+
+          {error && (
+            <div className="flex items-start gap-2 p-3 bg-red-50 border border-red-200 rounded-xl">
+              <AlertTriangle size={14} className="text-red-500 flex-shrink-0 mt-0.5" />
+              <p className="text-xs text-red-600">{error}</p>
+            </div>
+          )}
+
+          {isLoading ? <Spinner /> : docs.length === 0 ? (
+            <p className="text-center text-xs text-gray-400 py-4">Sin documentos todavía</p>
+          ) : (
+            <ul className="divide-y divide-gray-100 border border-gray-100 rounded-xl overflow-hidden">
+              {docs.map(d => (
+                <li key={d.id} className="flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50">
+                  <FileText size={15} className="text-gray-400 flex-shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <a href={d.url} target="_blank" rel="noreferrer"
+                      className="text-xs font-semibold text-gray-800 hover:text-dassa-red truncate flex items-center gap-1">
+                      {d.name} <ExternalLink size={10} className="flex-shrink-0 text-gray-300" />
+                    </a>
+                    <p className="text-[10px] text-gray-400">
+                      {new Date(d.created_at).toLocaleDateString('es-AR')}{d.uploaded_by_name ? ` · ${d.uploaded_by_name}` : ''}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => { if (confirm(`¿Eliminar "${d.name}"?`)) delMut.mutate(d.id); }}
+                    aria-label={`Eliminar ${d.name}`}
+                    className="text-gray-300 hover:text-red-500 p-1.5 transition-colors"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function AcusesTable({ acuses }: { acuses: Acuse[] }) {
   return (
     <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
@@ -351,6 +458,7 @@ export default function Suppliers() {
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState<Supplier | undefined>();
   const [evaluating, setEvaluating] = useState<Supplier | undefined>();
+  const [docsFor, setDocsFor] = useState<Supplier | undefined>();
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
   const [filterType, setFilterType] = useState('');
@@ -540,6 +648,10 @@ export default function Suppliers() {
                         {isAdmin && (
                           <td className="px-4 py-3">
                             <div className="flex items-center gap-1">
+                              <button onClick={() => setDocsFor(s)} title="Documentos adjuntos"
+                                className="text-gray-400 hover:text-dassa-red p-1">
+                                <Paperclip size={13} />
+                              </button>
                               <button onClick={() => setEvaluating(s)} title="Evaluación anual F-TRI-17"
                                 className="text-[10px] font-bold text-emerald-600 hover:text-emerald-800 px-2 py-1">
                                 Evaluar
@@ -573,6 +685,7 @@ export default function Suppliers() {
 
       {showModal && <SupplierModal supplier={editing} onClose={() => { setShowModal(false); setEditing(undefined); }} />}
       {evaluating && <EvaluationModal supplier={evaluating} onClose={() => setEvaluating(undefined)} />}
+      {docsFor && <DocsModal supplier={docsFor} onClose={() => setDocsFor(undefined)} />}
     </>
   );
 }

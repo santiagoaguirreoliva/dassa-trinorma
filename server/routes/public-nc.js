@@ -14,12 +14,16 @@ router.post('/nc', async (req, res) => {
     affected_client, client_complaint,
     immediate_action_required, immediate_action,
     current_status, comments,
-    photo_base64
+    photo_base64, report_kind
   } = req.body;
 
   if (!description || !area) {
     return res.status(400).json({ error: 'Descripción y sector son requeridos' });
   }
+
+  // 'nc' = No Conformidad Trinorma (gestión formal) · 'hallazgo' = aviso/hallazgo
+  // general (se revisa en comité mixto). Segregados por findings.report_kind.
+  const kind = report_kind === 'hallazgo' ? 'hallazgo' : 'nc';
 
   try {
     let evidence_urls = [];
@@ -31,8 +35,8 @@ router.post('/nc', async (req, res) => {
     const { rows } = await query(
       `INSERT INTO findings
          (title, description, finding_type, status, origin, area,
-          immediate_action, evidence_urls)
-       VALUES ($1,$2,'nc_real','abierto','desvio_operativo',$3,$4,$5)
+          immediate_action, evidence_urls, report_kind)
+       VALUES ($1,$2,${kind === 'nc' ? `'nc_real'` : `'mejora'`},'abierto','desvio_operativo',$3,$4,$5,'${kind}')
        RETURNING id, code`,
       [
         description.substring(0, 120),
@@ -51,14 +55,18 @@ router.post('/nc', async (req, res) => {
       await query(
         `INSERT INTO notifications (user_id, title, message, type, source_module)
          VALUES ($1,$2,$3,'warning','findings')`,
-        [admin.id, `Nueva NC pública: ${rows[0].code}`, `Sector: ${area} — ${description.substring(0, 80)}`]
+        [admin.id,
+         kind === 'nc' ? `Nueva NC pública: ${rows[0].code}` : `Nuevo hallazgo general: ${rows[0].code}`,
+         `Sector: ${area} — ${description.substring(0, 80)}`]
       );
     }
 
     res.status(201).json({
       success: true,
       code: rows[0].code,
-      message: 'No conformidad registrada correctamente'
+      message: kind === 'nc'
+        ? 'No conformidad registrada correctamente'
+        : 'Aviso/hallazgo registrado correctamente'
     });
   } catch (err) {
     console.error('Public NC error:', err);

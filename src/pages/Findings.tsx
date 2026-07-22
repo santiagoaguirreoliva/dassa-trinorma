@@ -13,6 +13,7 @@ import { exportToCSV } from '@/lib/exportCsv';
 interface Finding {
   id: string; code: string; title: string; description: string;
   finding_type: string; status: string; origin: string; area: string;
+  report_kind?: string;
   due_date?: string; reported_by_name?: string;
   assigned_to?: string; assigned_to_name?: string; assigned_to_avatar?: string;
   days_open: number; actions_count: number; comments_count: number;
@@ -196,6 +197,8 @@ function NewFindingModal({ onClose, users }: { onClose: () => void; users: any[]
 export default function Findings() {
   const { isAdmin } = useAuth();
   const [view, setView] = useState<'kanban' | 'table' | 'informes'>('kanban');
+  // Segregación: NC Trinorma (gestión formal) vs avisos/hallazgos generales (comisión mixta)
+  const [kindTab, setKindTab] = useState<'nc' | 'hallazgo'>('nc');
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [showNew, setShowNew] = useState(false);
   const [search, setSearch] = useState('');
@@ -230,7 +233,12 @@ export default function Findings() {
     refetchInterval: 30_000,
   });
 
-  const filtered = findings.filter(f => {
+  // Un finding sin report_kind (histórico) cuenta como NC
+  const byKind = findings.filter(f => (f.report_kind || 'nc') === kindTab);
+  const ncCount = findings.filter(f => (f.report_kind || 'nc') === 'nc' && f.status !== 'cerrado').length;
+  const hallazgoCount = findings.filter(f => f.report_kind === 'hallazgo' && f.status !== 'cerrado').length;
+
+  const filtered = byKind.filter(f => {
     const matchSearch = !search ||
       f.title.toLowerCase().includes(search.toLowerCase()) ||
       f.code.toLowerCase().includes(search.toLowerCase()) ||
@@ -242,8 +250,8 @@ export default function Findings() {
     return matchSearch && matchType && matchArea && matchStatus && matchAssigned;
   });
 
-  const openCount = findings.filter(f => f.status !== 'cerrado').length;
-  const overdueCount = findings.filter(f => f.status !== 'cerrado' && f.due_date && new Date(f.due_date) < new Date()).length;
+  const openCount = byKind.filter(f => f.status !== 'cerrado').length;
+  const overdueCount = byKind.filter(f => f.status !== 'cerrado' && f.due_date && new Date(f.due_date) < new Date()).length;
   const orphans = filtered.filter(f => !KNOWN_STATUS.has(f.status));
 
   return (
@@ -295,6 +303,29 @@ export default function Findings() {
           </div>
         }
       />
+
+      {/* Segregación NC Trinorma vs hallazgos generales */}
+      {view !== 'informes' && (
+      <div className="bg-white border-b border-gray-200 px-6 pt-2.5 flex items-center gap-2">
+        <button
+          onClick={() => setKindTab('nc')}
+          className={`px-4 py-2 rounded-t-lg text-xs font-bold border-b-2 transition-colors
+            ${kindTab === 'nc' ? 'border-dassa-red text-dassa-red bg-dassa-red-tint' : 'border-transparent text-gray-500 hover:text-gray-800'}`}
+        >
+          No Conformidades TRINORMA {ncCount > 0 && <span className="ml-1 px-1.5 py-0.5 rounded-full bg-dassa-red text-white text-[10px]">{ncCount}</span>}
+        </button>
+        <button
+          onClick={() => setKindTab('hallazgo')}
+          className={`px-4 py-2 rounded-t-lg text-xs font-bold border-b-2 transition-colors
+            ${kindTab === 'hallazgo' ? 'border-amber-500 text-amber-600 bg-amber-50' : 'border-transparent text-gray-500 hover:text-gray-800'}`}
+        >
+          Avisos y hallazgos generales {hallazgoCount > 0 && <span className="ml-1 px-1.5 py-0.5 rounded-full bg-amber-500 text-white text-[10px]">{hallazgoCount}</span>}
+        </button>
+        {kindTab === 'hallazgo' && (
+          <span className="ml-auto text-[11px] text-gray-400 pb-1">Se revisan en la comisión mixta — no entran al circuito formal de NC</span>
+        )}
+      </div>
+      )}
 
       {/* Filters bar */}
       {view !== 'informes' && (

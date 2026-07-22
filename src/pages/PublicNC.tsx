@@ -1,5 +1,5 @@
 import { useState, useRef, FormEvent } from 'react';
-import { CheckCircle2, Upload, X, AlertTriangle, Loader2 } from 'lucide-react';
+import { CheckCircle2, Upload, X, AlertTriangle, Loader2, ShieldAlert, Megaphone, ArrowLeft } from 'lucide-react';
 
 const SECTORES = [
   'DEPOSITO - ALMACEN',
@@ -12,6 +12,9 @@ const SECTORES = [
 
 export default function PublicNC() {
   const [step, setStep] = useState<'form' | 'success'>('form');
+  // 'nc' = No Conformidad Trinorma (gestión formal) · 'hallazgo' = aviso/hallazgo
+  // general (se revisa en comité mixto). null = todavía no eligió.
+  const [kind, setKind] = useState<'nc' | 'hallazgo' | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const fileRef = useRef<HTMLInputElement>(null);
@@ -54,7 +57,7 @@ export default function PublicNC() {
       const res = await fetch('/api/public/nc', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
+        body: JSON.stringify({ ...form, report_kind: kind || 'nc' }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Error al enviar');
@@ -74,22 +77,84 @@ export default function PublicNC() {
           <div className="w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-4">
             <CheckCircle2 size={32} className="text-emerald-600" />
           </div>
-          <h2 className="text-xl font-extrabold text-gray-900 mb-2">¡NC Registrada!</h2>
-          <p className="text-gray-500 text-sm mb-4">Tu no conformidad fue registrada correctamente y será gestionada por el equipo de calidad.</p>
+          <h2 className="text-xl font-extrabold text-gray-900 mb-2">
+            {kind === 'hallazgo' ? '¡Aviso registrado!' : '¡NC Registrada!'}
+          </h2>
+          <p className="text-gray-500 text-sm mb-4">
+            {kind === 'hallazgo'
+              ? 'Tu aviso/hallazgo fue registrado y va a ser revisado (comisión mixta / equipo SGI).'
+              : 'Tu no conformidad fue registrada correctamente y será gestionada por el equipo de calidad.'}
+          </p>
           <div className="bg-dassa-red-tint rounded-xl px-6 py-4 mb-6">
             <p className="text-xs text-dassa-red font-semibold uppercase tracking-wider mb-1">Número de referencia</p>
             <p className="text-2xl font-extrabold text-dassa-red-deep">{codeResult}</p>
           </div>
           <button
-            onClick={() => { setStep('form'); setForm({ description:'', area:'', detected_by:'', detected_by_email:'', affected_client:'No', client_complaint:'No', immediate_action_required:'No', immediate_action:'', current_status:'ABIERTO', comments:'', photo_base64:'', photo_name:'' }); }}
+            onClick={() => { setStep('form'); setKind(null); setForm({ description:'', area:'', detected_by:'', detected_by_email:'', affected_client:'No', client_complaint:'No', immediate_action_required:'No', immediate_action:'', current_status:'ABIERTO', comments:'', photo_base64:'', photo_name:'' }); }}
             className="w-full py-3 rounded-xl bg-gray-900 text-white font-bold text-sm hover:bg-gray-800 transition-colors"
           >
-            Registrar otra NC
+            Registrar otro aviso
           </button>
         </div>
       </main>
     );
   }
+
+  // Pantalla de elección: NC Trinorma vs aviso/hallazgo general
+  if (!kind) {
+    return (
+      <main className="min-h-screen bg-gray-50 flex items-center justify-center py-6 px-4">
+        <div className="max-w-lg w-full">
+          <div className="text-center mb-8">
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-600 to-sky-400 flex items-center justify-center text-white font-black text-xl mx-auto mb-3">
+              D
+            </div>
+            <h1 className="text-lg font-extrabold text-gray-900">DASSA — Avisos y No Conformidades</h1>
+            <p className="text-xs text-gray-500 mt-1">¿Qué querés registrar?</p>
+          </div>
+          <div className="grid gap-4">
+            <button
+              onClick={() => setKind('nc')}
+              className="bg-white rounded-2xl shadow-sm border-2 border-gray-200 p-6 text-left hover:border-dassa-red hover:shadow-md transition-all group"
+            >
+              <div className="flex items-center gap-4">
+                <div className="w-14 h-14 rounded-xl bg-dassa-red-tint flex items-center justify-center flex-shrink-0 group-hover:bg-dassa-red transition-colors">
+                  <ShieldAlert size={26} className="text-dassa-red group-hover:text-white transition-colors" />
+                </div>
+                <div>
+                  <p className="text-base font-extrabold text-gray-900">No Conformidad TRINORMA</p>
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    Desvío del sistema de gestión ISO (calidad, ambiente, seguridad). Entra al circuito formal de gestión y acciones correctivas.
+                  </p>
+                </div>
+              </div>
+            </button>
+            <button
+              onClick={() => setKind('hallazgo')}
+              className="bg-white rounded-2xl shadow-sm border-2 border-gray-200 p-6 text-left hover:border-amber-500 hover:shadow-md transition-all group"
+            >
+              <div className="flex items-center gap-4">
+                <div className="w-14 h-14 rounded-xl bg-amber-50 flex items-center justify-center flex-shrink-0 group-hover:bg-amber-500 transition-colors">
+                  <Megaphone size={26} className="text-amber-600 group-hover:text-white transition-colors" />
+                </div>
+                <div>
+                  <p className="text-base font-extrabold text-gray-900">Aviso / Hallazgo general</p>
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    Cualquier cosa que veas para avisar o mejorar: orden, mantenimiento, ideas, observaciones. Se revisa en la comisión mixta.
+                  </p>
+                </div>
+              </div>
+            </button>
+          </div>
+          <p className="text-center text-xs text-gray-400 mt-6">
+            DASSA — Depósito Avellaneda Sur S.A. · Sistema de Gestión Integrado Trinorma
+          </p>
+        </div>
+      </main>
+    );
+  }
+
+  const esNC = kind === 'nc';
 
   return (
     <main className="min-h-screen bg-gray-50 py-6 px-4">
@@ -99,8 +164,20 @@ export default function PublicNC() {
           <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-600 to-sky-400 flex items-center justify-center text-white font-black text-xl mx-auto mb-3">
             D
           </div>
-          <h1 className="text-lg font-extrabold text-gray-900">DASSA — Avisos de No Conformidades</h1>
-          <p className="text-xs text-gray-500 mt-1">Completá el formulario para registrar una no conformidad o desvío</p>
+          <h1 className="text-lg font-extrabold text-gray-900">
+            {esNC ? 'DASSA — No Conformidad TRINORMA' : 'DASSA — Aviso / Hallazgo general'}
+          </h1>
+          <p className="text-xs text-gray-500 mt-1">
+            {esNC
+              ? 'Completá el formulario para registrar una no conformidad o desvío del sistema de gestión'
+              : 'Contanos qué viste o qué se puede mejorar — se revisa en la comisión mixta'}
+          </p>
+          <button
+            onClick={() => setKind(null)}
+            className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-gray-500 hover:text-gray-800 transition-colors"
+          >
+            <ArrowLeft size={12} /> Cambiar tipo de aviso
+          </button>
         </div>
 
         <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 space-y-5">
@@ -108,7 +185,7 @@ export default function PublicNC() {
           {/* Descripción */}
           <div>
             <label className="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1.5">
-              Descripción de la NC / Desvío <span className="text-red-500">*</span>
+              {esNC ? 'Descripción de la NC / Desvío' : 'Descripción del aviso / hallazgo'} <span className="text-red-500">*</span>
             </label>
             <textarea
               value={form.description}
@@ -313,7 +390,7 @@ export default function PublicNC() {
             className="w-full py-3.5 rounded-xl bg-gradient-to-r from-blue-700 to-blue-600 text-white font-bold text-sm hover:from-blue-600 hover:to-blue-500 disabled:opacity-60 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
           >
             {loading && <Loader2 size={16} className="animate-spin" />}
-            {loading ? 'Registrando...' : 'Registrar No Conformidad'}
+            {loading ? 'Registrando...' : esNC ? 'Registrar No Conformidad' : 'Registrar Aviso / Hallazgo'}
           </button>
 
           <p className="text-center text-xs text-gray-500">

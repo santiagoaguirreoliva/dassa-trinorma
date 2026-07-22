@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   BookOpen, Plus, Calendar, ChevronLeft, ChevronRight,
   X, Loader2, CheckCircle2, Users, Bell,
-  Paperclip, Trash2, Upload, Shield, Pencil, Target
+  Paperclip, Trash2, Upload, Shield, Pencil, Target, Printer
 } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
@@ -55,6 +55,94 @@ const MONTHS = ['Enero','Febrero','Marzo','Abril','Mayo','Junio',
 const EFFICACY_LABEL: Record<string, string> = {
   eficaz: 'Eficaz', parcial: 'Parcialmente eficaz', no_eficaz: 'No eficaz',
 };
+
+// ─── Planilla de asistencia imprimible ───────────────────────
+// Abre una ventana con la planilla lista para imprimir: encabezado F-TRI-36
+// con los datos de la capacitación y filas para que cada asistente ponga
+// solo nombre y firma (los participantes cargados van con el nombre prefijado).
+function printPlanilla(training: Training & { organized_by_name?: string; description?: string }, participants: Participant[]) {
+  const esc = (s?: string | null) => String(s ?? '—')
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const fecha = new Date(training.scheduled_date).toLocaleDateString('es-AR');
+  const hora = new Date(training.scheduled_date).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
+
+  const nombres = participants.map(p => p.full_name || p.external_name || '').filter(Boolean);
+  const totalFilas = Math.max(18, nombres.length + 6);
+  const filas = Array.from({ length: totalFilas }).map((_, i) => `
+    <tr>
+      <td class="num">${i + 1}</td>
+      <td class="nombre">${esc(nombres[i] || '')}</td>
+      <td class="firma"></td>
+    </tr>`).join('');
+
+  const html = `<!doctype html><html lang="es"><head><meta charset="utf-8">
+<title>Planilla de asistencia — ${esc(training.title)}</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Arial, Helvetica, sans-serif; color: #111; padding: 24px; font-size: 12px; }
+  .head { display: flex; justify-content: space-between; align-items: center; border: 2px solid #111;
+          border-bottom: none; padding: 10px 14px; }
+  .brand { display: flex; align-items: center; gap: 10px; }
+  .logo { width: 40px; height: 40px; border-radius: 8px; background: #C8202C; color: #fff;
+          display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 22px; }
+  .brand b { font-size: 15px; letter-spacing: 1px; }
+  .brand small { display: block; font-size: 8px; color: #555; }
+  .doc { text-align: right; }
+  .doc b { font-size: 13px; }
+  .doc span { display: block; font-size: 8px; color: #555; margin-top: 2px; }
+  table.meta { width: 100%; border-collapse: collapse; }
+  table.meta td { border: 1px solid #111; padding: 6px 10px; }
+  table.meta td.k { background: #f3f3f3; font-weight: bold; width: 130px; white-space: nowrap; }
+  h2.lista { text-align: center; font-size: 12px; letter-spacing: 3px; text-transform: uppercase;
+             border: 1px solid #111; border-top: none; padding: 7px; background: #e9e9e9; }
+  table.asis { width: 100%; border-collapse: collapse; }
+  table.asis th { border: 1px solid #111; background: #f3f3f3; padding: 6px; font-size: 11px; }
+  table.asis td { border: 1px solid #111; padding: 0 8px; height: 30px; }
+  td.num { width: 34px; text-align: center; color: #666; }
+  td.firma { width: 40%; }
+  .pie { display: flex; gap: 20px; margin-top: 26px; }
+  .pie div { flex: 1; border-top: 1px solid #111; padding-top: 4px; text-align: center; font-size: 10px; color: #444; }
+  @media print { body { padding: 8px; } }
+</style></head><body>
+  <div class="head">
+    <div class="brand">
+      <div class="logo">D</div>
+      <div><b>DASSA</b><small>DEPÓSITO AVELLANEDA SUR S.A. · Sistema de Gestión Integrado TRINORMA</small></div>
+    </div>
+    <div class="doc">
+      <b>PLANILLA DE ASISTENCIA</b>
+      <span>F-TRI-36 · Ver.: 03 · Registro de formación</span>
+    </div>
+  </div>
+  <table class="meta">
+    <tr><td class="k">Capacitación:</td><td colspan="3"><b>${esc(training.title)}</b></td></tr>
+    <tr>
+      <td class="k">Fecha:</td><td>${fecha} · ${hora} hs</td>
+      <td class="k">Duración:</td><td>${training.duration_hours ? `${training.duration_hours} hs` : '—'}</td>
+    </tr>
+    <tr>
+      <td class="k">Capacitador:</td><td>${esc(training.instructor)}</td>
+      <td class="k">Lugar:</td><td>${esc(training.location)}</td>
+    </tr>
+    <tr><td class="k">Temario:</td><td colspan="3">${esc(training.description)}</td></tr>
+  </table>
+  <h2 class="lista">Lista de asistentes</h2>
+  <table class="asis">
+    <thead><tr><th style="width:34px">N°</th><th>Apellido y Nombre</th><th style="width:40%">Firma</th></tr></thead>
+    <tbody>${filas}</tbody>
+  </table>
+  <div class="pie">
+    <div>Firma del capacitador</div>
+    <div>Responsable SGI</div>
+  </div>
+  <script>window.onload = () => window.print();</script>
+</body></html>`;
+
+  const w = window.open('', '_blank');
+  if (!w) { alert('Habilitá las ventanas emergentes para imprimir la planilla'); return; }
+  w.document.write(html);
+  w.document.close();
+}
 
 // ─── F-TRI-36 View (pantalla) ────────────────────────────────
 function FTri36View({ training, participants }: { training: any; participants: Participant[] }) {
@@ -517,10 +605,16 @@ function TrainingDetail({ trainingId, onClose }: { trainingId: string; onClose: 
           {/* ─── F-TRI-36 ─── */}
           {tab === 'ftri36' && (
             <div className="space-y-4">
-              <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
-                <p className="text-xs text-amber-700 font-medium">
+              <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 flex items-center justify-between gap-3 flex-wrap">
+                <p className="text-xs text-amber-700 font-medium flex-1 min-w-[200px]">
                   Vista del acta oficial F-TRI-36 Rev.03. Marcá la asistencia en la pestaña "Participantes" para que aparezca reflejada acá.
                 </p>
+                <button
+                  onClick={() => printPlanilla(data, data.participants || [])}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-900 text-white rounded-lg text-xs font-bold hover:bg-gray-800 transition-colors"
+                >
+                  <Printer size={13} /> Imprimir planilla de asistencia
+                </button>
               </div>
               {isAdmin && (
                 <EfficacyForm training={data} onSave={(p: any) => saveEfficacy.mutate(p)} saving={saveEfficacy.isPending} />

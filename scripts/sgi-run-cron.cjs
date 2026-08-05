@@ -35,6 +35,12 @@ const JOBS = {
     const s = require('../server/services/kpi-objetivos.cjs');
     return s.runKpisObjetivos();
   },
+  // Criterios de actuación ante incumplimiento de meta mensual (escalera aviso →
+  // plan de acción → NC automática). Día 1, 08:15 AR, tras kpi_objetivos.
+  kpi_criterios: async () => {
+    const s = require('../server/services/kpi-criterios.cjs');
+    return s.run({ dryRun: process.argv.includes('--dry-run') });
+  },
 };
 
 const key = process.argv[2];

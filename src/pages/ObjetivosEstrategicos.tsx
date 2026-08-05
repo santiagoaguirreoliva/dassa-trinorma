@@ -173,6 +173,16 @@ export default function ObjetivosEstrategicos() {
         <KPICard label="Habilitación" value={`${totKpis ? Math.round(totEnabled / totKpis * 100) : 0}%`} sub="activación progresiva" />
       </div>
 
+      <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 mb-4 text-[11px] text-amber-900">
+        <span className="font-bold uppercase text-[10px]">Criterios de actuación ante incumplimiento de meta mensual (ISO 9001 6.2 / 9.1)</span>
+        <div className="mt-1 flex flex-wrap gap-x-5 gap-y-1">
+          <span><strong>1 mes</strong> bajo nivel aceptable (90% de la meta) → aviso al responsable del área</span>
+          <span><strong>2 meses</strong> consecutivos → alerta formal + requerimiento de plan de acción</span>
+          <span><strong>3 meses</strong> consecutivos → NC automática en Hallazgos/NCs</span>
+        </div>
+        <div className="mt-1 text-amber-700">Evaluación automática mensual (día 1) sobre los KPIs con medición viva; cada incumplimiento queda registrado con su acción.</div>
+      </div>
+
       <div className="space-y-2.5">
         {objs.map(o => <ObjetivoCard key={o.id} obj={o} canEdit={canEdit} />)}
       </div>

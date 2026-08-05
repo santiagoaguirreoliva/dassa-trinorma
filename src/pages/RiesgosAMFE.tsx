@@ -1,6 +1,6 @@
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { AlertTriangle, Sparkles, Loader2 } from 'lucide-react';
-import { useState } from 'react';
+import { Fragment, useState } from 'react';
 import { api } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { Header } from '@/components/layout/Header';
@@ -14,6 +14,8 @@ interface Risk {
   ro_type?:string; responsible_text?:string; eficacia_verificada?:string;
   residual_severity?:number; residual_probability?:number; residual_detection?:number;
   matrix_version?:string; matrix_date?:string;
+  opportunity?:string; plazo?:string; resultado_acciones?:string;
+  affected_parties?:string[]; current_controls_text?:string;
 }
 const fmtDate = (d?:string) => d ? d.slice(0,10).split('-').reverse().join('/') : '';
 
@@ -22,6 +24,7 @@ export default function RiesgosAMFE() {
   const isAdmin = ['master_admin','director','sgi_leader'].includes(user?.role||'');
   const [proc, setProc] = useState<string>('');
   const [suggestions, setSuggestions] = useState<any[]>([]);
+  const [openId, setOpenId] = useState<string|null>(null);
 
   const { data, isLoading } = useQuery<{ok:boolean;risks:Risk[]}>({
     queryKey: ['riesgos-amfe', proc],
@@ -41,7 +44,7 @@ export default function RiesgosAMFE() {
 
   return (
     <PageContent>
-      <Header title="⚠ Matriz de Riesgos AMFE" subtitle={`${data.risks.length} riesgos y oportunidades · NPR = G × O × D · ≥16 significativo`} icon={<AlertTriangle size={20}/>}/>
+      <Header title="⚠ Matriz de Riesgos AMFE" subtitle={`${data.risks.length} riesgos y oportunidades · NPR = G × O × D · ≥150 significativo`} icon={<AlertTriangle size={20}/>}/>
       {meta?.matrix_version && (
         <div className="mb-4 -mt-1">
           <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-dassa-navy bg-dassa-navy/10 rounded-full px-3 py-1">
@@ -51,7 +54,7 @@ export default function RiesgosAMFE() {
       )}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
         <KPICard label="Total riesgos" value={data.risks.length}/>
-        <KPICard label="Significativos" value={significativos} sub="NPR ≥ 16" alert={significativos>0}/>
+        <KPICard label="Significativos" value={significativos} sub="NPR ≥ 150" alert={significativos>0}/>
         <KPICard label="NPR promedio" value={promNPR}/>
         <KPICard label="Procesos" value={processes.length}/>
       </div>
@@ -129,7 +132,8 @@ export default function RiesgosAMFE() {
           </thead>
           <tbody>
             {data.risks.map(r=>(
-              <tr key={r.id} className="border-b hover:bg-gray-50">
+              <Fragment key={r.id}>
+              <tr className="border-b hover:bg-gray-50 cursor-pointer" onClick={()=>setOpenId(openId===r.id?null:r.id)}>
                 <td className="px-3 py-2"><code className="text-[10px] font-bold text-dassa-red-deep">{r.code}</code></td>
                 <td className="px-3 py-2 max-w-xs">
                   <div className="font-semibold text-gray-900">{r.activity}</div>
@@ -152,6 +156,62 @@ export default function RiesgosAMFE() {
                 <td className="px-3 py-2 text-[10px] text-gray-600 max-w-[140px]">{r.responsible_text||'—'}</td>
                 <td className="px-3 py-2 text-[10px] text-gray-700 line-clamp-2 max-w-xs">{r.recommended_action||'—'}</td>
               </tr>
+              {openId===r.id && (
+                <tr key={`${r.id}-det`} className="border-b bg-gray-50/70">
+                  <td colSpan={11} className="px-4 py-3">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-[11px]">
+                      <div>
+                        <div className="text-[9px] font-bold text-gray-400 uppercase mb-0.5">Causa(s) potencial(es)</div>
+                        <div className="text-gray-700 whitespace-pre-line">{r.causes||'—'}</div>
+                      </div>
+                      <div>
+                        <div className="text-[9px] font-bold text-gray-400 uppercase mb-0.5">Verificaciones / controles actuales</div>
+                        <div className="text-gray-700 whitespace-pre-line">{r.current_controls_text||'—'}</div>
+                      </div>
+                      <div>
+                        <div className="text-[9px] font-bold text-gray-400 uppercase mb-0.5">Partes interesadas afectadas</div>
+                        <div className="text-gray-700">{r.affected_parties?.length ? r.affected_parties.join(', ') : '—'}</div>
+                      </div>
+                    </div>
+                    <div className="mt-3 pt-3 border-t border-gray-200">
+                      <div className="text-[9px] font-bold text-dassa-navy uppercase mb-2">Gestión de acciones · resultado</div>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-[11px]">
+                        <div>
+                          <div className="text-[9px] font-bold text-gray-400 uppercase mb-0.5">Acción recomendada</div>
+                          <div className="text-gray-700">{r.recommended_action||'—'}</div>
+                        </div>
+                        <div>
+                          <div className="text-[9px] font-bold text-gray-400 uppercase mb-0.5">Oportunidades / riesgos</div>
+                          <div className="text-gray-700">{r.opportunity||'—'}</div>
+                        </div>
+                        <div className="space-y-2">
+                          <div>
+                            <div className="text-[9px] font-bold text-gray-400 uppercase mb-0.5">Responsables · Plazo</div>
+                            <div className="text-gray-700">{r.responsible_text||'—'} · {r.plazo ? fmtDate(r.plazo) : 'sin plazo'}</div>
+                          </div>
+                          <div>
+                            <div className="text-[9px] font-bold text-gray-400 uppercase mb-0.5">Estado de verificación de eficacia</div>
+                            <span className={`inline-block px-2 py-0.5 rounded-full text-[9px] font-bold ${r.eficacia_verificada?'bg-amber-100 text-amber-700':'bg-gray-100 text-gray-500'}`}>{r.eficacia_verificada||'Sin registrar'}</span>
+                          </div>
+                        </div>
+                        <div>
+                          <div className="text-[9px] font-bold text-gray-400 uppercase mb-0.5">Acciones implementadas</div>
+                          <div className="text-gray-700">{r.resultado_acciones||'—'}</div>
+                        </div>
+                        <div>
+                          <div className="text-[9px] font-bold text-gray-400 uppercase mb-0.5">NPR residual (G·O·D)</div>
+                          <div className="text-gray-700">
+                            {r.residual_severity && r.residual_probability && r.residual_detection
+                              ? `G=${r.residual_severity} O=${r.residual_probability} D=${r.residual_detection} → NPR ${r.residual_severity*r.residual_probability*r.residual_detection}`
+                              : 'Sin reevaluar'}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+              )}
+              </Fragment>
             ))}
           </tbody>
         </table>

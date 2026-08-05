@@ -143,15 +143,15 @@ changesRouter.get('/:id', async (req, res) => {
 changesRouter.post('/', async (req, res) => {
   if (!isLeader(req.user.role)) return res.status(403).json({ error: 'No autorizado' });
   try {
-    const { title, purpose, impact_description, year, plazo_target, budget_estimated } = req.body;
+    const { title, purpose, impact_description, year, plazo_target, budget_estimated, recursos, verificacion } = req.body;
     if (!title) return res.status(400).json({ error: 'title requerido' });
     const yr = year || new Date().getFullYear();
     const { rows: cnt } = await query('SELECT COUNT(*)::int AS n FROM change_requests WHERE year = $1', [yr]);
     const code = `CC-${yr}-${String(cnt[0].n + 1).padStart(2, '0')}`;
     const { rows } = await query(`
-      INSERT INTO change_requests (code, title, purpose, impact_description, year, plazo_target, budget_estimated, responsible_id, status)
-      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,'propuesto') RETURNING *
-    `, [code, title, purpose||null, impact_description||null, yr, plazo_target||null, budget_estimated||null, req.user.id]);
+      INSERT INTO change_requests (code, title, purpose, impact_description, year, plazo_target, budget_estimated, recursos, verificacion, responsible_id, status)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,'propuesto') RETURNING *
+    `, [code, title, purpose||null, impact_description||null, yr, plazo_target||null, budget_estimated||null, recursos||null, verificacion||null, req.user.id]);
     res.status(201).json({ ok: true, change: rows[0] });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
@@ -159,7 +159,7 @@ changesRouter.post('/', async (req, res) => {
 changesRouter.patch('/:id', async (req, res) => {
   if (!isLeader(req.user.role)) return res.status(403).json({ error: 'No autorizado' });
   try {
-    const FIELDS = ['title','purpose','impact_description','status','plazo_target','plazo_real','budget_estimated','budget_real','related_risks_text'];
+    const FIELDS = ['title','purpose','impact_description','status','plazo_target','plazo_real','budget_estimated','budget_real','related_risks_text','recursos','verificacion'];
     const updates = []; const values = []; let i = 1;
     for (const f of FIELDS) if (req.body[f] !== undefined) { updates.push(`${f} = $${i++}`); values.push(req.body[f]); }
     if (!updates.length) return res.status(400).json({ error: 'Sin cambios' });

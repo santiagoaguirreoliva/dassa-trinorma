@@ -18,17 +18,18 @@ interface EnvironmentalAspect {
 }
 
 // ─── Constantes ─────────────────────────────────────────────
-function getSigLevel(sig: number) {
+// Regla oficial F-TRI-44: Significativo si IPR (F×G×P) > 32, ó Gravedad ≥ 4, ó Pérdida de control ≥ 4
+function getSigLevel(sig: number, significant?: boolean) {
   if (sig > 64)  return { label: 'Crítico',       bg: 'bg-red-600',     text: 'text-white' };
-  if (sig > 36)  return { label: 'Significativo',  bg: 'bg-orange-500',  text: 'text-white' };
-  if (sig > 18)  return { label: 'Moderado',       bg: 'bg-amber-400',   text: 'text-amber-900' };
+  if (sig > 32 || significant) return { label: 'Significativo', bg: 'bg-orange-500', text: 'text-white' };
+  if (sig > 16)  return { label: 'Moderado',       bg: 'bg-amber-400',   text: 'text-amber-900' };
   return              { label: 'No Significativo',bg: 'bg-emerald-500', text: 'text-white' };
 }
 
 
 // ─── Significance Badge ──────────────────────────────────────
-function SigBadge({ sig }: { sig: number }) {
-  const level = getSigLevel(sig);
+function SigBadge({ sig, significant }: { sig: number; significant?: boolean }) {
+  const level = getSigLevel(sig, significant);
   return (
     <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-extrabold ${level.bg} ${level.text}`}>
       {sig} — {level.label}
@@ -101,21 +102,21 @@ function AspectModal({ aspect, onClose }: { aspect?: EnvironmentalAspect; onClos
               </select>
             </div>
             <div>
-              <label className="label-field">Severidad (1–5) <span className="text-red-500">*</span></label>
+              <label className="label-field">Gravedad [G] (1–5) <span className="text-red-500">*</span></label>
               <select value={form.severity} onChange={e => set('severity', e.target.value)} className="input-field">
-                {[1,2,3,4,5].map(n => <option key={n} value={n}>{n} — {['Insignificante','Menor','Moderado','Mayor','Catastrófico'][n-1]}</option>)}
+                {[1,2,3,4,5].map(n => <option key={n} value={n}>{n} — {['Nulo','Leve','Moderado','Grave','Muy Grave'][n-1]}</option>)}
               </select>
             </div>
             <div>
-              <label className="label-field">Detección (1–5) <span className="text-red-500">*</span></label>
+              <label className="label-field">Pérdida de control [P] (1–5) <span className="text-red-500">*</span></label>
               <select value={form.detection} onChange={e => set('detection', e.target.value)} className="input-field">
-                {[1,2,3,4,5].map(n => <option key={n} value={n}>{n} — {['Alta','Buena','Moderada','Baja','Nula'][n-1]}</option>)}
+                {[1,2,3,4,5].map(n => <option key={n} value={n}>{n} — {['Muy baja','Baja','Media','Alta','Muy Alta'][n-1]}</option>)}
               </select>
             </div>
           </div>
           <div className="bg-gray-50 rounded-lg p-3 flex items-center justify-between">
-            <span className="text-xs font-bold text-gray-500">Significancia (F × S × D)</span>
-            <SigBadge sig={sig} />
+            <span className="text-xs font-bold text-gray-500">Significancia IPR (F × G × P) — Significativo si &gt;32, G≥4 ó P≥4</span>
+            <SigBadge sig={sig} significant={parseInt(form.severity) >= 4 || parseInt(form.detection) >= 4} />
           </div>
           <div>
             <label className="label-field">Medida de Control</label>
@@ -256,7 +257,7 @@ export default function Environmental() {
                         <span className="text-xs font-bold text-gray-700">{a.detection}</span>
                       </td>
                       <td className="px-4 py-3">
-                        <SigBadge sig={a.significance} />
+                        <SigBadge sig={a.significance} significant={a.is_significant} />
                       </td>
                       <td className="px-4 py-3 hidden lg:table-cell max-w-[160px]">
                         <p className="text-[10px] text-gray-500 truncate">{a.control_measure || '—'}</p>

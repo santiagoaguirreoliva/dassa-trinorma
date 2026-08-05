@@ -49,16 +49,17 @@ router.get('/:id', async (req, res) => {
 // POST /api/environmental
 // significance and is_significant are GENERATED ALWAYS columns — DB computes them
 router.post('/', requireRole('master_admin', 'director', 'sgi_leader'), async (req, res) => {
-  const { area, activity, aspect, impact, condition, frequency, severity, legal_req, control_measure, responsible_id } = req.body;
-  if (!area || !activity || !aspect || !impact || !frequency || !severity) {
-    return res.status(400).json({ error: 'Área, actividad, aspecto, impacto, frecuencia y severidad son requeridos' });
+  const { area, activity, aspect, impact, condition, frequency, severity, detection, legal_req, control_measure, responsible_id, effect, legal_desc, responsible_text } = req.body;
+  if (!area || !activity || !aspect || !impact || !frequency || !severity || !detection) {
+    return res.status(400).json({ error: 'Área, actividad, aspecto, impacto, frecuencia, severidad y pérdida de control son requeridos' });
   }
   try {
     const { rows } = await query(
-      `INSERT INTO environmental_aspects (area, activity, aspect, impact, condition, frequency, severity, legal_req, control_measure, responsible_id)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING *`,
-      [area, activity, aspect, impact, condition || 'normal', frequency, severity,
-       legal_req || false, control_measure || null, responsible_id || null]
+      `INSERT INTO environmental_aspects (area, activity, aspect, impact, condition, frequency, severity, detection, legal_req, control_measure, responsible_id, effect, legal_desc, responsible_text)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14) RETURNING *`,
+      [area, activity, aspect, impact, condition || 'normal', frequency, severity, detection,
+       legal_req || false, control_measure || null, responsible_id || null,
+       effect || 'negativo', legal_desc || null, responsible_text || null]
     );
     res.status(201).json(rows[0]);
   } catch (error) {
@@ -70,7 +71,8 @@ router.post('/', requireRole('master_admin', 'director', 'sgi_leader'), async (r
 // PATCH /api/environmental/:id
 router.patch('/:id', requireRole('master_admin', 'director', 'sgi_leader'), async (req, res) => {
   const ALLOWED = ['area', 'activity', 'aspect', 'impact', 'condition',
-                   'frequency', 'severity', 'legal_req', 'control_measure', 'responsible_id'];
+                   'frequency', 'severity', 'detection', 'legal_req', 'control_measure', 'responsible_id',
+                   'effect', 'legal_desc', 'responsible_text'];
   const updates = [];
   const params = [];
 

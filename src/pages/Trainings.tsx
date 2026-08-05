@@ -66,12 +66,18 @@ function printPlanilla(training: Training & { organized_by_name?: string; descri
   const fecha = new Date(training.scheduled_date).toLocaleDateString('es-AR');
   const hora = new Date(training.scheduled_date).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
 
-  const nombres = participants.map(p => p.full_name || p.external_name || '').filter(Boolean);
-  const totalFilas = Math.max(18, nombres.length + 6);
+  const asistentes = participants
+    .filter(p => p.full_name || p.external_name)
+    .map(p => ({
+      nombre: p.full_name || p.external_name || '',
+      sector: p.department || p.position || p.external_position || p.external_sector || '',
+    }));
+  const totalFilas = Math.max(18, asistentes.length + 6);
   const filas = Array.from({ length: totalFilas }).map((_, i) => `
     <tr>
       <td class="num">${i + 1}</td>
-      <td class="nombre">${esc(nombres[i] || '')}</td>
+      <td class="nombre">${esc(asistentes[i]?.nombre || '')}</td>
+      <td class="sector">${esc(asistentes[i]?.sector || '')}</td>
       <td class="firma"></td>
     </tr>`).join('');
 
@@ -96,13 +102,17 @@ function printPlanilla(training: Training & { organized_by_name?: string; descri
   h2.lista { text-align: center; font-size: 12px; letter-spacing: 3px; text-transform: uppercase;
              border: 1px solid #111; border-top: none; padding: 7px; background: #e9e9e9; }
   table.asis { width: 100%; border-collapse: collapse; }
+  table.asis thead { display: table-header-group; }
   table.asis th { border: 1px solid #111; background: #f3f3f3; padding: 6px; font-size: 11px; }
   table.asis td { border: 1px solid #111; padding: 0 8px; height: 30px; }
+  table.asis tr { page-break-inside: avoid; }
   td.num { width: 34px; text-align: center; color: #666; }
-  td.firma { width: 40%; }
-  .pie { display: flex; gap: 20px; margin-top: 26px; }
+  td.sector { width: 26%; color: #444; }
+  td.firma { width: 28%; }
+  .pie { display: flex; gap: 20px; margin-top: 26px; page-break-inside: avoid; }
   .pie div { flex: 1; border-top: 1px solid #111; padding-top: 4px; text-align: center; font-size: 10px; color: #444; }
-  @media print { body { padding: 8px; } }
+  @page { size: A4 portrait; margin: 12mm 10mm; }
+  @media print { body { padding: 0; } .head, table.meta, h2.lista { page-break-inside: avoid; } }
 </style></head><body>
   <div class="head">
     <div class="brand">
@@ -110,25 +120,30 @@ function printPlanilla(training: Training & { organized_by_name?: string; descri
       <div><b>DASSA</b><small>DEPÓSITO AVELLANEDA SUR S.A. · Sistema de Gestión Integrado TRINORMA</small></div>
     </div>
     <div class="doc">
-      <b>PLANILLA DE ASISTENCIA</b>
-      <span>F-TRI-36 · Ver.: 03 · Registro de formación</span>
+      <b>F-TRI-36 REGISTRO DE FORMACIÓN</b>
+      <span>F-TRI-36 · Ver.: 03 · Emisión: Junio 2024 · Planilla de asistencia</span>
     </div>
   </div>
   <table class="meta">
-    <tr><td class="k">Capacitación:</td><td colspan="3"><b>${esc(training.title)}</b></td></tr>
+    <tr><td class="k">Nombre del Curso:</td><td colspan="3"><b>${esc(training.title)}</b></td></tr>
     <tr>
-      <td class="k">Fecha:</td><td>${fecha} · ${hora} hs</td>
+      <td class="k">Fecha del curso:</td><td>${fecha}</td>
       <td class="k">Duración:</td><td>${training.duration_hours ? `${training.duration_hours} hs` : '—'}</td>
     </tr>
     <tr>
       <td class="k">Capacitador:</td><td>${esc(training.instructor)}</td>
-      <td class="k">Lugar:</td><td>${esc(training.location)}</td>
+      <td class="k">Hora de inicio y cierre:</td><td>${hora} hs</td>
     </tr>
-    <tr><td class="k">Temario:</td><td colspan="3">${esc(training.description)}</td></tr>
+    <tr>
+      <td class="k">Lugar:</td><td>${esc(training.location)}</td>
+      <td class="k">Firma del capacitador:</td><td></td>
+    </tr>
+    <tr><td class="k">Temario desarrollado:</td><td colspan="3">${esc(training.description)}</td></tr>
+    <tr><td class="k">Objetivo:</td><td colspan="3">${esc(training.objective)}</td></tr>
   </table>
   <h2 class="lista">Lista de asistentes</h2>
   <table class="asis">
-    <thead><tr><th style="width:34px">N°</th><th>Apellido y Nombre</th><th style="width:40%">Firma</th></tr></thead>
+    <thead><tr><th style="width:34px">N°</th><th>Apellido y Nombre</th><th style="width:26%">Cargo / Sector</th><th style="width:28%">Firma</th></tr></thead>
     <tbody>${filas}</tbody>
   </table>
   <div class="pie">

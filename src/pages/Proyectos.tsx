@@ -81,7 +81,7 @@ export default function Proyectos() {
 
   return (
     <PageContent>
-      <Header title="🧩 Proyectos Estratégicos" subtitle="Sistema Integral de Gestión · Nivel 2"
+      <Header title="🧩 Proyectos Estratégicos" subtitle="Sistema Integral de Gestión · Nivel 2" doc="F-TRI-04"
         icon={<GitBranch size={20} />}
         actions={<div className="flex gap-2">
           <Link to="/objetivos" className="text-[11px] font-bold text-dassa-celeste-deep hover:underline inline-flex items-center gap-1"><Target size={13} /> Objetivos</Link>

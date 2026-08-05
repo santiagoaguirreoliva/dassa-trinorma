@@ -215,6 +215,7 @@ export default function Legal() {
       <Header
         title="Requisitos Legales"
         subtitle="Control de cumplimiento legal y normativo — TRINORMA"
+        doc="F-TRI-10"
         alerts={alertas}
         actions={
           isAdmin && (

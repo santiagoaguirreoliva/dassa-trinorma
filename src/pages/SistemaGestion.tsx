@@ -115,7 +115,7 @@ export default function SistemaGestion() {
 
   return (
     <>
-      <Header title="Sistema de Gestión Integrado" subtitle="Misión, Visión, Valores y Política de Gestión Integrada — TRINORMA" />
+      <Header title="Sistema de Gestión Integrado" subtitle="Misión, Visión, Valores y Política de Gestión Integrada — TRINORMA" doc="T-TRI-01" />
       <PageContent>
         {isLoading ? (
           <div className="flex items-center justify-center h-64"><Spinner size={32} /></div>

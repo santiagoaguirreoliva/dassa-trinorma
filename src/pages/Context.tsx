@@ -92,6 +92,7 @@ export default function Context() {
       <Header
         title="Análisis de Contexto"
         subtitle="Análisis FODA (ISO Cláusula 4.1)"
+        doc="F-TRI-01"
         actions={
           (isAdmin && !homologado) ? (
             <button

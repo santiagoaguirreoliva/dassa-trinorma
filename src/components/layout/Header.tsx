@@ -1,5 +1,6 @@
 import { Bell } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { docRefs } from '../../lib/docRevisions';
 
 interface HeaderProps {
   title: string;
@@ -7,9 +8,11 @@ interface HeaderProps {
   alerts?: number;
   actions?: React.ReactNode;
   icon?: React.ReactNode;
+  /** Código(s) F-TRI/P-TRI del documento del SGI que respalda la pantalla — muestra "F-TRI-XX · Rev.N · dd/mm/aaaa" */
+  doc?: string | string[];
 }
 
-export function Header({ title, subtitle, alerts = 0, actions }: HeaderProps) {
+export function Header({ title, subtitle, alerts = 0, actions, doc }: HeaderProps) {
   const navigate = useNavigate();
 
   return (
@@ -24,6 +27,11 @@ export function Header({ title, subtitle, alerts = 0, actions }: HeaderProps) {
         <h1 className="text-[14px] md:text-[15px] font-extrabold text-slate-900 tracking-tight leading-tight">
           {title}
         </h1>
+        {doc && (
+          <p className="text-[10px] text-slate-400 font-semibold tracking-wide truncate" title="Documento del SGI · revisión vigente">
+            {docRefs(doc)}
+          </p>
+        )}
       </div>
 
       <div className="flex items-center gap-2 flex-shrink-0">

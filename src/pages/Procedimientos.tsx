@@ -114,7 +114,7 @@ export default function Procedimientos() {
 
   return (
     <PageContent>
-      <Header title="📘 Procedimientos del SGI" subtitle={`${total} procedimientos · ${reales} con texto · árbol por proceso del mapa F-TRI-03`} />
+      <Header title="📘 Procedimientos del SGI" subtitle={`${total} procedimientos · ${reales} con texto · árbol por proceso del mapa F-TRI-03`} doc="F-TRI-03" />
 
       <div className="mb-4 relative max-w-xl">
         <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />

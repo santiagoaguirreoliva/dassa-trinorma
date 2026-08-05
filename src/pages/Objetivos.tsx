@@ -29,7 +29,7 @@ export default function Objetivos() {
 
   return (
     <PageContent>
-      <Header title="🎯 Objetivos Corporativos" subtitle={`Año ${year} · ${total} objetivos`} icon={<Target size={20}/>}/>
+      <Header title="🎯 Objetivos Corporativos" subtitle={`Año ${year} · ${total} objetivos`} doc="F-TRI-04" icon={<Target size={20}/>}/>
       <div className="flex items-center justify-between mb-4">
         <div className="flex gap-2">
           {[2024,2025,2026].map(y=>(

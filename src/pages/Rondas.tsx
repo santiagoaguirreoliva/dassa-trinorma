@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '@/lib/api';
+import { docRefs } from '@/lib/docRevisions';
 import { useAuth } from '@/contexts/AuthContext';
 import {
   ClipboardCheck, AlertTriangle, CheckCircle2, Calendar, Truck,
@@ -108,6 +109,7 @@ export default function Rondas() {
             <div>
               <h1 className="text-sm font-extrabold text-gray-900 leading-tight">Rondas de Inspección</h1>
               <p className="text-[11px] text-gray-500">Trinorma · supervisión y maquinaria</p>
+              <p className="text-[10px] text-gray-400 font-semibold">{docRefs(['F-TRI-19', 'F-TRI-20', 'F-TRI-23'])}</p>
             </div>
           </div>
           <div className="flex items-center gap-1">

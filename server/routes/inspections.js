@@ -9,6 +9,12 @@ import { query, getClient } from '../db/db.js';
 import { authenticate, requireRole, ADMIN_ROLES } from '../middleware/auth.js';
 import { saveBase64File } from '../services/uploads.js';
 import { generateDueInspections, markOverdueInspections } from '../services/inspections-generator.js';
+import { readFileSync } from 'fs';
+
+// Catálogo único de revisiones del SGI (compartido con el front)
+const DOC_REVISIONS = JSON.parse(readFileSync(new URL('../../src/lib/doc-revisions.json', import.meta.url), 'utf8'));
+const ftri19 = DOC_REVISIONS['F-TRI-19'];
+const FTRI19_REF = `F-TRI-19 · Rev.${ftri19.rev} · ${ftri19.date.split('-').reverse().join('/')}`;
 
 const router = Router();
 router.use(authenticate);
@@ -309,7 +315,7 @@ router.get('/machines/qrs.pdf', requireRole(...ADMIN_ROLES), async (req, res) =>
       // Encabezado de página
       if (i % 2 === 0) {
         doc.fontSize(10).fillColor('#9ca3af')
-           .text('DASSA — Trinorma · Checklist diario de maquinaria', 36, 36,
+           .text(`DASSA — Trinorma · Checklist diario de maquinaria · ${FTRI19_REF}`, 36, 36,
                  { width: PAGE_W, align: 'left' });
         doc.fontSize(8).fillColor('#9ca3af')
            .text(`Página ${pageIdx + 1} de ${Math.ceil(machines.length / 2)}`,

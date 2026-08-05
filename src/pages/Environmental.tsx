@@ -175,6 +175,7 @@ export default function Environmental() {
       <Header
         title="Aspectos Ambientales"
         subtitle="Matriz de evaluación F×S×D — ISO 14001"
+        doc="F-TRI-44"
         alerts={significant}
         actions={
           isAdmin && (

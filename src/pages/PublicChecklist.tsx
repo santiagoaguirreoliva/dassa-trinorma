@@ -7,6 +7,7 @@ import {
   Gauge, MapPin, ChevronRight, ChevronLeft, KeyRound, Lock,
 } from 'lucide-react';
 import SignaturePad from '@/components/SignaturePad';
+import { docRef } from '@/lib/docRevisions';
 
 interface Machine { id: string; code: string; name: string; type: string; }
 interface Template { id: string; code: string; name: string; }
@@ -279,7 +280,7 @@ export default function PublicChecklist() {
             <KeyRound size={16} /> Ingresar
           </button>
           <p className="text-center text-[10px] text-gray-400 mt-4">
-            DASSA — Trinorma · Checklist diario de maquinaria
+            DASSA — Trinorma · Checklist diario de maquinaria · {docRef('F-TRI-19')}
           </p>
         </div>
       </main>

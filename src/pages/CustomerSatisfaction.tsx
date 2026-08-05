@@ -163,6 +163,7 @@ export default function CustomerSatisfaction() {
       <Header
         title="Encuestas de Satisfacción"
         subtitle="Medición NPS y satisfacción del cliente — ISO 9001"
+        doc="P-TRI-10"
         actions={
           isAdmin ? (
             <button onClick={() => setShowModal(true)}

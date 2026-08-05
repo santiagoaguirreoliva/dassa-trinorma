@@ -159,7 +159,7 @@ export default function ObjetivosEstrategicos() {
 
   return (
     <PageContent>
-      <Header title="🎯 Objetivos Estratégicos" subtitle="Sistema Integral de Gestión · Nivel 1"
+      <Header title="🎯 Objetivos Estratégicos" subtitle="Sistema Integral de Gestión · Nivel 1" doc="F-TRI-04"
         icon={<Target size={20} />}
         actions={<div className="flex gap-2">
           <Link to="/proyectos" className="text-[11px] font-bold text-dassa-celeste-deep hover:underline inline-flex items-center gap-1"><GitBranch size={13} /> Proyectos</Link>

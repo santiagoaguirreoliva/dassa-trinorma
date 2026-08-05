@@ -21,7 +21,7 @@ export default function Cambios() {
   if (isLoading || !data) return <PageContent><Spinner/></PageContent>;
   return (
     <PageContent>
-      <Header title="🔧 Gestión de Cambios" subtitle={`${data.changes.length} proyectos · F-TRI-14`} icon={<GitMerge size={20}/>}/>
+      <Header title="🔧 Gestión de Cambios" subtitle={`${data.changes.length} proyectos`} doc="F-TRI-14" icon={<GitMerge size={20}/>}/>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
         <KPICard label="Total" value={data.changes.length}/>
         <KPICard label="En curso" value={data.changes.filter(c=>c.status==='en_curso').length}/>

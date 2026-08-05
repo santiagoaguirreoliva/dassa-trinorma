@@ -181,6 +181,7 @@ export default function Incidents() {
       <Header
         title="Incidentes y Accidentes"
         subtitle="Registro y seguimiento — ISO 45001"
+        doc="F-TRI-43"
         alerts={abiertos}
         actions={
           isAdmin && (

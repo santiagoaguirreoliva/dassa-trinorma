@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '@/lib/api';
+import { docRef } from '@/lib/docRevisions';
 import { ArrowLeft, Truck, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface Machine { id: string; code: string; name: string; active: boolean; }
@@ -73,7 +74,7 @@ export default function RondasMaquinaria() {
           </button>
           <div className="flex-1">
             <div className="text-sm font-extrabold text-gray-900">Histórico de Maquinaria</div>
-            <div className="text-[11px] text-gray-500">F-TRI-19 · 14 días</div>
+            <div className="text-[11px] text-gray-500">{docRef('F-TRI-19')} · 14 días</div>
           </div>
           <div className="flex items-center gap-1">
             <button onClick={() => setEndDate(addDays(endDate, -7))} className="p-2 rounded-lg hover:bg-gray-100"><ChevronLeft size={15} /></button>

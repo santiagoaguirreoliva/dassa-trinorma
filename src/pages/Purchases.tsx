@@ -783,6 +783,7 @@ export default function Purchases() {
       <Header
         title="Compras"
         subtitle="Gestión de órdenes de compra con flujo de aprobación"
+        doc="P-TRI-11"
         alerts={pendingAuth}
         actions={
           <div className="flex items-center gap-2">

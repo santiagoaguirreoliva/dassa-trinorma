@@ -10,6 +10,10 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Header } from '@/components/layout/Header';
 import { Avatar, Spinner, PageContent, KPICard } from '@/components/ui';
 import CompetencyMatrix from '@/components/trainings/CompetencyMatrix';
+import { DOC_REVISIONS, docRef } from '@/lib/docRevisions';
+
+const FTRI36 = DOC_REVISIONS['F-TRI-36'];
+const FTRI36_DATE = FTRI36.date.split('-').reverse().join('/');
 
 // ─── Tipos ──────────────────────────────────────────────────
 interface Training {
@@ -121,7 +125,7 @@ function printPlanilla(training: Training & { organized_by_name?: string; descri
     </div>
     <div class="doc">
       <b>F-TRI-36 REGISTRO DE FORMACIÓN</b>
-      <span>F-TRI-36 · Ver.: 03 · Emisión: Junio 2024 · Planilla de asistencia</span>
+      <span>${docRef('F-TRI-36')} · Planilla de asistencia</span>
     </div>
   </div>
   <table class="meta">
@@ -176,8 +180,8 @@ function FTri36View({ training, participants }: { training: any; participants: P
           <p className="font-extrabold text-sm">F-TRI-36 REGISTRO DE FORMACIÓN</p>
           <div className="flex gap-4 text-[10px] text-gray-400 mt-1">
             <span>F-TRI-36</span>
-            <span>Ver.: 03</span>
-            <span>Emisión: Junio 2024</span>
+            <span>Rev.{FTRI36.rev}</span>
+            <span>Revisión: {FTRI36_DATE}</span>
             <span>HOJA: 1/1</span>
           </div>
         </div>
@@ -622,7 +626,7 @@ function TrainingDetail({ trainingId, onClose }: { trainingId: string; onClose: 
             <div className="space-y-4">
               <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 flex items-center justify-between gap-3 flex-wrap">
                 <p className="text-xs text-amber-700 font-medium flex-1 min-w-[200px]">
-                  Vista del acta oficial F-TRI-36 Rev.03. Marcá la asistencia en la pestaña "Participantes" para que aparezca reflejada acá.
+                  Vista del acta oficial {docRef('F-TRI-36')}. Marcá la asistencia en la pestaña "Participantes" para que aparezca reflejada acá.
                 </p>
                 <button
                   onClick={() => printPlanilla(data, data.participants || [])}
@@ -1017,6 +1021,7 @@ export default function Trainings() {
       <Header
         title="Capacitaciones"
         subtitle={`${upcoming.length} programadas · ${completed.length} completadas`}
+        doc="F-TRI-36"
         actions={
           <div className="flex items-center gap-2">
             <div className="flex bg-gray-100 rounded-lg p-0.5">

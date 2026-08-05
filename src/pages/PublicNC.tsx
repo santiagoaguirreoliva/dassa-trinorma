@@ -1,5 +1,6 @@
 import { useState, useRef, FormEvent } from 'react';
 import { CheckCircle2, Upload, X, AlertTriangle, Loader2, ShieldAlert, Megaphone, ArrowLeft } from 'lucide-react';
+import { docRef } from '@/lib/docRevisions';
 
 const SECTORES = [
   'DEPOSITO - ALMACEN',
@@ -172,6 +173,7 @@ export default function PublicNC() {
               ? 'Completá el formulario para registrar una no conformidad o desvío del sistema de gestión'
               : 'Contanos qué viste o qué se puede mejorar — se revisa en la comisión mixta'}
           </p>
+          <p className="text-[10px] text-gray-400 font-semibold mt-1">{docRef('F-TRI-13')}</p>
           <button
             onClick={() => setKind(null)}
             className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-gray-500 hover:text-gray-800 transition-colors"

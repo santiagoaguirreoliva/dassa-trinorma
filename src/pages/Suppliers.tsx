@@ -503,6 +503,7 @@ export default function Suppliers() {
       <Header
         title="Proveedores"
         subtitle="Evaluación y gestión de proveedores — ISO 9001"
+        doc={["F-TRI-17", "P-TRI-11"]}
         alerts={enEval}
         actions={
           isAdmin && (

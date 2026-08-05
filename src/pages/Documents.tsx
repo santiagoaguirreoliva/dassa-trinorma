@@ -179,6 +179,7 @@ export default function Documents() {
       <Header
         title="Documentos SGI"
         subtitle="Control de documentos del Sistema de Gestión Integrado"
+        doc="F-TRI-09"
         alerts={enRevision}
         actions={
           isAdmin && (

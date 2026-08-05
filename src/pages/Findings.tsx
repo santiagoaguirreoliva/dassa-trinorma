@@ -259,6 +259,7 @@ export default function Findings() {
       <Header
         title="Hallazgos / NC"
         subtitle={`${openCount} abiertas · ${overdueCount > 0 ? overdueCount + ' vencidas' : 'sin vencidas'}`}
+        doc="F-TRI-13"
         alerts={overdueCount}
         actions={
           <div className="flex items-center gap-2">

@@ -43,7 +43,7 @@ function StepBox({ children }: { children: React.ReactNode }) {
 export default function MapaProcesos() {
   return (
     <PageContent>
-      <Header title="🗺️ Mapa de Procesos" subtitle="F-TRI-03 Rev. 02 · enfoque a procesos (ISO 9001 4.4) · entrada comercial → 4 circuitos → soporte" />
+      <Header title="🗺️ Mapa de Procesos" subtitle="Enfoque a procesos (ISO 9001 4.4) · entrada comercial → 4 circuitos → soporte" doc="F-TRI-03" />
 
       <div className="bg-white rounded-dassa shadow-dassa-card border border-gray-200 p-5 mb-4 overflow-x-auto">
         {/* flecha de retorno al cliente */}

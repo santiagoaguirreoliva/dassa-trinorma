@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { docRef } from '@/lib/docRevisions';
 
 // Vista PÚBLICA (sin login) del árbol de procedimientos del SGI.
 // Solo lectura, solo procedimientos aprobados. Fuente: GET /api/public/procedimientos.
@@ -162,7 +163,7 @@ export default function ProcedimientosPublico() {
             </div>
           )}
         <footer style={{ marginTop: 28, paddingTop: 16, borderTop: '1px solid #E7E7E7', fontSize: 12, color: '#8A8A8A', fontFamily: 'Open Sans, sans-serif' }}>
-          DASSA — Depósito Avellaneda Sur S.A. · Documentación del Sistema de Gestión Integrado (lectura). Versión vigente sujeta a la app Trinorma.
+          DASSA — Depósito Avellaneda Sur S.A. · Documentación del Sistema de Gestión Integrado (lectura). Versión vigente sujeta a la app Trinorma. · {docRef('F-TRI-03')}
         </footer>
       </main>
     </div>

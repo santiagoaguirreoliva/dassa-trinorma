@@ -375,6 +375,7 @@ export default function Risks() {
       <Header
         title="Matriz de Riesgos"
         subtitle="Evaluación de riesgos SGI — ISO 45001 / 14001 / 9001"
+        doc="F-TRI-42"
         alerts={critical}
         actions={
           isAdmin && (

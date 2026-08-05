@@ -1,5 +1,6 @@
 import { useState, useRef, FormEvent } from 'react';
 import { CheckCircle2, Upload, X, AlertTriangle, Loader2, Link2, Sparkles, ShoppingCart } from 'lucide-react';
+import { docRef } from '@/lib/docRevisions';
 
 const SECTORES = [
   'DEPOSITO - ALMACEN',
@@ -182,6 +183,7 @@ export default function PublicCompra() {
           <p className="text-xs text-gray-500 mt-1">
             Pedí lo que necesitás. Si tenés un link de MercadoLibre (u otra tienda), pegalo y lo analizamos automáticamente.
           </p>
+          <p className="text-[10px] text-gray-400 font-semibold mt-1">{docRef('P-TRI-11')}</p>
         </div>
 
         <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 space-y-5">

@@ -76,6 +76,7 @@ export default function Organigrama() {
       <Header
         title="🏛️ Organigrama DASSA"
         subtitle={`${data.profiles.length} puestos · ${data.profiles.reduce((a,p)=>a+p.employees.length,0)} empleados · ${data.externals?.length || 0} externos`}
+        doc="F-TRI-41"
         icon={<Users size={20} />}
       />
 

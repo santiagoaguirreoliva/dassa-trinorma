@@ -51,6 +51,7 @@ export default function Puestos() {
       <Header
         title="💼 Puestos · Fichas"
         subtitle={`${data.profiles.length} puestos activos`}
+        doc="F-TRI-34"
         icon={<Briefcase size={20} />}
       />
 

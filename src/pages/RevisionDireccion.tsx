@@ -92,7 +92,7 @@ export default function RevisionDireccion() {
 
   return (
     <PageContent>
-      <Header title="🏛️ Revisión por la Dirección" subtitle={`ISO 9.3 · ciclo ${YEAR}`} icon={<ClipboardCheck size={20} />} />
+      <Header title="🏛️ Revisión por la Dirección" subtitle={`ISO 9.3 · ciclo ${YEAR}`} doc="F-TRI-05" icon={<ClipboardCheck size={20} />} />
 
       {/* PASO 1 · Entradas de desempeño (auto) */}
       <h3 className="text-sm font-extrabold text-gray-900 uppercase tracking-wider mb-2 flex items-center gap-1.5"><Target size={15} className="text-dassa-red" /> 1 · Entradas de desempeño del período <span className="text-[10px] font-normal text-gray-400">(compiladas automáticamente)</span></h3>

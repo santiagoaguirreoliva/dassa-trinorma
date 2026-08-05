@@ -9,9 +9,10 @@
 //    fechaarrib - fecha_buq <= 10 días corridos. Solo carga meses con muestra
 //    confiable (>= 50 ctns con fecha_buq): Depofis no siempre la carga.
 // 3. Nuevos clientes (OBJ-01): 1ª aparición histórica del nombre en el campo
-//    CONSIGNATARIO/FW de una operación IMPO/EXPO (ingresadas_en_stock.agencia
-//    = stock.transporte, lookback 2023). Definición de Santi 05/08: se cuenta
-//    el consignatario/fw, no el cliente de carga (columna cliente).
+//    AGENCIA = el cliente comercial (ingresadas_en_stock.agencia =
+//    stock.transporte, lookback 2023). Caso canónico OI 43855: Agencia=ABIMEX
+//    (cliente) / Consignatario=RUEDA OESTE (dueño de la carga, columna
+//    cliente, NO cuenta). Definición final de Santi 05/08.
 const { Pool } = require('pg');
 
 const IND = {
@@ -60,7 +61,7 @@ WHERE tipo_oper ILIKE '%IMPO%' AND COALESCE(us_del,'')=''
 GROUP BY 1 ORDER BY 1`;
 
 // la 1ª aparición se calcula sobre TODO el histórico; la ventana solo filtra el resultado
-const SQL_NUEVOS_CONSIGNATARIOS = `
+const SQL_NUEVAS_AGENCIAS = `
 WITH primera AS (
   SELECT upper(btrim(agencia)) ag, min(fecha_ing) f1
   FROM depofis_mirror.ingresadas_en_stock
@@ -110,10 +111,10 @@ async function runKpisObjetivos() {
       console.log(`[kpi-obj] forzoso ${r.mes}: ${r.valor}% (${r.casos} ctns)`);
       cargadas++;
     }
-    for (const r of (await mirror.query(SQL_NUEVOS_CONSIGNATARIOS, params)).rows) {
+    for (const r of (await mirror.query(SQL_NUEVAS_AGENCIAS, params)).rows) {
       await upsert(IND.nuevos_clientes, r.mes, r.valor,
-        `real ${r.mes.slice(0, 4)} · 1ª op como CONSIGNATARIO/FW · auto`);
-      console.log(`[kpi-obj] nuevos consignatarios/fw ${r.mes}: ${r.valor}`);
+        `real ${r.mes.slice(0, 4)} · 1ª op como AGENCIA (cliente comercial) · auto`);
+      console.log(`[kpi-obj] nuevas agencias ${r.mes}: ${r.valor}`);
       cargadas++;
     }
     if (!cargadas) console.log('[kpi-obj] sin datos en la ventana, nada que cargar');

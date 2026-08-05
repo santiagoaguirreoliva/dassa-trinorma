@@ -29,11 +29,11 @@ const JOBS = {
     const { generateWakeUpAlerts } = require('../server/services/ai-quality.cjs');
     return generateWakeUpAlerts();
   },
-  // KPI Tiempo de desconsolidación (OBJ-03): recalcula los 2 últimos meses cerrados
-  // desde el espejo depofis_mirror (balanza→tally) y upsertea la medición (día 1, 07:30 AR)
-  kpi_desconsolidacion: async () => {
-    const s = require('../server/services/kpi-desconsolidacion.cjs');
-    return s.runKpiDesconsolidacion();
+  // KPIs de Objetivos con conector al espejo depofis_mirror (desconsolidación,
+  // forzoso, nuevas agencias): recalcula los 2 últimos meses cerrados (día 1, 07:30 AR)
+  kpi_objetivos: async () => {
+    const s = require('../server/services/kpi-objetivos.cjs');
+    return s.runKpisObjetivos();
   },
 };
 

@@ -9,7 +9,9 @@
 //    fechaarrib - fecha_buq <= 10 días corridos. Solo carga meses con muestra
 //    confiable (>= 50 ctns con fecha_buq): Depofis no siempre la carga.
 // 3. Nuevos clientes (OBJ-01): 1ª aparición histórica del nombre en el campo
-//    AGENCIA de una operación IMPO/EXPO (ingresadas_en_stock, lookback 2023).
+//    CLIENTE DE CARGA de una operación IMPO/EXPO (ingresadas_en_stock.cliente
+//    = stock.importador, lookback 2023). OJO: la columna `agencia` del espejo
+//    es el Consignatario/Fw, NO el cliente de carga.
 const { Pool } = require('pg');
 
 const IND = {
@@ -58,12 +60,12 @@ WHERE tipo_oper ILIKE '%IMPO%' AND COALESCE(us_del,'')=''
 GROUP BY 1 ORDER BY 1`;
 
 // la 1ª aparición se calcula sobre TODO el histórico; la ventana solo filtra el resultado
-const SQL_NUEVAS_AGENCIAS = `
+const SQL_NUEVOS_CLIENTES_CARGA = `
 WITH primera AS (
-  SELECT upper(btrim(agencia)) ag, min(fecha_ing) f1
+  SELECT upper(btrim(cliente)) cl, min(fecha_ing) f1
   FROM depofis_mirror.ingresadas_en_stock
   WHERE tipo_oper IN ('IMPORTACION','EXPORTACION')
-    AND agencia IS NOT NULL AND btrim(agencia) NOT IN ('','0')
+    AND cliente IS NOT NULL AND btrim(cliente) NOT IN ('','0')
   GROUP BY 1
 )
 SELECT to_char(f1,'YYYY-MM') mes, count(*)::int casos, count(*)::numeric valor
@@ -108,10 +110,10 @@ async function runKpisObjetivos() {
       console.log(`[kpi-obj] forzoso ${r.mes}: ${r.valor}% (${r.casos} ctns)`);
       cargadas++;
     }
-    for (const r of (await mirror.query(SQL_NUEVAS_AGENCIAS, params)).rows) {
+    for (const r of (await mirror.query(SQL_NUEVOS_CLIENTES_CARGA, params)).rows) {
       await upsert(IND.nuevos_clientes, r.mes, r.valor,
-        `real ${r.mes.slice(0, 4)} · 1ª operación como AGENCIA · auto`);
-      console.log(`[kpi-obj] nuevas agencias ${r.mes}: ${r.valor}`);
+        `real ${r.mes.slice(0, 4)} · 1ª op como CLIENTE DE CARGA · auto`);
+      console.log(`[kpi-obj] nuevos clientes de carga ${r.mes}: ${r.valor}`);
       cargadas++;
     }
     if (!cargadas) console.log('[kpi-obj] sin datos en la ventana, nada que cargar');

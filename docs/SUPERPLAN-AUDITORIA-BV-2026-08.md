@@ -46,10 +46,14 @@ Mapeo directo del plan de BV contra los módulos de la app. Esta tabla es la que
 
 Todo lo de abajo está comprobado con consultas a `dassa_sgi`, no supuesto.
 
-### 🔴 A · El accidente de Marcelo no está en el sistema
-`incidents` tiene **0 filas**. Nixa lo dice textual: *"No lo vi cargado en la app y necesitamos por favor sea más completo el análisis y que cumpla con lo que pide el marco legal"*.
-El 25/08 a las 10:00 el auditor pide justamente *análisis e investigación de accidentes laborales*. Hoy no hay nada que mostrar.
-Además hay 2 `findings` con `origin = 'accidente'` — o sea que los accidentes se venían cargando en el módulo equivocado.
+### ✅ A · El registro de incidentes estaba roto de fábrica — RESUELTO 10/08
+`incidents` tenía **0 filas** y Nixa reclamó: *"No lo vi cargado en la app"*. El accidente **sí estaba cargado, como `NC-2026-012` "Accidente Laboral"**, en el módulo equivocado.
+
+La causa de fondo era peor: `gen_incident_code()` usaba `CASE incident_type` en vez de `CASE NEW.incident_type`, así que **todo INSERT en `incidents` fallaba** — desde la app y desde SQL. Sumado a eso, el formulario mandaba `type` y la API espera `incident_type`. El módulo nunca pudo grabar una fila; por eso los accidentes terminaban como no conformidades.
+
+Corregido en las migraciones 073/074 y en el commit `e58b158`, junto con los campos de investigación que pide el marco legal (causa inmediata, causa raíz, testigos, ART, días perdidos).
+
+**Pendiente de datos:** mover `NC-2026-012` al registro de incidentes con el análisis completo. Falta confirmar persona afectada, fecha y hora del hecho, si se denunció a la ART y días perdidos.
 
 ### 🔴 B · Objetivos: dos generaciones superpuestas
 - `OBJ-01…OBJ-10` (tier estratégico): tienen 205 indicadores y 153 mediciones reales. **Solo 4 están `enabled`.** OBJ-03 tiene 38 indicadores y 34 mediciones cargadas y está apagado.
@@ -61,6 +65,13 @@ Un auditor que abra Objetivos ve 26 objetivos para 2026, la mayoría vacíos. IS
 `findings.report_kind` ya distingue `nc` / `hallazgo` (23 NC + 3 hallazgos + 1 histórico), y el formulario público ya nace con uno u otro. Lo que falta:
 1. **No se puede cambiar** de NC a hallazgo ni al revés desde la app.
 2. `incidents` es una tabla **separada** de `findings`, sin ningún vínculo: un accidente nunca puede derivar en una no conformidad formal.
+
+### 🔴 D-bis · Un proveedor suspendido figura como apto (pedido de Nixa por chat)
+En la evaluación F-TRI-17 de DALE GAS conviven dos verdades en la misma pantalla: el total da **12/20 → SUSPENDIDO**, y el histórico del mismo año lo muestra como **"APTO PARA COMPRA"**. Nixa lo resumió como *"revisar consideración de proveedores como homologados"*.
+
+Hay que definir qué manda: el resultado de la última evaluación o la marca de homologación. Hoy la homologación no se recalcula cuando la evaluación da suspendido, y el auditor mira esto el 25/08 a las 15:00.
+
+También pidió **dar de alta a Top Service** (control de plagas y desinfección), que no está entre los 53.
 
 ### 🟡 D · Proveedores y transportistas tercerizados
 - 53 proveedores, **los 53 marcados como críticos**. Si todos son críticos, no hay criterio de criticidad — el auditor lo va a preguntar el 25/08 a las 15:00.
@@ -94,15 +105,17 @@ Ordenados por lo que el auditor va a mirar y por dependencia real, no por comodi
 
 **Criterio de éxito:** el 24/08 se puede abrir `/incidents` y `/findings` y mostrar cada punto que Nixa escribió, con responsable y fecha.
 
-### F1 · Desvíos: no conformidades, avisos e incidentes — antes del 15/08
-> El pedido central de Santi.
+### F1 · Desvíos: no conformidades, avisos e incidentes — ✅ DEPLOYADO 10/08 (`e58b158`)
+> El pedido central de Santi. Migraciones 073 y 074 aplicadas en producción.
 
 1. **Vocabulario visible y único** en `/findings`: solapa *No conformidades* (acción correctiva formal, análisis de causa, verificación de eficacia 30/60) y solapa *Avisos e identificaciones* (aviso, observación, oportunidad de mejora — sin obligación de acción correctiva).
 2. **Conversión en los dos sentidos**, con traza: pasar un aviso a no conformidad y viceversa, registrando quién convirtió, cuándo y por qué, en `finding_status_history`. Convertir a NC exige completar lo que la NC requiere; convertir a aviso pide motivo.
 3. **Puente incidente → no conformidad**: desde un accidente o incidente ambiental, generar la NC asociada con un clic, quedando ambos vinculados. Es literalmente lo que el auditor busca el 25/08 a las 10:00.
 4. Un solo lugar de entrada: el formulario público `/reporte-nc` ya distingue el tipo; unificar el rótulo con el de la app para que el operario y el auditor lean lo mismo.
 
-**Criterio de éxito:** tomar un caso cargado como incidente, pasarlo a no conformidad delante del auditor y que quede el rastro de la conversión.
+**Criterio de éxito:** tomar un caso cargado como incidente, pasarlo a no conformidad delante del auditor y que quede el rastro de la conversión. — *Verificado con E2E el 10/08: ciclo completo NC → aviso → NC → incidente → NC del desvío, con los contadores del dashboard estables y 3 peticiones concurrentes (1 alta, 2 rechazos).*
+
+De paso aparecieron y se corrigieron tres defectos que nadie había visto: el trigger que impedía grabar incidentes, el drift `type`/`incident_type` que rompía el alta y el filtro, y el dashboard contando como no conformidades los hallazgos archivados y los avisos.
 
 ### F2 · Objetivos — antes del 17/08
 1. **Decidir la generación única de 2026.** Recomendación: quedarse con `OBJ-01…OBJ-10` (los que tienen indicadores y mediciones) y archivar los 16 `OBJ-2026-XX` vacíos, con snapshot de rollback.
@@ -113,6 +126,7 @@ Ordenados por lo que el auditor va a mirar y por dependencia real, no por comodi
 **Criterio de éxito:** ningún objetivo 2026 visible sin indicador, responsable y plazo.
 
 ### F3 · Proveedores, homologación y transportistas — antes del 19/08
+0. **Coherencia homologado vs evaluación** (pedido directo de Nixa): que un proveedor con puntaje de suspensión no pueda figurar como apto para compra. Revisar los 41 homologados contra el resultado de su última F-TRI-17. Alta de **Top Service** (control de plagas y desinfección).
 1. **Criterio de criticidad explícito** y reclasificación: hoy los 53 son críticos. Definir la regla (impacto en el servicio, en ambiente o en SST) y aplicarla.
 2. **Documentación por proveedor** (`supplier_documents` está en 0): póliza, ART, habilitaciones, con vencimiento y alerta. Es lo que el auditor pide como control de subcontratistas.
 3. **F-TRI-52 para transportistas tercerizados**: circuito de homologación con los requisitos de Nixa + acuse de la Política Integrada T-TRI-01 rev 03 usando el mecanismo de acuse que ya existe y está sin usar.

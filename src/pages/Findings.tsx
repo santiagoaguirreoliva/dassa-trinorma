@@ -313,14 +313,14 @@ export default function Findings() {
           className={`px-4 py-2 rounded-t-lg text-xs font-bold border-b-2 transition-colors
             ${kindTab === 'nc' ? 'border-dassa-red text-dassa-red bg-dassa-red-tint' : 'border-transparent text-gray-500 hover:text-gray-800'}`}
         >
-          No Conformidades TRINORMA {ncCount > 0 && <span className="ml-1 px-1.5 py-0.5 rounded-full bg-dassa-red text-white text-[10px]">{ncCount}</span>}
+          No conformidades {ncCount > 0 && <span className="ml-1 px-1.5 py-0.5 rounded-full bg-dassa-red text-white text-[10px]">{ncCount}</span>}
         </button>
         <button
           onClick={() => setKindTab('hallazgo')}
           className={`px-4 py-2 rounded-t-lg text-xs font-bold border-b-2 transition-colors
             ${kindTab === 'hallazgo' ? 'border-amber-500 text-amber-600 bg-amber-50' : 'border-transparent text-gray-500 hover:text-gray-800'}`}
         >
-          Avisos y hallazgos generales {hallazgoCount > 0 && <span className="ml-1 px-1.5 py-0.5 rounded-full bg-amber-500 text-white text-[10px]">{hallazgoCount}</span>}
+          Avisos e identificaciones {hallazgoCount > 0 && <span className="ml-1 px-1.5 py-0.5 rounded-full bg-amber-500 text-white text-[10px]">{hallazgoCount}</span>}
         </button>
         {kindTab === 'hallazgo' && (
           <span className="ml-auto text-[11px] text-gray-400 pb-1">Se revisan en la comisión mixta — no entran al circuito formal de NC</span>

@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { query } from '../db/db.js';
+import { query, getClient } from '../db/db.js';
 import { authenticate, requireRole } from '../middleware/auth.js';
 
 const router = Router();
@@ -106,6 +106,86 @@ router.patch('/:id', requireRole('master_admin', 'director', 'sgi_leader', 'area
   } catch (error) {
     console.error('Incidents PATCH error:', error.message);
     res.status(500).json({ error: 'Error al actualizar incidente' });
+  }
+});
+
+// POST /api/incidents/:id/to-finding — abre la no conformidad (o el aviso) que
+// se desprende de un accidente o incidente. Ambos quedan vinculados: el
+// incidente es el hecho, la NC es el desvío del sistema que lo permitió.
+router.post('/:id/to-finding',
+  requireRole('master_admin', 'director', 'sgi_leader'), async (req, res) => {
+  const { title, finding_type, assigned_to, due_date, report_kind, reason } = req.body;
+  const kind = report_kind === 'hallazgo' ? 'hallazgo' : 'nc';
+
+  if (kind === 'nc' && !['nc_real', 'nc_potencial'].includes(finding_type)) {
+    return res.status(400).json({ error: 'Indicá si es no conformidad real o potencial' });
+  }
+  if (kind === 'nc' && (!assigned_to || !due_date)) {
+    return res.status(400).json({ error: 'La no conformidad necesita responsable y fecha límite' });
+  }
+
+  const client = await getClient();
+  try {
+    await client.query('BEGIN');
+
+    // FOR UPDATE: dos clics simultáneos generaban dos NC para el mismo incidente.
+    const cur = await client.query(
+      'SELECT * FROM incidents WHERE id = $1 FOR UPDATE', [req.params.id]);
+    const incident = cur.rows[0];
+    if (!incident) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ error: 'Incidente no encontrado' });
+    }
+    if (incident.finding_id) {
+      await client.query('ROLLBACK');
+      return res.status(409).json({ error: 'Este incidente ya tiene un hallazgo asociado' });
+    }
+
+    const { rows } = await client.query(
+      `INSERT INTO findings
+         (title, description, finding_type, origin, area, due_date,
+          assigned_to, immediate_action, reported_by, report_kind)
+       VALUES ($1,$2,$3,'accidente',$4,$5,$6,$7,$8,$9)
+       RETURNING *`,
+      [
+        title || `Desvío asociado a ${incident.code}`,
+        `${incident.description}\n\n---\nOriginado en el ${incident.incident_type} ${incident.code} del ${incident.date}.`,
+        kind === 'nc' ? finding_type : 'mejora',
+        incident.area || null,
+        due_date || null,
+        assigned_to || null,
+        incident.corrective_action || null,
+        req.user.id,
+        kind,
+      ]
+    );
+    const finding = rows[0];
+
+    await client.query('UPDATE incidents SET finding_id = $1 WHERE id = $2',
+      [finding.id, incident.id]);
+
+    await client.query(
+      `INSERT INTO finding_kind_history (finding_id, from_kind, to_kind, reason, changed_by)
+       VALUES ($1,'incidente',$2,$3,$4)`,
+      [finding.id, kind,
+       `${(reason || '').trim() || 'Desvío detectado a partir del incidente'} — originado en ${incident.code}`,
+       req.user.id]
+    );
+
+    await client.query(
+      `INSERT INTO finding_status_history (finding_id, from_status, to_status, changed_by, note)
+       VALUES ($1, NULL, $2, $3, $4)`,
+      [finding.id, finding.status, req.user.id, `Alta desde el incidente ${incident.code}`]
+    );
+
+    await client.query('COMMIT');
+    res.status(201).json(finding);
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error('Incidents to-finding error:', error.message);
+    res.status(500).json({ error: 'Error al generar el hallazgo' });
+  } finally {
+    client.release();
   }
 });
 

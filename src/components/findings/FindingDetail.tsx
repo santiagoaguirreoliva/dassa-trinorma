@@ -2,10 +2,11 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { X, Plus, CheckCircle2,
          Clock, User, MessageSquare, Paperclip, Save, Loader2, Sparkles,
-         Archive, History, AlertTriangle } from 'lucide-react';
+         Archive, History, AlertTriangle, ArrowRightLeft } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { Badge, FINDING_STATUS, FINDING_TYPE, Avatar } from '@/components/ui';
+import ConvertModal from './ConvertModal';
 
 interface Props {
   findingId: string;
@@ -25,6 +26,10 @@ const STATUS_IDX: Record<string, number> = {
   abierto: 0, analisis: 1, plan_accion: 2, en_ejecucion: 3, verificacion: 4, cerrado: 5
 };
 
+const KIND_LABEL: Record<string, string> = {
+  nc: 'no conformidad', hallazgo: 'aviso', incidente: 'incidente de SST',
+};
+
 export default function FindingDetail({ findingId, onClose }: Props) {
   const { isAdmin } = useAuth();
   const qc = useQueryClient();
@@ -33,6 +38,7 @@ export default function FindingDetail({ findingId, onClose }: Props) {
   const [newAction, setNewAction] = useState({ description: '', due_date: '', responsible_id: '' });
   const [editMode, setEditMode] = useState(false);
   const [editData, setEditData] = useState<Record<string, any>>({});
+  const [showConvert, setShowConvert] = useState(false);
 
   const { data: finding, isLoading } = useQuery({
     queryKey: ['finding', findingId],
@@ -183,6 +189,14 @@ export default function FindingDetail({ findingId, onClose }: Props) {
                     Archivar
                   </button>
                   <div className="flex">
+                    <button
+                      onClick={() => setShowConvert(true)}
+                      className="flex items-center gap-1.5 px-3 py-1.5 mr-2 bg-slate-100 text-slate-600 rounded-lg text-xs font-bold hover:bg-slate-200"
+                      title="Pasar a aviso, a no conformidad o al registro de incidentes"
+                    >
+                      <ArrowRightLeft size={12} />
+                      Convertir
+                    </button>
                     <button
                       onClick={() => editMode ? updateFinding.mutate(editData) : setEditMode(true)}
                       className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-bold hover:bg-blue-700"
@@ -625,6 +639,30 @@ export default function FindingDetail({ findingId, onClose }: Props) {
           {/* ─── HISTORIAL ─── */}
           {tab === 'historial' && (
             <div className="space-y-3">
+              {(finding.kind_history ?? []).length > 0 && (
+                <div className="space-y-2 pb-3 mb-1 border-b border-slate-200">
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-slate-500 uppercase tracking-wider">
+                    <ArrowRightLeft size={13} /> Reclasificaciones
+                  </div>
+                  {(finding.kind_history ?? []).map((k: any) => (
+                    <div key={k.id} className="flex gap-3">
+                      <div className="w-2 h-2 rounded-full bg-amber-500 mt-1.5 flex-shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm text-slate-700">
+                          De <strong>{KIND_LABEL[k.from_kind] || k.from_kind}</strong> a{' '}
+                          <strong>{KIND_LABEL[k.to_kind] || k.to_kind}</strong>
+                        </p>
+                        <div className="flex items-center gap-2 mt-0.5 text-[11px] text-slate-400">
+                          <span>{k.changed_by_name || 'Sistema'}</span>
+                          <span>·</span>
+                          <span>{new Date(k.created_at).toLocaleString('es-AR', { day:'2-digit', month:'2-digit', year:'2-digit', hour:'2-digit', minute:'2-digit' })}</span>
+                        </div>
+                        {k.reason && <p className="text-xs text-slate-500 mt-1 italic">{k.reason}</p>}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
               <div className="flex items-center gap-1.5 text-xs font-bold text-slate-500 uppercase tracking-wider">
                 <History size={13} /> Trazabilidad de estados
               </div>
@@ -666,6 +704,15 @@ export default function FindingDetail({ findingId, onClose }: Props) {
 
         </div>
       </div>
+
+      {showConvert && (
+        <ConvertModal
+          finding={finding}
+          users={users}
+          onClose={() => setShowConvert(false)}
+          onConverted={onClose}
+        />
+      )}
     </div>
   );
 }

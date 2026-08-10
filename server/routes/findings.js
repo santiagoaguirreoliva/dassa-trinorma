@@ -11,6 +11,9 @@ const STATUS_LABEL = {
   abierto: 'Detectado', analisis: 'En Análisis', plan_accion: 'Plan de AC',
   en_ejecucion: 'En Ejecución', verificacion: 'Verificación', cerrado: 'Cerrado',
 };
+const VALID_KIND = ['nc', 'hallazgo'];
+const NC_TYPES = ['nc_real', 'nc_potencial'];
+const KIND_LABEL = { nc: 'no conformidad', hallazgo: 'aviso' };
 
 // ─── RUTAS PRIVADAS (requieren auth) ────────────────────────
 // La ruta pública POST /nc se movió a routes/public-nc.js (H-06).
@@ -185,7 +188,7 @@ router.get('/:id', async (req, res) => {
     );
     if (!rows[0]) return res.status(404).json({ error: 'No encontrado' });
 
-    const [actions, comments, history] = await Promise.all([
+    const [actions, comments, history, kindHistory] = await Promise.all([
       query(
         `SELECT fa.*, u.full_name AS responsible_name
            FROM finding_actions fa
@@ -208,9 +211,23 @@ router.get('/:id', async (req, res) => {
           WHERE h.finding_id = $1 ORDER BY h.changed_at`,
         [req.params.id]
       ),
+      // Conversiones entre NC, aviso e incidente SST
+      query(
+        `SELECT k.*, u.full_name AS changed_by_name
+           FROM finding_kind_history k
+           LEFT JOIN users u ON u.id = k.changed_by
+          WHERE k.finding_id = $1 ORDER BY k.created_at`,
+        [req.params.id]
+      ),
     ]);
 
-    res.json({ ...rows[0], actions: actions.rows, comments: comments.rows, history: history.rows });
+    res.json({
+      ...rows[0],
+      actions: actions.rows,
+      comments: comments.rows,
+      history: history.rows,
+      kind_history: kindHistory.rows,
+    });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
@@ -431,6 +448,187 @@ router.patch('/:id/status', async (req, res) => {
 
     await client.query('COMMIT');
     res.json(rows[0]);
+  } catch (err) {
+    await client.query('ROLLBACK');
+    res.status(500).json({ error: err.message });
+  } finally {
+    client.release();
+  }
+});
+
+// PATCH /api/findings/:id/kind — convierte una NC en aviso o un aviso en NC.
+// El código (NC-2026-012, OM-2026-004) NO cambia: es el identificador con el
+// que el hallazgo ya figura en actas y correos.
+router.patch('/:id/kind', async (req, res) => {
+  if (!ADMIN_ROLES.includes(req.user.role)) {
+    return res.status(403).json({ error: 'Sin permiso para convertir hallazgos' });
+  }
+
+  const { kind, reason, finding_type, assigned_to, due_date } = req.body;
+  if (!VALID_KIND.includes(kind)) {
+    return res.status(400).json({ error: 'Destino no válido: nc o hallazgo' });
+  }
+  if (!reason || !reason.trim()) {
+    return res.status(400).json({ error: 'El motivo de la conversión es obligatorio' });
+  }
+
+  const client = await getClient();
+  try {
+    await client.query('BEGIN');
+
+    const cur = await client.query(
+      'SELECT report_kind, status, deleted_at FROM findings WHERE id = $1',
+      [req.params.id]
+    );
+    if (!cur.rows[0] || cur.rows[0].deleted_at) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ error: 'No encontrado' });
+    }
+
+    const fromKind = cur.rows[0].report_kind || 'nc';
+    if (fromKind === kind) {
+      await client.query('ROLLBACK');
+      return res.status(409).json({ error: `Ya está registrado como ${KIND_LABEL[kind]}` });
+    }
+
+    const updates = ['report_kind = $1'];
+    const values = [kind];
+    let i = 2;
+
+    if (kind === 'nc') {
+      // Una NC sin tipo, responsable y plazo no es gestionable (ISO 10.2).
+      if (!NC_TYPES.includes(finding_type)) {
+        await client.query('ROLLBACK');
+        return res.status(400).json({ error: 'Indicá si es no conformidad real o potencial' });
+      }
+      if (!assigned_to || !due_date) {
+        await client.query('ROLLBACK');
+        return res.status(400).json({ error: 'La no conformidad necesita responsable y fecha límite' });
+      }
+      updates.push(`finding_type = $${i++}`, `assigned_to = $${i++}`, `due_date = $${i++}`);
+      values.push(finding_type, assigned_to, due_date);
+    } else {
+      // Una NC cerrada conserva su condición: su evidencia de eficacia ya se emitió.
+      if (cur.rows[0].status === 'cerrado') {
+        await client.query('ROLLBACK');
+        return res.status(409).json({
+          error: 'No se puede convertir una NC cerrada. Su verificación de eficacia ya forma parte del registro.',
+        });
+      }
+      updates.push(`finding_type = $${i++}`);
+      values.push('mejora');
+    }
+
+    values.push(req.params.id);
+    const { rows } = await client.query(
+      `UPDATE findings SET ${updates.join(', ')} WHERE id = $${i} RETURNING *`,
+      values
+    );
+
+    await client.query(
+      `INSERT INTO finding_kind_history (finding_id, from_kind, to_kind, reason, changed_by)
+       VALUES ($1,$2,$3,$4,$5)`,
+      [req.params.id, fromKind, kind, reason.trim(), req.user.id]
+    );
+
+    if (rows[0].assigned_to && rows[0].assigned_to !== req.user.id) {
+      await client.query(
+        `INSERT INTO notifications (user_id, title, message, type, source_module)
+         VALUES ($1,$2,$3,'info','findings')`,
+        [rows[0].assigned_to,
+         `${rows[0].code} pasó a ${KIND_LABEL[kind]}`,
+         `${reason.trim()} — convertido por ${req.user.full_name}`]
+      );
+    }
+
+    await client.query('COMMIT');
+    res.json(rows[0]);
+  } catch (err) {
+    await client.query('ROLLBACK');
+    res.status(500).json({ error: err.message });
+  } finally {
+    client.release();
+  }
+});
+
+// POST /api/findings/:id/to-incident — mueve el hallazgo al registro de SST.
+// Caso típico: un accidente laboral cargado como NC. El hallazgo se archiva
+// (no se borra) y queda vinculado al incidente que lo reemplaza.
+router.post('/:id/to-incident', async (req, res) => {
+  if (!ADMIN_ROLES.includes(req.user.role)) {
+    return res.status(403).json({ error: 'Sin permiso para convertir hallazgos' });
+  }
+
+  const {
+    incident_type, date, time, severity, injured_person, witness,
+    art_reported, lost_time_days, reason,
+  } = req.body;
+
+  if (!['accidente', 'incidente'].includes(incident_type)) {
+    return res.status(400).json({ error: 'Indicá si es accidente o incidente' });
+  }
+  if (!reason || !reason.trim()) {
+    return res.status(400).json({ error: 'El motivo de la conversión es obligatorio' });
+  }
+
+  const client = await getClient();
+  try {
+    await client.query('BEGIN');
+
+    const cur = await client.query(
+      'SELECT * FROM findings WHERE id = $1 AND deleted_at IS NULL',
+      [req.params.id]
+    );
+    const finding = cur.rows[0];
+    if (!finding) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ error: 'No encontrado' });
+    }
+
+    // finding_id queda libre a propósito: ese vínculo es para la NC que se
+    // desprenda del incidente (el desvío del sistema), no para el hallazgo de
+    // origen. La procedencia se traza en finding_kind_history y en el texto.
+    const { rows } = await client.query(
+      `INSERT INTO incidents
+         (incident_type, date, time, area, severity, description,
+          injured_person, witness, corrective_action,
+          reported_by, responsible_id, art_reported, lost_time_days)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)
+       RETURNING *`,
+      [
+        incident_type,
+        date || finding.created_at,
+        time || null,
+        finding.area || null,
+        severity || 'leve',
+        `${finding.description}\n\n---\nRegistrado a partir de ${finding.code}.`,
+        injured_person || null,
+        witness || null,
+        finding.immediate_action || null,
+        req.user.id,
+        finding.assigned_to || null,
+        art_reported || false,
+        lost_time_days || 0,
+      ]
+    );
+    const incident = rows[0];
+
+    // El hallazgo se archiva con su historia intacta: el registro vivo pasa a
+    // ser el incidente.
+    await client.query(
+      'UPDATE findings SET deleted_at = NOW(), deleted_by = $1 WHERE id = $2',
+      [req.user.id, finding.id]
+    );
+
+    await client.query(
+      `INSERT INTO finding_kind_history (finding_id, from_kind, to_kind, reason, changed_by)
+       VALUES ($1,$2,'incidente',$3,$4)`,
+      [finding.id, finding.report_kind || 'nc',
+       `${reason.trim()} — movido a ${incident.code}`, req.user.id]
+    );
+
+    await client.query('COMMIT');
+    res.status(201).json(incident);
   } catch (err) {
     await client.query('ROLLBACK');
     res.status(500).json({ error: err.message });

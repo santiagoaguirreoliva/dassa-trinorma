@@ -11,11 +11,14 @@ import { Spinner, KPICard, PageContent } from '@/components/ui';
 
 // ─── Tipos ──────────────────────────────────────────────────
 interface Incident {
-  id: string; code: string; type: string;
-  date: string; area: string; severity: string;
+  id: string; code: string; incident_type: string;
+  date: string; time?: string; area: string; severity: string;
   status: string; description?: string;
-  employee_id?: string; corrective_action?: string;
-  created_by?: string; created_at: string; updated_at?: string;
+  injured_person?: string; witness?: string;
+  immediate_cause?: string; root_cause?: string; corrective_action?: string;
+  art_reported?: boolean; lost_time_days?: number;
+  responsible_id?: string; finding_id?: string;
+  reported_by?: string; created_at: string; updated_at?: string;
 }
 
 // ─── Constantes ─────────────────────────────────────────────
@@ -49,21 +52,109 @@ function fmtDate(d?: string) {
   return new Date(d).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: '2-digit' });
 }
 
+// ─── Abrir la NC que se desprende de un incidente ────────────
+// El incidente es el hecho; la no conformidad es el desvío del sistema que lo
+// hizo posible. Quedan vinculados y ninguno reemplaza al otro.
+function ToFindingModal({ incident, onClose }: { incident: Incident; onClose: () => void }) {
+  const qc = useQueryClient();
+  const [findingType, setFindingType] = useState('nc_real');
+  const [assignedTo, setAssignedTo] = useState('');
+  const [dueDate, setDueDate] = useState('');
+  const [reason, setReason] = useState('');
+  const [error, setError] = useState('');
+
+  const { data: users = [] } = useQuery({
+    queryKey: ['users'],
+    queryFn: () => api.get<any[]>('/users'),
+  });
+
+  const mutation = useMutation({
+    mutationFn: () => api.post(`/incidents/${incident.id}/to-finding`, {
+      finding_type: findingType, assigned_to: assignedTo, due_date: dueDate, reason,
+    }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['incidents'] });
+      qc.invalidateQueries({ queryKey: ['findings'] });
+      onClose();
+    },
+    onError: (e: any) => setError(e.message),
+  });
+
+  return (
+    <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between px-6 py-4 border-b">
+          <h3 className="text-[15px] font-extrabold text-gray-900">No conformidad de {incident.code}</h3>
+          <button onClick={onClose}><X size={18} className="text-gray-400" /></button>
+        </div>
+        <div className="p-6 space-y-4">
+          <p className="text-xs text-gray-500">
+            El incidente queda como registro del hecho. La no conformidad gestiona el desvío
+            que lo permitió, con su análisis de causa y verificación de eficacia.
+          </p>
+          <div>
+            <label className="label-field">Tipo <span className="text-red-500">*</span></label>
+            <select value={findingType} onChange={e => setFindingType(e.target.value)} className="input-field">
+              <option value="nc_real">No conformidad real</option>
+              <option value="nc_potencial">No conformidad potencial</option>
+            </select>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="label-field">Responsable <span className="text-red-500">*</span></label>
+              <select value={assignedTo} onChange={e => setAssignedTo(e.target.value)} className="input-field">
+                <option value="">Elegir…</option>
+                {users.map(u => <option key={u.id} value={u.id}>{u.full_name}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="label-field">Fecha límite <span className="text-red-500">*</span></label>
+              <input type="date" value={dueDate} onChange={e => setDueDate(e.target.value)} className="input-field" />
+            </div>
+          </div>
+          <div>
+            <label className="label-field">Motivo</label>
+            <textarea value={reason} onChange={e => setReason(e.target.value)} rows={2}
+              placeholder="Qué falló del sistema de gestión" className="input-field resize-none" />
+          </div>
+          {error && <p className="text-xs text-red-500 bg-red-50 px-3 py-2 rounded-lg">{error}</p>}
+        </div>
+        <div className="px-6 pb-5 flex justify-end gap-2">
+          <button onClick={onClose} className="px-4 py-2 text-sm font-semibold text-gray-600 hover:bg-gray-100 rounded-lg">Cancelar</button>
+          <button onClick={() => !mutation.isPending && mutation.mutate()}
+            disabled={!assignedTo || !dueDate || mutation.isPending}
+            className="flex items-center gap-2 px-5 py-2 bg-dassa-red-deep text-white font-bold text-sm rounded-lg hover:bg-dassa-red disabled:opacity-50">
+            {mutation.isPending && <Loader2 size={14} className="animate-spin" />}
+            Generar NC
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── New / Edit Incident Modal ───────────────────────────────
 function IncidentModal({ incident, onClose }: { incident?: Incident; onClose: () => void }) {
   const qc = useQueryClient();
   const isEdit = !!incident;
   const [form, setForm] = useState({
-    type: incident?.type ?? 'incidente',
+    incident_type: incident?.incident_type ?? 'incidente',
     date: incident?.date?.substring(0, 10) ?? new Date().toISOString().substring(0, 10),
+    time: incident?.time?.substring(0, 5) ?? '',
     area: incident?.area ?? '',
     severity: incident?.severity ?? 'leve',
     status: incident?.status ?? 'abierto',
     description: incident?.description ?? '',
+    injured_person: incident?.injured_person ?? '',
+    witness: incident?.witness ?? '',
+    immediate_cause: incident?.immediate_cause ?? '',
+    root_cause: incident?.root_cause ?? '',
     corrective_action: incident?.corrective_action ?? '',
+    art_reported: incident?.art_reported ?? false,
+    lost_time_days: incident?.lost_time_days ?? 0,
   });
   const [error, setError] = useState('');
-  const set = (k: string, v: string) => setForm(p => ({ ...p, [k]: v }));
+  const set = (k: string, v: string | boolean | number) => setForm(p => ({ ...p, [k]: v }));
 
   const mutation = useMutation({
     mutationFn: () => {
@@ -86,7 +177,7 @@ function IncidentModal({ incident, onClose }: { incident?: Incident; onClose: ()
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="label-field">Tipo <span className="text-red-500">*</span></label>
-              <select value={form.type} onChange={e => set('type', e.target.value)} className="input-field">
+              <select value={form.incident_type} onChange={e => set('incident_type', e.target.value)} className="input-field">
                 <option value="incidente">Incidente</option>
                 <option value="accidente">Accidente</option>
               </select>
@@ -94,6 +185,17 @@ function IncidentModal({ incident, onClose }: { incident?: Incident; onClose: ()
             <div>
               <label className="label-field">Fecha <span className="text-red-500">*</span></label>
               <input type="date" value={form.date} onChange={e => set('date', e.target.value)} className="input-field" />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="label-field">Hora</label>
+              <input type="time" value={form.time} onChange={e => set('time', e.target.value)} className="input-field" />
+            </div>
+            <div>
+              <label className="label-field">Persona afectada</label>
+              <input value={form.injured_person} onChange={e => set('injured_person', e.target.value)}
+                placeholder="Nombre y apellido" className="input-field" />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
@@ -126,17 +228,46 @@ function IncidentModal({ incident, onClose }: { incident?: Incident; onClose: ()
               className="input-field resize-none" />
           </div>
           <div>
+            <label className="label-field">Testigos</label>
+            <input value={form.witness} onChange={e => set('witness', e.target.value)}
+              placeholder="Quién presenció el hecho" className="input-field" />
+          </div>
+          <div>
+            <label className="label-field">Causa inmediata</label>
+            <textarea value={form.immediate_cause} onChange={e => set('immediate_cause', e.target.value)}
+              rows={2} placeholder="Qué desencadenó el hecho (acto o condición insegura)"
+              className="input-field resize-none" />
+          </div>
+          <div>
+            <label className="label-field">Causa raíz</label>
+            <textarea value={form.root_cause} onChange={e => set('root_cause', e.target.value)}
+              rows={2} placeholder="Por qué fue posible: falla del control, del procedimiento o de la supervisión"
+              className="input-field resize-none" />
+          </div>
+          <div>
             <label className="label-field">Acción Correctiva</label>
             <textarea value={form.corrective_action} onChange={e => set('corrective_action', e.target.value)}
               rows={2} placeholder="Medidas adoptadas o a implementar"
               className="input-field resize-none" />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="flex items-center gap-2 pt-5">
+              <input id="art_reported" type="checkbox" checked={form.art_reported}
+                onChange={e => set('art_reported', e.target.checked)} />
+              <label htmlFor="art_reported" className="text-xs font-semibold text-gray-700">Denunciado a la ART</label>
+            </div>
+            <div>
+              <label className="label-field">Días perdidos</label>
+              <input type="number" min={0} value={form.lost_time_days}
+                onChange={e => set('lost_time_days', Number(e.target.value))} className="input-field" />
+            </div>
           </div>
           {error && <p className="text-xs text-red-500 bg-red-50 px-3 py-2 rounded-lg">{error}</p>}
         </div>
         <div className="px-6 pb-5 flex justify-end gap-2">
           <button onClick={onClose} className="px-4 py-2 text-sm font-semibold text-gray-600 hover:bg-gray-100 rounded-lg">Cancelar</button>
           <button onClick={() => !mutation.isPending && mutation.mutate()}
-            disabled={!form.type || !form.date || !form.area || !form.severity || mutation.isPending}
+            disabled={!form.incident_type || !form.date || !form.area || !form.severity || !form.description || mutation.isPending}
             className="flex items-center gap-2 px-5 py-2 bg-dassa-red-deep text-white font-bold text-sm rounded-lg hover:bg-dassa-red disabled:opacity-50">
             {mutation.isPending && <Loader2 size={14} className="animate-spin" />}
             {isEdit ? 'Guardar Cambios' : 'Registrar'}
@@ -152,6 +283,7 @@ export default function Incidents() {
   const { isAdmin } = useAuth();
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState<Incident | undefined>();
+  const [toFinding, setToFinding] = useState<Incident | undefined>();
   const [filterType, setFilterType] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
   const [filterSeverity, setFilterSeverity] = useState('');
@@ -161,7 +293,7 @@ export default function Incidents() {
     queryKey: ['incidents', filterType, filterStatus, filterSeverity, search],
     queryFn: () => {
       const params = new URLSearchParams();
-      if (filterType) params.set('type', filterType);
+      if (filterType) params.set('incident_type', filterType);
       if (filterStatus) params.set('status', filterStatus);
       if (filterSeverity) params.set('severity', filterSeverity);
       if (search) params.set('search', search);
@@ -172,8 +304,8 @@ export default function Incidents() {
   });
 
   const abiertos = incidents.filter(i => i.status === 'abierto').length;
-  const accidentes = incidents.filter(i => i.type === 'accidente').length;
-  const incidentes = incidents.filter(i => i.type === 'incidente').length;
+  const accidentes = incidents.filter(i => i.incident_type === 'accidente').length;
+  const incidentes = incidents.filter(i => i.incident_type === 'incidente').length;
   const graves = incidents.filter(i => ['grave', 'muy_grave', 'mortal'].includes(i.severity)).length;
 
   return (
@@ -257,12 +389,12 @@ export default function Incidents() {
                 </thead>
                 <tbody>
                   {incidents.map(inc => {
-                    const tc = TYPE_CONFIG[inc.type] ?? TYPE_CONFIG.incidente;
+                    const tc = TYPE_CONFIG[inc.incident_type] ?? TYPE_CONFIG.incidente;
                     const sev = SEVERITY_CONFIG[inc.severity] ?? SEVERITY_CONFIG.leve;
                     const sc = STATUS_CONFIG[inc.status] ?? STATUS_CONFIG.abierto;
                     return (
                       <tr key={inc.id} className={`border-b border-gray-100 hover:bg-gray-50 transition-colors
-                        ${inc.type === 'accidente' ? 'bg-red-50/30' : ''}`}>
+                        ${inc.incident_type === 'accidente' ? 'bg-red-50/30' : ''}`}>
                         <td className="px-4 py-3">
                           <code className="text-[10px] font-extrabold text-dassa-red-deep">{inc.code}</code>
                         </td>
@@ -295,10 +427,22 @@ export default function Incidents() {
                         </td>
                         {isAdmin && (
                           <td className="px-4 py-3">
-                            <button onClick={() => { setEditing(inc); setShowModal(true); }}
-                              className="text-[10px] font-bold text-dassa-red hover:text-blue-800">
-                              Editar
-                            </button>
+                            <div className="flex items-center gap-2">
+                              <button onClick={() => { setEditing(inc); setShowModal(true); }}
+                                className="text-[10px] font-bold text-dassa-red hover:text-blue-800">
+                                Editar
+                              </button>
+                              {inc.finding_id ? (
+                                <span className="text-[10px] font-bold text-emerald-600" title="Ya tiene una no conformidad asociada">
+                                  NC ✓
+                                </span>
+                              ) : (
+                                <button onClick={() => setToFinding(inc)}
+                                  className="text-[10px] font-bold text-slate-500 hover:text-dassa-red">
+                                  Generar NC
+                                </button>
+                              )}
+                            </div>
                           </td>
                         )}
                       </tr>
@@ -318,6 +462,7 @@ export default function Incidents() {
       </PageContent>
 
       {showModal && <IncidentModal incident={editing} onClose={() => { setShowModal(false); setEditing(undefined); }} />}
+      {toFinding && <ToFindingModal incident={toFinding} onClose={() => setToFinding(undefined)} />}
     </>
   );
 }

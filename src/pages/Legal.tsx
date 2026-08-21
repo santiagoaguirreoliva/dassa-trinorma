@@ -16,6 +16,7 @@ interface LegalReq {
   effective_date?: string; expiration_date?: string;
   alert_days_before: number; responsible_id?: string; responsible_name?: string;
   evidence_url?: string; evidence_notes?: string;
+  compliance_status?: string; compliance_evaluation?: string; last_verification_date?: string;
   computed_status?: string; days_remaining?: number;
   is_active: boolean; created_at: string;
 }
@@ -38,6 +39,25 @@ const CAT_LABELS: Record<string, string> = {
   calidad: 'Calidad', habilitacion: 'Habilitación', tributaria: 'Tributaria',
   aduanera: 'Aduanera', otra: 'Otra',
 };
+
+// Evaluación del cumplimiento (ISO 14001/45001 9.1.2) — distinta de la vigencia:
+// un requisito puede estar vigente y no cumplirse todavía.
+const COMPLIANCE: Record<string, { label: string; bg: string; color: string }> = {
+  cumple:      { label: 'Cumple',      bg: 'bg-emerald-100', color: 'text-emerald-700' },
+  en_proceso:  { label: 'En proceso',  bg: 'bg-amber-100',   color: 'text-amber-700' },
+  no_aplica:   { label: 'No aplica',   bg: 'bg-slate-100',   color: 'text-slate-500' },
+  sin_evaluar: { label: 'Sin evaluar', bg: 'bg-red-50',      color: 'text-red-600' },
+};
+
+function ComplianceBadge({ status, evaluation }: { status?: string; evaluation?: string }) {
+  const c = COMPLIANCE[status || 'sin_evaluar'] ?? COMPLIANCE.sin_evaluar;
+  return (
+    <span title={evaluation || 'Sin evaluación registrada'}
+      className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-extrabold ${c.bg} ${c.color}`}>
+      {c.label}
+    </span>
+  );
+}
 
 function fmtDate(d?: string) {
   if (!d) return '—';
@@ -79,6 +99,9 @@ function LegalModal({ item, users, onClose }: { item?: LegalReq; users: User[]; 
     responsible_id: item?.responsible_id ?? '',
     evidence_url: item?.evidence_url ?? '',
     evidence_notes: item?.evidence_notes ?? '',
+    compliance_status: item?.compliance_status ?? 'sin_evaluar',
+    compliance_evaluation: item?.compliance_evaluation ?? '',
+    last_verification_date: item?.last_verification_date?.substring(0, 10) ?? '',
   });
   const [error, setError] = useState('');
   const set = (k: string, v: string) => setForm(p => ({ ...p, [k]: v }));
@@ -91,6 +114,7 @@ function LegalModal({ item, users, onClose }: { item?: LegalReq; users: User[]; 
         responsible_id: form.responsible_id || null,
         effective_date: form.effective_date || null,
         expiration_date: form.expiration_date || null,
+        last_verification_date: form.last_verification_date || null,
       };
       return isEdit
         ? api.patch(`/legal/${item!.id}`, payload)
@@ -158,6 +182,30 @@ function LegalModal({ item, users, onClose }: { item?: LegalReq; users: User[]; 
               {users.map(u => <option key={u.id} value={u.id}>{u.full_name}</option>)}
             </select>
           </div>
+          {/* Evaluación del cumplimiento — ISO 14001/45001 9.1.2 */}
+          <div className="border border-gray-200 rounded-xl p-3 space-y-3 bg-gray-50/60">
+            <p className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">Evaluación del cumplimiento</p>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="label-field">Estado</label>
+                <select value={form.compliance_status} onChange={e => set('compliance_status', e.target.value)} className="input-field">
+                  {Object.entries(COMPLIANCE).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="label-field">Fecha de evaluación</label>
+                <input type="date" value={form.last_verification_date}
+                  onChange={e => set('last_verification_date', e.target.value)} className="input-field" />
+              </div>
+            </div>
+            <div>
+              <label className="label-field">Fundamento de la evaluación</label>
+              <textarea value={form.compliance_evaluation} onChange={e => set('compliance_evaluation', e.target.value)}
+                rows={2} placeholder="Cómo se verifica el cumplimiento de este requisito"
+                className="input-field resize-none" />
+            </div>
+          </div>
+
           <div>
             <label className="label-field">Evidencia / Notas</label>
             <textarea value={form.evidence_notes} onChange={e => set('evidence_notes', e.target.value)}
@@ -186,6 +234,7 @@ export default function Legal() {
   const [editing, setEditing] = useState<LegalReq | undefined>();
   const [filterStatus, setFilterStatus] = useState('');
   const [filterCat, setFilterCat] = useState('');
+  const [filterCompliance, setFilterCompliance] = useState('');
 
   const { data: items = [], isLoading } = useQuery<LegalReq[]>({
     queryKey: ['legal'],
@@ -201,6 +250,7 @@ export default function Legal() {
   const filtered = items.filter(r => {
     if (filterStatus && r.computed_status !== filterStatus) return false;
     if (filterCat && r.category !== filterCat) return false;
+    if (filterCompliance && (r.compliance_status || 'sin_evaluar') !== filterCompliance) return false;
     return true;
   });
 
@@ -208,6 +258,8 @@ export default function Legal() {
   const porVencer = items.filter(r => r.computed_status === 'por_vencer').length;
   const vigentes = items.filter(r => r.computed_status === 'vigente' || !r.computed_status).length;
   const sinVto = items.filter(r => !r.expiration_date).length;
+  const sinEvaluar = items.filter(r => !r.compliance_status || r.compliance_status === 'sin_evaluar').length;
+  const cumplen = items.filter(r => r.compliance_status === 'cumple').length;
   const alertas = vencidos + porVencer;
 
   return (
@@ -240,6 +292,12 @@ export default function Legal() {
               <KPICard label="Sin Vencimiento" value={sinVto} sub="Permanentes / indefinidos" icon={<Calendar size={16} />} />
             </div>
 
+            {/* Evaluación del cumplimiento — ISO 14001/45001 9.1.2 */}
+            <div className="grid grid-cols-2 gap-3">
+              <KPICard label="Cumplen" value={`${cumplen}/${items.length}`} sub="Con evaluación registrada" icon={<CheckCircle2 size={16} />} />
+              <KPICard label="Sin evaluar" value={sinEvaluar} sub="Falta evaluar el cumplimiento" alert={sinEvaluar > 0} icon={<Scale size={16} />} />
+            </div>
+
             {/* Filters */}
             <div className="bg-white rounded-xl border border-gray-200 px-4 py-3 flex items-center gap-3 flex-wrap">
               <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)}
@@ -247,13 +305,18 @@ export default function Legal() {
                 <option value="">Todos los estados</option>
                 {Object.entries(STATUS_CONFIG).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
               </select>
+              <select value={filterCompliance} onChange={e => setFilterCompliance(e.target.value)}
+                className="border border-gray-200 rounded-lg px-2.5 py-1.5 text-xs focus:outline-none">
+                <option value="">Todo el cumplimiento</option>
+                {Object.entries(COMPLIANCE).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
+              </select>
               <select value={filterCat} onChange={e => setFilterCat(e.target.value)}
                 className="border border-gray-200 rounded-lg px-2.5 py-1.5 text-xs focus:outline-none">
                 <option value="">Todas las categorías</option>
                 {CATEGORIES.map(c => <option key={c} value={c}>{CAT_LABELS[c]}</option>)}
               </select>
-              {(filterStatus || filterCat) && (
-                <button onClick={() => { setFilterStatus(''); setFilterCat(''); }}
+              {(filterStatus || filterCat || filterCompliance) && (
+                <button onClick={() => { setFilterStatus(''); setFilterCat(''); setFilterCompliance(''); }}
                   className="text-xs text-gray-400 hover:text-red-500 flex items-center gap-1">
                   <X size={12} /> Limpiar
                 </button>
@@ -273,6 +336,7 @@ export default function Legal() {
                     <th className="th-cell w-24">Vigencia</th>
                     <th className="th-cell w-24">Vencimiento</th>
                     <th className="th-cell w-28">Estado</th>
+                    <th className="th-cell w-24">Cumplimiento</th>
                     <th className="th-cell hidden lg:table-cell">Responsable</th>
                     {isAdmin && <th className="th-cell w-20">Acción</th>}
                   </tr>
@@ -306,6 +370,12 @@ export default function Legal() {
                       </td>
                       <td className="px-4 py-3">
                         <StatusBadge status={r.computed_status} days={r.days_remaining} />
+                      </td>
+                      <td className="px-4 py-3">
+                        <ComplianceBadge status={r.compliance_status} evaluation={r.compliance_evaluation} />
+                        {r.last_verification_date && (
+                          <p className="text-[9px] text-gray-400 mt-0.5">{fmtDate(r.last_verification_date)}</p>
+                        )}
                       </td>
                       <td className="px-4 py-3 hidden lg:table-cell">
                         {r.responsible_name ? (

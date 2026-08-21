@@ -148,7 +148,7 @@ legalRouter.get('/', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-legalRouter.post('/', requireRole('master_admin','sgi_leader'), async (req, res) => {
+legalRouter.post('/', requireRole('master_admin','sgi_leader','director'), async (req, res) => {
   const { code, title, category, issuing_authority, applicable_area,
           effective_date, expiration_date, alert_days_before, responsible_id, description } = req.body;
   if (!title || !category) return res.status(400).json({ error: 'Título y categoría requeridos' });
@@ -165,9 +165,11 @@ legalRouter.post('/', requireRole('master_admin','sgi_leader'), async (req, res)
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-legalRouter.patch('/:id', requireRole('master_admin','sgi_leader'), async (req, res) => {
+legalRouter.patch('/:id', requireRole('master_admin','sgi_leader','director'), async (req, res) => {
   const allowed = ['title','description','category','issuing_authority','applicable_area',
-    'effective_date','expiration_date','alert_days_before','responsible_id','evidence_url','evidence_notes'];
+    'effective_date','expiration_date','alert_days_before','responsible_id','evidence_url','evidence_notes',
+    // evaluación del cumplimiento (ISO 14001/45001 9.1.2 · migr 077)
+    'compliance_status','compliance_evaluation','last_verification_date'];
   const updates = []; const values = []; let i = 1;
   for (const f of allowed) {
     if (req.body[f] !== undefined) { updates.push(`${f} = $${i++}`); values.push(req.body[f]); }

@@ -37,11 +37,15 @@ objectivesRouter.get('/', async (req, res) => {
                  'id', oi.id, 'indicator_name', oi.indicator_name, 'item_medido', oi.item_medido,
                  'unit', oi.unit, 'frequency', oi.frequency, 'target_value', oi.target_value,
                  'target_text', oi.target_text, 'direction', oi.direction,
+                 -- El año del objetivo y el anterior: la planilla muestra el año en
+                 -- curso sobre el baseline del año pasado, y así se lee si mejora.
                  'mediciones', (SELECT json_agg(json_build_object(
-                       'mes', to_char(m.period,'YYYY-MM'), 'valor', m.value, 'notes', m.notes)
+                       'mes', to_char(m.period,'YYYY-MM'), 'valor', m.value, 'notes', m.notes,
+                       'anio', date_part('year', m.period))
                      ORDER BY m.period)
                    FROM objective_measurements m
-                   WHERE m.indicator_id = oi.id AND date_part('year', m.period) = o.year))
+                   WHERE m.indicator_id = oi.id
+                     AND date_part('year', m.period) IN (o.year, o.year - 1)))
                ORDER BY oi.kpi_order)
               FROM objective_indicators oi
               WHERE oi.objective_id = o.id AND oi.enabled) AS kpis

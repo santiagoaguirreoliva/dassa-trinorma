@@ -133,8 +133,11 @@ export default function App() {
               <Route path="/mi-puesto"      element={<Navigate to="/mi-perfil" replace />} />
               <Route path="/mi-perfil"      element={<MiPerfil />} />
               <Route path="/mi-puesto-legacy" element={<MiPuesto />} />
-              <Route path="/objetivos"      element={<ObjetivosEstrategicos />} />
-              <Route path="/objetivos-historico" element={<Objetivos />} />
+              {/* Los objetivos vigentes son los del F-TRI-04; el tablero estratégico
+                  quedó como vista interna de dirección (sus objetivos están ocultos). */}
+              <Route path="/objetivos"      element={<Objetivos />} />
+              <Route path="/objetivos-tablero" element={<ObjetivosEstrategicos />} />
+              <Route path="/objetivos-historico" element={<Navigate to="/objetivos" replace />} />
               <Route path="/proyectos"      element={<Proyectos />} />
               <Route path="/inversiones"    element={<Inversiones />} />
               <Route path="/revision-direccion" element={<RevisionDireccion />} />

@@ -7,7 +7,7 @@ import { Header } from '@/components/layout/Header';
 import { Spinner, PageContent, KPICard } from '@/components/ui';
 import { SimplePie } from '@/components/charts';
 
-interface Medicion { mes:string; valor:number|string|null; notes?:string }
+interface Medicion { mes:string; valor:number|string|null; notes?:string; anio?:number }
 interface Kpi { id:string; indicator_name:string; item_medido?:string; unit?:string; frequency?:string;
   target_value:number|string|null; target_text?:string; direction?:string; mediciones:Medicion[]|null }
 interface Objective { id:string; code:string; name:string; description:string; area:string; target_metric:string;
@@ -20,8 +20,12 @@ const MESES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov'
 // Franja anual del F-TRI-04: los 12 meses + el acumulado del año contra la meta.
 // Para metas anuales acumulables (contenedores) suma; para tasas y porcentajes
 // promedia, porque sumar un 97% doce veces no significa nada.
-function FranjaAnual({ kpi, metaAnual }: { kpi:Kpi; metaAnual?:string }) {
-  const porMes = new Map((kpi.mediciones||[]).map(m => [m.mes.slice(5), Number(m.valor)]));
+function FranjaAnual({ kpi, metaAnual, year }: { kpi:Kpi; metaAnual?:string; year:number }) {
+  const meds = kpi.mediciones || [];
+  const delAnio = (a:number) => new Map(
+    meds.filter(m => Number(m.mes.slice(0,4)) === a).map(m => [m.mes.slice(5), Number(m.valor)]));
+  const porMes = delAnio(year);
+  const base = delAnio(year - 1);
   const valores = [...porMes.values()].filter(v => Number.isFinite(v));
   const acumulable = (kpi.unit||'').includes('CNT');
   const acum = acumulable
@@ -33,6 +37,10 @@ function FranjaAnual({ kpi, metaAnual }: { kpi:Kpi; metaAnual?:string }) {
   const ritmo = valores.length ? Math.round(100*valores.length/12) : 0;
   return (
     <div className="mt-2.5 pt-2.5 border-t border-gray-100">
+      <div className="flex items-center gap-2 mb-1">
+        <span className="text-[9px] font-bold text-gray-400 uppercase">{year}</span>
+        {base.size > 0 && <span className="text-[9px] text-gray-300">· abajo en gris: real {year-1} (baseline)</span>}
+      </div>
       <div className="flex gap-0.5 overflow-x-auto pb-1">
         {MESES.map((m,i) => {
           const v = porMes.get(String(i+1).padStart(2,'0'));
@@ -43,6 +51,14 @@ function FranjaAnual({ kpi, metaAnual }: { kpi:Kpi; metaAnual?:string }) {
               <div className={`text-[10px] font-extrabold ${hay ? 'text-gray-800' : 'text-gray-300'}`}>
                 {hay ? (Number.isInteger(v) ? v : (v as number).toFixed(1)) : '—'}
               </div>
+              {(() => {
+                const b = base.get(String(i+1).padStart(2,'0'));
+                return Number.isFinite(b as number)
+                  ? <div className="text-[8px] text-gray-400" title={`Real ${year-1} (baseline)`}>
+                      {Number.isInteger(b) ? b : (b as number).toFixed(1)}
+                    </div>
+                  : null;
+              })()}
             </div>
           );
         })}
@@ -137,7 +153,7 @@ export default function Objetivos() {
               <div className="col-span-2"><strong className="text-gray-500">Acciones:</strong> {o.acciones_asociadas || '—'}</div>
               <div className="col-span-2"><strong className="text-gray-500">Recursos:</strong> {o.recursos || '—'}</div>
             </div>
-            {o.kpis?.[0] && <FranjaAnual kpi={o.kpis[0]} metaAnual={o.target_value} />}
+            {o.kpis?.[0] && <FranjaAnual kpi={o.kpis[0]} metaAnual={o.target_value} year={year} />}
           </div>
         ))}
       </div>

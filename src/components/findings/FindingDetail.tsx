@@ -195,7 +195,7 @@ export default function FindingDetail({ findingId, onClose }: Props) {
                       title="Pasar a aviso, a no conformidad o al registro de incidentes"
                     >
                       <ArrowRightLeft size={12} />
-                      Convertir
+                      {finding.report_kind === 'hallazgo' ? 'Pasar a NC' : 'Pasar a aviso'}
                     </button>
                     <button
                       onClick={() => editMode ? updateFinding.mutate(editData) : setEditMode(true)}

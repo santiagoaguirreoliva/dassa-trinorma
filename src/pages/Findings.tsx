@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Plus, LayoutGrid, List, Search, Loader2, X, AlertTriangle, Download, FileText } from 'lucide-react';
+import { Plus, LayoutGrid, List, Search, Loader2, X, AlertTriangle, Download, FileText, ArrowRightLeft } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { Header } from '@/components/layout/Header';
 import { Badge, FINDING_STATUS, FINDING_TYPE, Avatar, Spinner, PageContent } from '@/components/ui';
 import FindingDetail from '@/components/findings/FindingDetail';
 import FindingsReports from '@/components/findings/FindingsReports';
+import ConvertModal from '@/components/findings/ConvertModal';
 import { exportToCSV } from '@/lib/exportCsv';
 
 // ─── Tipos ──────────────────────────────────────────────────
@@ -44,9 +45,10 @@ const TIPOS = [
 const AREAS = ['', 'Depósito — Almacén', 'Coordinación', 'Plazoleta', 'Administración', 'Mantenimiento', 'Otros'];
 
 // ─── NC Card (kanban) ─────────────────────────────────────────
-function NCCard({ finding, onClick, draggable, onDragStart }: {
+function NCCard({ finding, onClick, draggable, onDragStart, onConvert }: {
   finding: Finding; onClick: () => void;
   draggable?: boolean; onDragStart?: (e: React.DragEvent) => void;
+  onConvert?: () => void;
 }) {
   const tc = FINDING_TYPE[finding.finding_type];
   const overdue = finding.due_date && new Date(finding.due_date) < new Date() && finding.status !== 'cerrado';
@@ -79,6 +81,18 @@ function NCCard({ finding, onClick, draggable, onDragStart }: {
           )}
         </div>
         <div className="flex items-center gap-2">
+          {onConvert && (
+            <button
+              onClick={e => { e.stopPropagation(); onConvert(); }}
+              title={(finding.report_kind || 'nc') === 'nc'
+                ? 'Pasar a aviso: sale del circuito formal de acción correctiva'
+                : 'Pasar a no conformidad: entra al circuito formal con causa, acción y eficacia'}
+              className="inline-flex items-center gap-0.5 text-[9px] font-bold text-gray-400 hover:text-dassa-red transition-colors"
+            >
+              <ArrowRightLeft size={10} />
+              {(finding.report_kind || 'nc') === 'nc' ? 'a aviso' : 'a NC'}
+            </button>
+          )}
           {overdue && <AlertTriangle size={11} className="text-red-500" />}
           <span className={`text-[10px] font-bold ${finding.days_open > 15 ? 'text-red-500' : 'text-gray-400'}`}>
             {finding.days_open}d
@@ -200,6 +214,8 @@ export default function Findings() {
   // Segregación: NC Trinorma (gestión formal) vs avisos/hallazgos generales (comisión mixta)
   const [kindTab, setKindTab] = useState<'nc' | 'hallazgo'>('nc');
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  // Reclasificar sin abrir el desvío: se pide desde la lista misma.
+  const [convertTarget, setConvertTarget] = useState<Finding | null>(null);
   const [showNew, setShowNew] = useState(false);
   const [search, setSearch] = useState('');
   const [filterType, setFilterType] = useState('');
@@ -323,7 +339,7 @@ export default function Findings() {
           Avisos e identificaciones {hallazgoCount > 0 && <span className="ml-1 px-1.5 py-0.5 rounded-full bg-amber-500 text-white text-[10px]">{hallazgoCount}</span>}
         </button>
         {kindTab === 'hallazgo' && (
-          <span className="ml-auto text-[11px] text-gray-400 pb-1">Se revisan en la comisión mixta — no entran al circuito formal de NC</span>
+          <span className="ml-auto text-[11px] text-gray-400 pb-1">Se revisan en la comisión mixta. El RSGI puede pasar cualquiera a no conformidad con “a NC”.</span>
         )}
       </div>
       )}
@@ -408,7 +424,9 @@ export default function Findings() {
                     {cards.map(f => (
                       <NCCard key={f.id} finding={f} onClick={() => setSelectedId(f.id)}
                         draggable={isAdmin}
-                        onDragStart={() => setDragId(f.id)} />
+                        onDragStart={() => setDragId(f.id)}
+                        onConvert={isAdmin && !(kindTab === 'nc' && f.status === 'cerrado')
+                          ? () => setConvertTarget(f) : undefined} />
                     ))}
                     {cards.length === 0 && (
                       <div className="border-2 border-dashed border-gray-100 rounded-xl h-24 flex items-center justify-center">
@@ -453,6 +471,7 @@ export default function Findings() {
                   <th className="text-left px-4 py-3 text-[10px] font-bold text-gray-500 uppercase tracking-wider w-28">Estado</th>
                   <th className="text-left px-4 py-3 text-[10px] font-bold text-gray-500 uppercase tracking-wider w-20 hidden lg:table-cell">Responsable</th>
                   <th className="text-center px-4 py-3 text-[10px] font-bold text-gray-500 uppercase tracking-wider w-16 hidden lg:table-cell">Días</th>
+                  {isAdmin && <th className="text-right px-4 py-3 text-[10px] font-bold text-gray-500 uppercase tracking-wider w-28">Reclasificar</th>}
                 </tr>
               </thead>
               <tbody>
@@ -494,6 +513,25 @@ export default function Findings() {
                           {f.days_open}d
                         </span>
                       </td>
+                      {isAdmin && (
+                        <td className="px-4 py-3 text-right">
+                          {/* Una NC cerrada conserva su condición: su eficacia ya está verificada. */}
+                          {kindTab === 'nc' && f.status === 'cerrado' ? (
+                            <span className="text-[10px] text-gray-300">cerrada</span>
+                          ) : (
+                            <button
+                              onClick={e => { e.stopPropagation(); setConvertTarget(f); }}
+                              title={kindTab === 'nc'
+                                ? 'Pasar a aviso: sale del circuito formal de acción correctiva'
+                                : 'Pasar a no conformidad: entra al circuito formal con causa, acción y eficacia'}
+                              className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold border border-gray-200 text-gray-600 hover:border-dassa-red hover:text-dassa-red transition-colors whitespace-nowrap"
+                            >
+                              <ArrowRightLeft size={11} />
+                              {kindTab === 'nc' ? 'a aviso' : 'a NC'}
+                            </button>
+                          )}
+                        </td>
+                      )}
                     </tr>
                   );
                 })}
@@ -512,6 +550,15 @@ export default function Findings() {
       {/* Detail panel */}
       {selectedId && (
         <FindingDetail findingId={selectedId} onClose={() => setSelectedId(null)} />
+      )}
+
+      {/* Reclasificar NC ↔ aviso desde la lista */}
+      {convertTarget && (
+        <ConvertModal
+          finding={convertTarget}
+          users={users}
+          onClose={() => setConvertTarget(null)}
+        />
       )}
 
       {/* New NC modal */}

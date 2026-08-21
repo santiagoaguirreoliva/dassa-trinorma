@@ -83,7 +83,7 @@ risksRouter.get('/', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-risksRouter.post('/', requireRole('master_admin','sgi_leader','seguridad_higiene'), async (req, res) => {
+risksRouter.post('/', requireRole('master_admin','sgi_leader','seguridad_higiene','director'), async (req, res) => {
   const { code, activity, hazard, risk_factor, activity_type, impact,
           probability, severity, legal_req, current_controls, responsible_id,
           area, condition, control_status, recommended_action, start_date, end_date,
@@ -107,7 +107,7 @@ risksRouter.post('/', requireRole('master_admin','sgi_leader','seguridad_higiene
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-risksRouter.patch('/:id', requireRole('master_admin','sgi_leader','seguridad_higiene'), async (req, res) => {
+risksRouter.patch('/:id', requireRole('master_admin','sgi_leader','seguridad_higiene','director'), async (req, res) => {
   const allowed = ['activity','hazard','risk_factor','activity_type','impact','probability',
     'severity','legal_req','current_controls','responsible_id','control_status',
     'residual_probability','residual_severity','is_active',

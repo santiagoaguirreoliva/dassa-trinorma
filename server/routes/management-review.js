@@ -104,7 +104,7 @@ router.patch('/:id', async (req, res) => {
       'legal_summary','providers_summary','resources_adequacy','risks_actions_eval','improvement_opportunities',
       // entradas propias de ISO 14001 / 45001 (migr 075)
       'env_aspects_summary','lifecycle_summary','sst_hazards_summary','policy_review','incidents_summary',
-      'consultation_participation','env_sst_objectives',
+      'consultation_participation','env_sst_objectives','health_surveillance',
       // salidas propias de ISO 14001 / 45001 (migr 075)
       'conclusions_suitability','improvement_decisions','change_needs_resources','unmet_objectives_actions',
       'integration_opportunities','strategic_implications',

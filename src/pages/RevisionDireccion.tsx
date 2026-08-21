@@ -32,6 +32,7 @@ interface Review {
   // Entradas y salidas propias de ISO 14001 y 45001 (migr 075)
   env_aspects_summary?: string; lifecycle_summary?: string; sst_hazards_summary?: string; policy_review?: string;
   incidents_summary?: string; consultation_participation?: string; env_sst_objectives?: string;
+  health_surveillance?: string;
   conclusions_suitability?: string; improvement_decisions?: string; change_needs_resources?: string;
   unmet_objectives_actions?: string; integration_opportunities?: string; strategic_implications?: string;
   decisions?: string; improvement_actions?: Action[]; status: string; signatures?: { name: string; signed_at: string }[];
@@ -63,6 +64,7 @@ const ENTRADAS_MA_SST: { key: keyof Review; label: string }[] = [
   { key: 'incidents_summary', label: 'Incidentes, accidentes y enfermedades profesionales' },
   { key: 'consultation_participation', label: 'Consulta y participación de los trabajadores' },
   { key: 'env_sst_objectives', label: 'Grado de logro de los objetivos ambientales y de SST' },
+  { key: 'health_surveillance', label: 'Vigilancia de la salud: exámenes médicos periódicos' },
 ];
 
 const SALIDAS: { key: keyof Review; label: string }[] = [
@@ -94,19 +96,25 @@ export default function RevisionDireccion() {
 
   const review = reviewsQ.data?.reviews?.[0] || null;
   const [form, setForm] = useState<Review | null>(null);
+  // Sin esto, un guardado fallido era invisible y el acta se perdía en silencio.
+  const [error, setError] = useState<string | null>(null);
+  const onErr = (e: any) => setError(e?.message || 'No se pudo guardar. Copiá lo escrito antes de recargar.');
   useEffect(() => { if (review) setForm(review); }, [review?.id, review?.status]);
 
   const create = useMutation({
     mutationFn: () => api.post('/management-review', { year: YEAR, period_label: `Revisión por la Dirección ${YEAR}` }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['mr-reviews', YEAR] }),
+    onSuccess: () => { setError(null); qc.invalidateQueries({ queryKey: ['mr-reviews', YEAR] }); },
+    onError: onErr,
   });
   const save = useMutation({
     mutationFn: (body: Partial<Review>) => api.patch(`/management-review/${review!.id}`, body),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['mr-reviews', YEAR] }),
+    onSuccess: () => { setError(null); qc.invalidateQueries({ queryKey: ['mr-reviews', YEAR] }); },
+    onError: onErr,
   });
   const sign = useMutation({
     mutationFn: () => api.post(`/management-review/${review!.id}/close-and-sign`, {}),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['mr-reviews', YEAR] }),
+    onSuccess: () => { setError(null); qc.invalidateQueries({ queryKey: ['mr-reviews', YEAR] }); },
+    onError: onErr,
   });
 
   if (inputsQ.isLoading || reviewsQ.isLoading) return <PageContent><Header title="🏛️ Revisión por la Dirección" icon={<ClipboardCheck size={20} />} /><div className="flex justify-center py-10"><Spinner /></div></PageContent>;
@@ -220,6 +228,14 @@ export default function RevisionDireccion() {
           </div>
 
           {/* Acciones del acta */}
+          {error && (
+            <div className="mb-3 bg-red-50 border border-red-200 rounded-lg px-3 py-2 text-[11px] text-red-700">
+              {error}
+            </div>
+          )}
+          {!locked && save.isSuccess && !save.isPending && !error && (
+            <div className="mb-3 text-[11px] text-emerald-700">Borrador guardado.</div>
+          )}
           {!locked && (
             <div className="flex items-center justify-end gap-2 mb-8">
               <button onClick={() => save.mutate(form)} disabled={save.isPending}

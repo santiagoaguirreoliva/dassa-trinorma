@@ -22,8 +22,9 @@ projectsRouter.get('/', async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// Editable por cualquier usuario autenticado: quien ejecuta el proyecto es
+// quien sabe cómo viene. `updated_at` deja el rastro de la última mano.
 projectsRouter.patch('/:id', async (req, res) => {
-  if (!isLeader(req.user.role)) return res.status(403).json({ error: 'No autorizado' });
   try {
     const FIELDS = ['name', 'area', 'objective_codes', 'status', 'progress_pct', 'responsible', 'notes', 'enabled'];
     const updates = []; const values = []; let i = 1;

@@ -34,6 +34,7 @@ function ProjectCard({ p, canEdit }: { p: Project; canEdit: boolean }) {
   const patch = useMutation({
     mutationFn: (body: Partial<Project>) => api.patch(`/proyectos/${p.id}`, body),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['proyectos'] }),
+    onError: (e: any) => alert(e?.message || 'No se pudo guardar el proyecto'),
   });
   return (
     <div className="rounded-xl border border-gray-200 bg-white p-3">
@@ -47,7 +48,11 @@ function ProjectCard({ p, canEdit }: { p: Project; canEdit: boolean }) {
         ) : <Badge variant={STATUS_VARIANT[p.status || ''] || 'gray'} label={p.status || '—'} />}
       </div>
       {p.objective_codes && <div className="text-[10px] text-gray-400 mb-2">impulsa {p.objective_codes}</div>}
-      {p.notes && <p className="text-[11px] text-gray-600 leading-snug mb-2">{p.notes}</p>}
+      {canEdit ? (
+        <textarea defaultValue={p.notes || ''} rows={2} placeholder="Anotá cómo viene el proyecto…"
+          onBlur={e => { if (e.target.value !== (p.notes || '')) patch.mutate({ notes: e.target.value }); }}
+          className="w-full text-[11px] text-gray-600 leading-snug mb-2 border border-transparent hover:border-gray-200 focus:border-dassa-celeste rounded px-1.5 py-1 focus:outline-none resize-none bg-transparent" />
+      ) : p.notes ? <p className="text-[11px] text-gray-600 leading-snug mb-2">{p.notes}</p> : null}
 
       {/* No todo proyecto se mide en porcentaje: una obra o una certificación
           avanzan por hitos y su estado ya lo dice. La barra aparece cuando hay
@@ -88,7 +93,8 @@ function ProjectCard({ p, canEdit }: { p: Project; canEdit: boolean }) {
 
 export default function Proyectos() {
   const { user } = useAuth();
-  const canEdit = ['master_admin', 'director', 'sgi_leader'].includes(user?.role || '');
+  // Todos pueden anotar el avance de un proyecto: el dato lo tiene quien lo ejecuta.
+  const canEdit = !!user;
   const { data, isLoading } = useQuery({
     queryKey: ['proyectos'],
     queryFn: () => api.get<{ ok: boolean; projects: Project[] }>('/proyectos'),

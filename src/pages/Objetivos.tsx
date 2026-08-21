@@ -6,6 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Header } from '@/components/layout/Header';
 import { Spinner, PageContent, KPICard } from '@/components/ui';
 import { SimplePie } from '@/components/charts';
+import ObjetivoDetalle from '@/components/objetivos/ObjetivoDetalle';
 
 interface Medicion { mes:string; valor:number|string|null; notes?:string; anio?:number }
 interface Kpi { id:string; indicator_name:string; item_medido?:string; unit?:string; frequency?:string;
@@ -119,6 +120,7 @@ export default function Objetivos() {
   const isLeader = ['master_admin','director','sgi_leader'].includes(user?.role||'');
   const [year, setYear] = useState(2026);
   const [showNew, setShowNew] = useState(false);
+  const [detalleId, setDetalleId] = useState<string|null>(null);
 
   const { data, isLoading } = useQuery<{ok:boolean;objectives:Objective[]}>({
     queryKey: ['objetivos', year],
@@ -164,7 +166,8 @@ export default function Objetivos() {
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
         {data.objectives.map(o=>(
-          <div key={o.id} className="bg-white border border-gray-200 rounded-xl p-4">
+          <div key={o.id} onClick={() => setDetalleId(o.id)}
+            className="bg-white border border-gray-200 rounded-xl p-4 cursor-pointer hover:border-dassa-celeste hover:shadow-sm transition-all">
             <div className="flex items-start justify-between mb-2">
               <code className="text-[10px] font-bold text-dassa-celeste-deep">{o.code}</code>
               <span className={`text-[10px] px-2 py-0.5 rounded font-bold ${o.status==='cumplido'?'bg-emerald-100 text-emerald-700':o.status==='no_cumplido'?'bg-red-100 text-red-700':'bg-amber-100 text-amber-700'}`}>{o.status}</span>
@@ -189,6 +192,7 @@ export default function Objetivos() {
           </div>
         ))}
       </div>
+      {detalleId && <ObjetivoDetalle objectiveId={detalleId} onClose={() => setDetalleId(null)} />}
       {showNew && <NewObjetivoModal year={year} onClose={()=>setShowNew(false)} onCreated={()=>qc.invalidateQueries({ queryKey:['objetivos', year] })}/>}
     </PageContent>
   );

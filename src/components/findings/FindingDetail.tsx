@@ -30,6 +30,21 @@ const KIND_LABEL: Record<string, string> = {
   nc: 'no conformidad', hallazgo: 'aviso', incidente: 'incidente de SST',
 };
 
+// Los 5 porqués se guardan como {p1..p5} en una columna text. Si lo que hay
+// adentro no es JSON (texto libre de otro camino de carga), se recupera como p1
+// en vez de romper el render del panel.
+function parseCausas(raw: unknown): Record<string, string> {
+  if (!raw) return {};
+  if (typeof raw === 'object') return raw as Record<string, string>;
+  if (typeof raw !== 'string') return {};
+  try {
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === 'object' ? parsed : { p1: raw };
+  } catch {
+    return { p1: raw };
+  }
+}
+
 export default function FindingDetail({ findingId, onClose }: Props) {
   const { isAdmin } = useAuth();
   const qc = useQueryClient();
@@ -39,6 +54,10 @@ export default function FindingDetail({ findingId, onClose }: Props) {
   const [editMode, setEditMode] = useState(false);
   const [editData, setEditData] = useState<Record<string, any>>({});
   const [showConvert, setShowConvert] = useState(false);
+  // El backend rechaza operaciones con motivo (ej. cerrar sin verificar la eficacia,
+  // ISO 10.2 d). Sin esto el rechazo era invisible y el panel parecía no responder.
+  const [error, setError] = useState<string | null>(null);
+  const onErr = (e: any) => setError(e?.message || 'No se pudo completar la acción. Reintentá en unos segundos.');
 
   const { data: finding, isLoading } = useQuery({
     queryKey: ['finding', findingId],
@@ -52,37 +71,44 @@ export default function FindingDetail({ findingId, onClose }: Props) {
 
   const updateStatus = useMutation({
     mutationFn: (status: string) => api.patch(`/findings/${findingId}/status`, { status }),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['finding', findingId] }); qc.invalidateQueries({ queryKey: ['findings'] }); },
+    onSuccess: () => { setError(null); qc.invalidateQueries({ queryKey: ['finding', findingId] }); qc.invalidateQueries({ queryKey: ['findings'] }); },
+    onError: onErr,
   });
 
   const updateFinding = useMutation({
     mutationFn: (data: any) => api.patch(`/findings/${findingId}`, data),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['finding', findingId] }); qc.invalidateQueries({ queryKey: ['findings'] }); setEditMode(false); },
+    onSuccess: () => { setError(null); qc.invalidateQueries({ queryKey: ['finding', findingId] }); qc.invalidateQueries({ queryKey: ['findings'] }); setEditMode(false); },
+    onError: onErr,
   });
 
   const addComment = useMutation({
     mutationFn: () => api.post(`/findings/${findingId}/comments`, { content: newComment }),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['finding', findingId] }); setNewComment(''); },
+    onSuccess: () => { setError(null); qc.invalidateQueries({ queryKey: ['finding', findingId] }); setNewComment(''); },
+    onError: onErr,
   });
 
   const addAction = useMutation({
     mutationFn: () => api.post(`/findings/${findingId}/actions`, newAction),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['finding', findingId] }); setNewAction({ description: '', due_date: '', responsible_id: '' }); },
+    onSuccess: () => { setError(null); qc.invalidateQueries({ queryKey: ['finding', findingId] }); setNewAction({ description: '', due_date: '', responsible_id: '' }); },
+    onError: onErr,
   });
 
   const completeAction = useMutation({
     mutationFn: (aid: string) => api.patch(`/findings/${findingId}/actions/${aid}`, { status: 'completada' }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['finding', findingId] }),
+    onSuccess: () => { setError(null); qc.invalidateQueries({ queryKey: ['finding', findingId] }); },
+    onError: onErr,
   });
 
   const aiAnalyze = useMutation({
     mutationFn: () => api.post(`/findings/${findingId}/ai-analyze`, {}),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['finding', findingId] }),
+    onSuccess: () => { setError(null); qc.invalidateQueries({ queryKey: ['finding', findingId] }); },
+    onError: onErr,
   });
 
   const archiveFinding = useMutation({
     mutationFn: () => api.delete(`/findings/${findingId}`),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['findings'] }); onClose(); },
+    onError: onErr,
   });
 
   if (isLoading) return (
@@ -95,11 +121,10 @@ export default function FindingDetail({ findingId, onClose }: Props) {
   const sc = FINDING_STATUS[finding.status];
   const tc = FINDING_TYPE[finding.finding_type];
   const currentIdx = STATUS_IDX[finding.status] ?? 0;
-  const porques = finding.cause_analysis_content
-    ? (typeof finding.cause_analysis_content === 'string'
-        ? JSON.parse(finding.cause_analysis_content)
-        : finding.cause_analysis_content)
-    : {};
+  // `cause_analysis_content` es una columna text: nada garantiza que sea JSON.
+  // Un parse que explota acá se lleva puesto el panel entero (pantalla en blanco),
+  // así que un contenido no-JSON se muestra como el primer porqué y listo.
+  const porques = parseCausas(finding.cause_analysis_content);
 
   const ed = (k: string) => editData[k] ?? finding[k] ?? '';
   const ai = finding.ai_analysis || null;
@@ -110,8 +135,8 @@ export default function FindingDetail({ findingId, onClose }: Props) {
         className="relative h-full w-full max-w-2xl bg-white shadow-2xl overflow-y-auto flex flex-col"
         onClick={e => e.stopPropagation()}
       >
-        {/* Header */}
-        <div className="sticky top-0 bg-white border-b border-slate-200 z-10 px-6 py-4">
+        {/* Header — fijo: código, estado, etapas y secciones quedan siempre a la vista */}
+        <div className="sticky top-0 bg-white z-10 px-6 py-4">
           <div className="flex items-start justify-between gap-3">
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-1">
@@ -135,38 +160,67 @@ export default function FindingDetail({ findingId, onClose }: Props) {
 
           {/* Status flow */}
           <div className="flex items-center gap-1 mt-3 overflow-x-auto pb-1">
-            {STATUS_FLOW.map((s, idx) => (
+            {STATUS_FLOW.map((s, idx) => {
+              const aplicando = updateStatus.isPending && updateStatus.variables === s.key;
+              const esActual = idx === currentIdx;
+              return (
+                <button
+                  key={s.key}
+                  onClick={() => {
+                    if (!isAdmin || esActual) return;
+                    // Retroceder o saltear etapas no es lo habitual: se confirma para
+                    // que un click de más no reabra ni adelante una NC sin querer.
+                    const salto = idx - currentIdx;
+                    if (salto < 0 && !window.confirm(
+                      `¿Volver ${finding.code} a "${s.label}"? Queda registrado en el historial.`)) return;
+                    if (salto > 1 && !window.confirm(
+                      `¿Saltar directo a "${s.label}" salteando ${salto - 1} etapa${salto > 2 ? 's' : ''}?`)) return;
+                    setError(null);
+                    updateStatus.mutate(s.key);
+                  }}
+                  disabled={!isAdmin || updateStatus.isPending}
+                  title={isAdmin && !esActual ? `Mover a ${s.label}` : undefined}
+                  className={`flex-shrink-0 inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold transition-colors
+                    disabled:opacity-60
+                    ${esActual
+                      ? 'bg-blue-700 text-white'
+                      : idx < currentIdx
+                      ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200'
+                      : 'bg-slate-100 text-slate-400 hover:bg-slate-200'
+                    } ${isAdmin && !esActual ? 'cursor-pointer' : 'cursor-default'}`}
+                >
+                  {aplicando && <Loader2 size={9} className="animate-spin" />}
+                  {!aplicando && idx < currentIdx ? '✓ ' : ''}{s.label}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* El backend rechaza con motivo (ej. ISO 10.2 d); antes se perdía en silencio */}
+          {error && (
+            <div className="mt-2 flex items-start gap-2 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+              <AlertTriangle size={13} className="text-red-500 flex-shrink-0 mt-0.5" />
+              <p className="text-[11px] text-red-700 leading-snug flex-1">{error}</p>
+              <button onClick={() => setError(null)} className="text-red-400 hover:text-red-600 flex-shrink-0">
+                <X size={13} />
+              </button>
+            </div>
+          )}
+
+          {/* Tabs: van dentro del bloque fijo para no perderse al scrollear */}
+          <div className="flex border-b border-slate-200 -mx-6 px-6 -mb-4 mt-3 overflow-x-auto">
+            {(['detalle','causas','acciones','evidencia','comentarios','historial'] as const).map(t => (
               <button
-                key={s.key}
-                onClick={() => isAdmin && updateStatus.mutate(s.key)}
-                disabled={!isAdmin || updateStatus.isPending}
-                className={`flex-shrink-0 px-2.5 py-1 rounded-full text-[10px] font-bold transition-colors
-                  ${idx === currentIdx
-                    ? 'bg-blue-700 text-white'
-                    : idx < currentIdx
-                    ? 'bg-emerald-100 text-emerald-700'
-                    : 'bg-slate-100 text-slate-400 hover:bg-slate-200'
-                  } ${isAdmin ? 'cursor-pointer' : 'cursor-default'}`}
+                key={t}
+                onClick={() => setTab(t)}
+                className={`px-3 py-3 text-xs font-bold capitalize border-b-2 flex-shrink-0 transition-colors
+                  ${tab === t ? 'border-blue-600 text-blue-700' : 'border-transparent text-slate-400 hover:text-slate-700'}`}
               >
-                {idx < currentIdx ? '✓ ' : ''}{s.label}
+                {t === 'acciones' ? `Acciones (${finding.actions?.length ?? 0})` : t}
+                {t === 'comentarios' && finding.comments?.length > 0 ? ` (${finding.comments.length})` : ''}
               </button>
             ))}
           </div>
-        </div>
-
-        {/* Tabs */}
-        <div className="flex border-b border-slate-200 px-6 overflow-x-auto">
-          {(['detalle','causas','acciones','evidencia','comentarios','historial'] as const).map(t => (
-            <button
-              key={t}
-              onClick={() => setTab(t)}
-              className={`px-3 py-3 text-xs font-bold capitalize border-b-2 flex-shrink-0 transition-colors
-                ${tab === t ? 'border-blue-600 text-blue-700' : 'border-transparent text-slate-400 hover:text-slate-700'}`}
-            >
-              {t === 'acciones' ? `Acciones (${finding.actions?.length ?? 0})` : t}
-              {t === 'comentarios' && finding.comments?.length > 0 ? ` (${finding.comments.length})` : ''}
-            </button>
-          ))}
         </div>
 
         {/* Tab content */}

@@ -22,14 +22,29 @@ objectivesRouter.get('/', async (req, res) => {
   try {
     const year = req.query.year ? parseInt(req.query.year) : new Date().getFullYear();
     const params = [year];
-    let where = 'o.year = $1';
+    // Los ocultos (tablero interno, fuera del F-TRI-04) no se listan
+    let where = 'o.year = $1 AND o.deleted_at IS NULL';
     if (req.query.tier) { params.push(req.query.tier); where += ` AND o.tier = $${params.length}`; }  // 'estrategico' = tablero 3 niveles
     const { rows } = await query(`
       SELECT o.*, u.full_name AS responsible_name,
              (SELECT COUNT(*) FROM objective_indicators oi WHERE oi.objective_id = o.id) AS num_indicators,
              (SELECT COUNT(*) FROM objective_indicators oi WHERE oi.objective_id = o.id AND oi.enabled) AS num_enabled,
              (SELECT COUNT(DISTINCT oi.id) FROM objective_indicators oi
-                JOIN objective_measurements m ON m.indicator_id = oi.id WHERE oi.objective_id = o.id) AS num_with_data
+                JOIN objective_measurements m ON m.indicator_id = oi.id WHERE oi.objective_id = o.id) AS num_with_data,
+             -- Indicadores con su serie mensual del año: es lo que el F-TRI-04 muestra
+             -- como Ene..Dic, y permite el acumulado del año contra la meta anual.
+             (SELECT json_agg(json_build_object(
+                 'id', oi.id, 'indicator_name', oi.indicator_name, 'item_medido', oi.item_medido,
+                 'unit', oi.unit, 'frequency', oi.frequency, 'target_value', oi.target_value,
+                 'target_text', oi.target_text, 'direction', oi.direction,
+                 'mediciones', (SELECT json_agg(json_build_object(
+                       'mes', to_char(m.period,'YYYY-MM'), 'valor', m.value, 'notes', m.notes)
+                     ORDER BY m.period)
+                   FROM objective_measurements m
+                   WHERE m.indicator_id = oi.id AND date_part('year', m.period) = o.year))
+               ORDER BY oi.kpi_order)
+              FROM objective_indicators oi
+              WHERE oi.objective_id = o.id AND oi.enabled) AS kpis
       FROM objectives o LEFT JOIN users u ON u.id = o.responsible_id
       WHERE ${where} ORDER BY o.code
     `, params);

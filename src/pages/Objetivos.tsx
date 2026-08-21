@@ -7,13 +7,73 @@ import { Header } from '@/components/layout/Header';
 import { Spinner, PageContent, KPICard } from '@/components/ui';
 import { SimplePie } from '@/components/charts';
 
-interface Objective { id:string; code:string; name:string; description:string; area:string; target_metric:string; target_value:string; admissible_value:string; status:string; num_indicators:number; }
+interface Medicion { mes:string; valor:number|string|null; notes?:string }
+interface Kpi { id:string; indicator_name:string; item_medido?:string; unit?:string; frequency?:string;
+  target_value:number|string|null; target_text?:string; direction?:string; mediciones:Medicion[]|null }
+interface Objective { id:string; code:string; name:string; description:string; area:string; target_metric:string;
+  target_value:string; admissible_value:string; status:string; num_indicators:number;
+  responsible_text?:string; acciones_asociadas?:string; recursos?:string; plazo_frecuencia?:string;
+  kpis:Kpi[]|null }
+
+const MESES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+
+// Franja anual del F-TRI-04: los 12 meses + el acumulado del año contra la meta.
+// Para metas anuales acumulables (contenedores) suma; para tasas y porcentajes
+// promedia, porque sumar un 97% doce veces no significa nada.
+function FranjaAnual({ kpi, metaAnual }: { kpi:Kpi; metaAnual?:string }) {
+  const porMes = new Map((kpi.mediciones||[]).map(m => [m.mes.slice(5), Number(m.valor)]));
+  const valores = [...porMes.values()].filter(v => Number.isFinite(v));
+  const acumulable = (kpi.unit||'').includes('CNT');
+  const acum = acumulable
+    ? valores.reduce((a,b)=>a+b, 0)
+    : (valores.length ? valores.reduce((a,b)=>a+b,0)/valores.length : null);
+  const meta = Number(metaAnual);
+  const pct = acumulable && acum !== null && Number.isFinite(meta) && meta>0 ? Math.round(100*acum/meta) : null;
+  // A esta altura del año, ¿cuánto se debería llevar? Sirve para leer si el ritmo alcanza.
+  const ritmo = valores.length ? Math.round(100*valores.length/12) : 0;
+  return (
+    <div className="mt-2.5 pt-2.5 border-t border-gray-100">
+      <div className="flex gap-0.5 overflow-x-auto pb-1">
+        {MESES.map((m,i) => {
+          const v = porMes.get(String(i+1).padStart(2,'0'));
+          const hay = Number.isFinite(v as number);
+          return (
+            <div key={m} className={`flex-1 min-w-[34px] text-center rounded py-1 ${hay ? 'bg-dassa-celeste/15' : 'bg-gray-50'}`}>
+              <div className="text-[8px] font-bold text-gray-400 uppercase">{m}</div>
+              <div className={`text-[10px] font-extrabold ${hay ? 'text-gray-800' : 'text-gray-300'}`}>
+                {hay ? (Number.isInteger(v) ? v : (v as number).toFixed(1)) : '—'}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      {acum !== null && (
+        <div className="flex items-baseline gap-2 mt-1.5 flex-wrap">
+          <span className="text-[10px] font-bold text-gray-500 uppercase">
+            {acumulable ? 'Acumulado del año' : 'Promedio del año'}
+          </span>
+          <span className="text-sm font-extrabold text-gray-900">
+            {acumulable ? Math.round(acum) : acum.toFixed(1)}{kpi.unit && !acumulable ? ` ${kpi.unit}` : ''}
+          </span>
+          {pct !== null && (
+            <>
+              <span className="text-[10px] text-gray-400">de {meta} ({pct}%)</span>
+              <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${pct >= ritmo ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
+                {pct >= ritmo ? 'en ritmo' : `${ritmo}% del año transcurrido`}
+              </span>
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function Objetivos() {
   const { user } = useAuth();
   const qc = useQueryClient();
   const isLeader = ['master_admin','director','sgi_leader'].includes(user?.role||'');
-  const [year, setYear] = useState(2025);
+  const [year, setYear] = useState(2026);
   const [showNew, setShowNew] = useState(false);
 
   const { data, isLoading } = useQuery<{ok:boolean;objectives:Objective[]}>({
@@ -67,12 +127,17 @@ export default function Objetivos() {
             </div>
             <h4 className="font-bold text-sm text-gray-900 mb-1">{o.name}</h4>
             <p className="text-[11px] text-gray-600 mb-2">{o.description}</p>
-            <div className="grid grid-cols-2 gap-2 text-[10px]">
+            <div className="grid grid-cols-2 gap-x-2 gap-y-1 text-[10px]">
               <div><strong className="text-gray-500">META:</strong> {o.target_value}</div>
-              <div><strong className="text-gray-500">Admisible:</strong> {o.admissible_value}</div>
-              <div><strong className="text-gray-500">Área:</strong> {o.area}</div>
-              <div><strong className="text-gray-500">Indicador:</strong> {o.target_metric}</div>
+              <div><strong className="text-gray-500">Admisible:</strong> {o.admissible_value || '—'}</div>
+              <div><strong className="text-gray-500">Indicador:</strong> {o.kpis?.[0]?.indicator_name || o.target_metric}</div>
+              <div><strong className="text-gray-500">Ítem a medir:</strong> {o.kpis?.[0]?.item_medido || '—'}</div>
+              <div><strong className="text-gray-500">Responsable:</strong> {o.responsible_text || '—'}</div>
+              <div><strong className="text-gray-500">Plazo/Frec.:</strong> {o.plazo_frecuencia || '—'}</div>
+              <div className="col-span-2"><strong className="text-gray-500">Acciones:</strong> {o.acciones_asociadas || '—'}</div>
+              <div className="col-span-2"><strong className="text-gray-500">Recursos:</strong> {o.recursos || '—'}</div>
             </div>
+            {o.kpis?.[0] && <FranjaAnual kpi={o.kpis[0]} metaAnual={o.target_value} />}
           </div>
         ))}
       </div>

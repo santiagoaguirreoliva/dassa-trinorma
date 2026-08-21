@@ -21,7 +21,7 @@ async function compileInputs(year) {
             'last_period', (SELECT to_char(m.period,'YYYY-MM') FROM objective_measurements m WHERE m.indicator_id=oi.id ORDER BY m.period DESC LIMIT 1))
           ORDER BY oi.kpi_order)
           FROM objective_indicators oi WHERE oi.objective_id=o.id AND oi.enabled) AS kpis
-      FROM objectives o WHERE o.tier='estrategico' AND o.year=$1 ORDER BY o.code`, [year]),
+      FROM objectives o WHERE o.deleted_at IS NULL AND o.year=$1 ORDER BY o.code`, [year]),
     query(`SELECT
         COUNT(*) FILTER (WHERE closed_at IS NULL) AS abiertas,
         COUNT(*) FILTER (WHERE closed_at IS NOT NULL AND date_part('year',closed_at)=$1) AS cerradas_periodo,

@@ -29,6 +29,11 @@ interface Review {
   prior_actions_review?: string; context_changes?: string; satisfaction_summary?: string; objectives_summary?: string;
   process_performance?: string; nc_capa_summary?: string; audit_summary?: string; legal_summary?: string;
   providers_summary?: string; resources_adequacy?: string; risks_actions_eval?: string; improvement_opportunities?: string;
+  // Entradas y salidas propias de ISO 14001 y 45001 (migr 075)
+  env_aspects_summary?: string; lifecycle_summary?: string; sst_hazards_summary?: string; policy_review?: string;
+  incidents_summary?: string; consultation_participation?: string; env_sst_objectives?: string;
+  conclusions_suitability?: string; improvement_decisions?: string; change_needs_resources?: string;
+  unmet_objectives_actions?: string; integration_opportunities?: string; strategic_implications?: string;
   decisions?: string; improvement_actions?: Action[]; status: string; signatures?: { name: string; signed_at: string }[];
   created_by_name?: string;
 }
@@ -46,6 +51,27 @@ const ENTRADAS: { key: keyof Review; label: string }[] = [
   { key: 'resources_adequacy', label: 'Adecuación de los recursos' },
   { key: 'risks_actions_eval', label: 'Eficacia de las acciones frente a riesgos y oportunidades' },
   { key: 'improvement_opportunities', label: 'd) Oportunidades de mejora' },
+];
+
+// ISO 14001 y 45001 piden entradas propias que la 9001 no cubre. Van aparte porque
+// el auditor las pregunta por norma, no mezcladas con las de calidad.
+const ENTRADAS_MA_SST: { key: keyof Review; label: string }[] = [
+  { key: 'env_aspects_summary', label: 'Aspectos ambientales significativos' },
+  { key: 'lifecycle_summary', label: 'Etapas del ciclo de vida consideradas' },
+  { key: 'sst_hazards_summary', label: 'Peligros y evaluación de riesgos de SST' },
+  { key: 'policy_review', label: 'Política del SGI: adecuación y comunicación' },
+  { key: 'incidents_summary', label: 'Incidentes, accidentes y enfermedades profesionales' },
+  { key: 'consultation_participation', label: 'Consulta y participación de los trabajadores' },
+  { key: 'env_sst_objectives', label: 'Grado de logro de los objetivos ambientales y de SST' },
+];
+
+const SALIDAS: { key: keyof Review; label: string }[] = [
+  { key: 'conclusions_suitability', label: 'Conclusiones sobre la conveniencia, adecuación y eficacia continuas del SGI' },
+  { key: 'improvement_decisions', label: 'Decisiones sobre las oportunidades de mejora continua' },
+  { key: 'change_needs_resources', label: 'Decisiones sobre la necesidad de cambio en el SGI, incluidos los recursos' },
+  { key: 'unmet_objectives_actions', label: 'Acciones necesarias cuando no se lograron los objetivos ambientales y de SST' },
+  { key: 'integration_opportunities', label: 'Oportunidades de mejorar la integración del SGI a otros procesos de negocio' },
+  { key: 'strategic_implications', label: 'Implicaciones para la dirección estratégica de la organización' },
 ];
 
 function Field({ label, value, onChange, disabled }: { label: string; value?: string; onChange: (v: string) => void; disabled?: boolean }) {
@@ -150,14 +176,26 @@ export default function RevisionDireccion() {
 
           {/* PASO 2 · Análisis (9.3.2) */}
           <h3 className="text-sm font-extrabold text-gray-900 uppercase tracking-wider mb-2 flex items-center gap-1.5"><PenLine size={15} className="text-dassa-red" /> 2 · Análisis de las entradas (9.3.2)</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 bg-white border border-gray-200 rounded-xl p-4 mb-5">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 bg-white border border-gray-200 rounded-xl p-4 mb-3">
             {ENTRADAS.map(e => <Field key={e.key} label={e.label} value={form[e.key] as string} onChange={v => set(e.key, v)} disabled={locked} />)}
+          </div>
+          <div className="bg-white border border-gray-200 rounded-xl p-4 mb-5">
+            <div className="text-[11px] font-bold text-gray-500 uppercase mb-2.5">Entradas de ISO 14001 y 45001</div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {ENTRADAS_MA_SST.map(e => <Field key={e.key} label={e.label} value={form[e.key] as string} onChange={v => set(e.key, v)} disabled={locked} />)}
+            </div>
           </div>
 
           {/* PASO 3 · Salidas (9.3.3) */}
           <h3 className="text-sm font-extrabold text-gray-900 uppercase tracking-wider mb-2 flex items-center gap-1.5"><GitMerge size={15} className="text-dassa-red" /> 3 · Decisiones y acciones (9.3.3)</h3>
           <div className="bg-white border border-gray-200 rounded-xl p-4 mb-3">
             <Field label="Decisiones de la Dirección (mejora, cambios al SGI, necesidades de recursos)" value={form.decisions} onChange={v => set('decisions', v)} disabled={locked} />
+            <div className="mt-4 pt-3 border-t border-gray-100">
+              <div className="text-[11px] font-bold text-gray-500 uppercase mb-2.5">Salidas de ISO 14001 y 45001</div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {SALIDAS.map(s => <Field key={s.key} label={s.label} value={form[s.key] as string} onChange={v => set(s.key, v)} disabled={locked} />)}
+              </div>
+            </div>
             <div className="mt-3">
               <div className="flex items-center justify-between mb-1">
                 <label className="text-[11px] font-bold text-gray-600">Acciones de mejora</label>

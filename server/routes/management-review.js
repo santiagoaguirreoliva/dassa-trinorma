@@ -102,6 +102,12 @@ router.patch('/:id', async (req, res) => {
     const FIELDS = ['period_label','meeting_date','location','attendees','prior_actions_review','context_changes',
       'satisfaction_summary','objectives_summary','process_performance','nc_capa_summary','audit_summary',
       'legal_summary','providers_summary','resources_adequacy','risks_actions_eval','improvement_opportunities',
+      // entradas propias de ISO 14001 / 45001 (migr 075)
+      'env_aspects_summary','lifecycle_summary','sst_hazards_summary','policy_review','incidents_summary',
+      'consultation_participation','env_sst_objectives',
+      // salidas propias de ISO 14001 / 45001 (migr 075)
+      'conclusions_suitability','improvement_decisions','change_needs_resources','unmet_objectives_actions',
+      'integration_opportunities','strategic_implications',
       'decisions','improvement_actions','status'];
     const updates = []; const values = []; let i = 1;
     for (const f of FIELDS) if (req.body[f] !== undefined) {

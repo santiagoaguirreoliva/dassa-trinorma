@@ -13,69 +13,97 @@ interface Kpi { id:string; indicator_name:string; item_medido?:string; unit?:str
 interface Objective { id:string; code:string; name:string; description:string; area:string; target_metric:string;
   target_value:string; admissible_value:string; status:string; num_indicators:number;
   responsible_text?:string; acciones_asociadas?:string; recursos?:string; plazo_frecuencia?:string;
+  cumplimiento_nota?:string; acciones_si_no_llega?:string;
   kpis:Kpi[]|null }
 
+// Serie de mediciones del F-TRI-04. La planilla mide cada objetivo con SU
+// frecuencia: doce meses sirven para los que se cuentan mes a mes, pero un
+// objetivo semestral o anual con doce casilleros vacíos no informa nada — solo
+// simula que faltan datos. Por eso la grilla se arma según "Plazo/Frec.".
 const MESES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+const PERIODOS: Record<string, { label:string; meses:number[] }[]> = {
+  mensual:    MESES.map((m,i) => ({ label:m, meses:[i+1] })),
+  bimensual:  [[1,2],[3,4],[5,6],[7,8],[9,10],[11,12]].map((ms,i) => ({ label:`B${i+1}`, meses:ms })),
+  trimestral: [[1,2,3],[4,5,6],[7,8,9],[10,11,12]].map((ms,i) => ({ label:`Q${i+1}`, meses:ms })),
+  semestral:  [[1,2,3,4,5,6],[7,8,9,10,11,12]].map((ms,i) => ({ label:`S${i+1}`, meses:ms })),
+  anual:      [{ label:'Año', meses:[1,2,3,4,5,6,7,8,9,10,11,12] }],
+};
 
-// Franja anual del F-TRI-04: los 12 meses + el acumulado del año contra la meta.
-// Para metas anuales acumulables (contenedores) suma; para tasas y porcentajes
-// promedia, porque sumar un 97% doce veces no significa nada.
-function FranjaAnual({ kpi, metaAnual, year }: { kpi:Kpi; metaAnual?:string; year:number }) {
+function Campo({ label, valor, ancho }: { label:string; valor?:string|null; ancho?:boolean }) {
+  if (!valor || !String(valor).trim()) return null;
+  return (
+    <div className={ancho ? 'col-span-2' : undefined}>
+      <strong className="text-gray-500">{label}:</strong> {valor}
+    </div>
+  );
+}
+
+function fmt(v:number) { return Number.isInteger(v) ? String(v) : v.toFixed(1); }
+
+function SerieMediciones({ kpi, metaAnual, year }: { kpi:Kpi; metaAnual?:string; year:number }) {
+  const freq = (kpi.frequency || 'mensual').toLowerCase();
+  const periodos = PERIODOS[freq] || PERIODOS.mensual;
   const meds = kpi.mediciones || [];
-  const delAnio = (a:number) => new Map(
-    meds.filter(m => Number(m.mes.slice(0,4)) === a).map(m => [m.mes.slice(5), Number(m.valor)]));
-  const porMes = delAnio(year);
-  const base = delAnio(year - 1);
-  const valores = [...porMes.values()].filter(v => Number.isFinite(v));
-  const acumulable = (kpi.unit||'').includes('CNT');
-  const acum = acumulable
-    ? valores.reduce((a,b)=>a+b, 0)
-    : (valores.length ? valores.reduce((a,b)=>a+b,0)/valores.length : null);
+  const acumula = (kpi.unit || '').includes('CNT');
+  const valorDe = (anio:number, meses:number[]) => {
+    const vs = meds
+      .filter(m => Number(m.mes.slice(0,4)) === anio && meses.includes(Number(m.mes.slice(5))))
+      .map(m => Number(m.valor)).filter(v => Number.isFinite(v));
+    if (!vs.length) return null;
+    // Dentro de un período agrupado, contar suma y medir promedia.
+    return acumula ? vs.reduce((a,b)=>a+b,0) : vs.reduce((a,b)=>a+b,0)/vs.length;
+  };
+  const actuales = periodos.map(p => valorDe(year, p.meses));
+  const previos  = periodos.map(p => valorDe(year-1, p.meses));
+  const hayDatos = actuales.some(v => v !== null) || previos.some(v => v !== null);
+
+  if (!hayDatos) {
+    return (
+      <div className="mt-2.5 pt-2.5 border-t border-gray-100 text-[10px] text-gray-400">
+        Sin mediciones cargadas · se mide {freq} · lo carga {kpi.item_medido ? 'el responsable' : 'el responsable'}
+      </div>
+    );
+  }
+
+  const vs = actuales.filter(v => v !== null) as number[];
+  const total = acumula ? vs.reduce((a,b)=>a+b,0) : (vs.length ? vs.reduce((a,b)=>a+b,0)/vs.length : null);
   const meta = Number(metaAnual);
-  const pct = acumulable && acum !== null && Number.isFinite(meta) && meta>0 ? Math.round(100*acum/meta) : null;
-  // A esta altura del año, ¿cuánto se debería llevar? Sirve para leer si el ritmo alcanza.
-  const ritmo = valores.length ? Math.round(100*valores.length/12) : 0;
+  const pct = acumula && total !== null && Number.isFinite(meta) && meta > 0 ? Math.round(100*total/meta) : null;
+  const transcurrido = Math.round(100 * vs.length / periodos.length);
+
   return (
     <div className="mt-2.5 pt-2.5 border-t border-gray-100">
       <div className="flex items-center gap-2 mb-1">
-        <span className="text-[9px] font-bold text-gray-400 uppercase">{year}</span>
-        {base.size > 0 && <span className="text-[9px] text-gray-300">· abajo en gris: real {year-1} (baseline)</span>}
+        <span className="text-[9px] font-bold text-gray-400 uppercase">{year} · {freq}</span>
+        {previos.some(v => v !== null) && <span className="text-[9px] text-gray-300">· abajo en gris: real {year-1}</span>}
       </div>
-      <div className="flex gap-0.5 overflow-x-auto pb-1">
-        {MESES.map((m,i) => {
-          const v = porMes.get(String(i+1).padStart(2,'0'));
-          const hay = Number.isFinite(v as number);
+      <div className={`grid gap-0.5 ${periodos.length > 6 ? 'grid-cols-12' : periodos.length > 2 ? 'grid-cols-4' : 'grid-cols-2'}`}>
+        {periodos.map((p, i) => {
+          const v = actuales[i], b = previos[i];
           return (
-            <div key={m} className={`flex-1 min-w-[34px] text-center rounded py-1 ${hay ? 'bg-dassa-celeste/15' : 'bg-gray-50'}`}>
-              <div className="text-[8px] font-bold text-gray-400 uppercase">{m}</div>
-              <div className={`text-[10px] font-extrabold ${hay ? 'text-gray-800' : 'text-gray-300'}`}>
-                {hay ? (Number.isInteger(v) ? v : (v as number).toFixed(1)) : '—'}
+            <div key={p.label} className={`text-center rounded py-1 ${v !== null ? 'bg-dassa-celeste/15' : 'bg-gray-50'}`}>
+              <div className="text-[8px] font-bold text-gray-400 uppercase">{p.label}</div>
+              <div className={`text-[10px] font-extrabold ${v !== null ? 'text-gray-800' : 'text-gray-300'}`}>
+                {v !== null ? fmt(v) : '—'}
               </div>
-              {(() => {
-                const b = base.get(String(i+1).padStart(2,'0'));
-                return Number.isFinite(b as number)
-                  ? <div className="text-[8px] text-gray-400" title={`Real ${year-1} (baseline)`}>
-                      {Number.isInteger(b) ? b : (b as number).toFixed(1)}
-                    </div>
-                  : null;
-              })()}
+              {b !== null && <div className="text-[8px] text-gray-400" title={`Real ${year-1}`}>{fmt(b)}</div>}
             </div>
           );
         })}
       </div>
-      {acum !== null && (
+      {total !== null && (
         <div className="flex items-baseline gap-2 mt-1.5 flex-wrap">
           <span className="text-[10px] font-bold text-gray-500 uppercase">
-            {acumulable ? 'Acumulado del año' : 'Promedio del año'}
+            {acumula ? 'Acumulado del año' : 'Promedio del año'}
           </span>
           <span className="text-sm font-extrabold text-gray-900">
-            {acumulable ? Math.round(acum) : acum.toFixed(1)}{kpi.unit && !acumulable ? ` ${kpi.unit}` : ''}
+            {acumula ? Math.round(total) : fmt(total)}{!acumula && kpi.unit ? ` ${kpi.unit}` : ''}
           </span>
           {pct !== null && (
             <>
               <span className="text-[10px] text-gray-400">de {meta} ({pct}%)</span>
-              <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${pct >= ritmo ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
-                {pct >= ritmo ? 'en ritmo' : `${ritmo}% del año transcurrido`}
+              <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${pct >= transcurrido ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
+                {pct >= transcurrido ? 'en ritmo' : `${transcurrido}% del período transcurrido`}
               </span>
             </>
           )}
@@ -143,17 +171,21 @@ export default function Objetivos() {
             </div>
             <h4 className="font-bold text-sm text-gray-900 mb-1">{o.name}</h4>
             <p className="text-[11px] text-gray-600 mb-2">{o.description}</p>
+            {/* Columnas del F-TRI-04. Las vacías no se muestran: una fila con "—"
+                ocupa lo mismo que una con dato y no dice nada. */}
             <div className="grid grid-cols-2 gap-x-2 gap-y-1 text-[10px]">
-              <div><strong className="text-gray-500">META:</strong> {o.target_value}</div>
-              <div><strong className="text-gray-500">Admisible:</strong> {o.admissible_value || '—'}</div>
-              <div><strong className="text-gray-500">Indicador:</strong> {o.kpis?.[0]?.indicator_name || o.target_metric}</div>
-              <div><strong className="text-gray-500">Ítem a medir:</strong> {o.kpis?.[0]?.item_medido || '—'}</div>
-              <div><strong className="text-gray-500">Responsable:</strong> {o.responsible_text || '—'}</div>
-              <div><strong className="text-gray-500">Plazo/Frec.:</strong> {o.plazo_frecuencia || '—'}</div>
-              <div className="col-span-2"><strong className="text-gray-500">Acciones:</strong> {o.acciones_asociadas || '—'}</div>
-              <div className="col-span-2"><strong className="text-gray-500">Recursos:</strong> {o.recursos || '—'}</div>
+              <Campo label="META" valor={o.target_value} />
+              <Campo label="Admisible" valor={o.admissible_value} />
+              <Campo label="Indicador" valor={o.kpis?.[0]?.indicator_name || o.target_metric} />
+              <Campo label="Ítem a medir" valor={o.kpis?.[0]?.item_medido} />
+              <Campo label="Responsable" valor={o.responsible_text} />
+              <Campo label="Plazo/Frec." valor={o.plazo_frecuencia} />
+              <Campo label="Acciones" valor={o.acciones_asociadas} ancho />
+              <Campo label="Recursos" valor={o.recursos} ancho />
+              <Campo label="Cumplimiento" valor={o.cumplimiento_nota} ancho />
+              <Campo label="Si no se llega" valor={o.acciones_si_no_llega} ancho />
             </div>
-            {o.kpis?.[0] && <FranjaAnual kpi={o.kpis[0]} metaAnual={o.target_value} year={year} />}
+            {o.kpis?.[0] && <SerieMediciones kpi={o.kpis[0]} metaAnual={o.target_value} year={year} />}
           </div>
         ))}
       </div>

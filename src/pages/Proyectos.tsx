@@ -1,5 +1,6 @@
 // /proyectos — Proyectos Estratégicos (Sistema Integral de Gestión · Nivel 2)
 // Impulsan los objetivos; ≠ change_requests (acciones de mejora del SGI).
+import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { GitBranch, Target, Wallet, Cpu, Forklift, Megaphone, Users, Leaf, Layers } from 'lucide-react';
@@ -25,6 +26,11 @@ const STATUS_OPTIONS = ['Planificado', 'En análisis', 'Desarrollo', 'En ejecuci
 // ─── Tarjeta de proyecto (edición inline de estado/avance para líderes) ──
 function ProjectCard({ p, canEdit }: { p: Project; canEdit: boolean }) {
   const qc = useQueryClient();
+  const [cargando, setCargando] = useState(false);
+  const finalizado = p.status === 'Finalizado';
+  // Se muestra la barra si el proyecto tiene avance real, si está finalizado
+  // (100 % implícito) o si quien edita pidió cargarlo.
+  const avanceVisible = (p.progress_pct ?? 0) > 0 || finalizado || cargando;
   const patch = useMutation({
     mutationFn: (body: Partial<Project>) => api.patch(`/proyectos/${p.id}`, body),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['proyectos'] }),
@@ -41,25 +47,40 @@ function ProjectCard({ p, canEdit }: { p: Project; canEdit: boolean }) {
         ) : <Badge variant={STATUS_VARIANT[p.status || ''] || 'gray'} label={p.status || '—'} />}
       </div>
       {p.objective_codes && <div className="text-[10px] text-gray-400 mb-2">impulsa {p.objective_codes}</div>}
-      <div className="mt-2">
-        <div className="flex items-center justify-between text-[10px] text-gray-500 mb-0.5">
-          <span>Avance</span>
-          {canEdit ? (
-            <div className="flex items-center gap-1">
-              <input type="number" min={0} max={100} defaultValue={p.progress_pct ?? 0}
-                onBlur={e => {
-                  const v = Math.max(0, Math.min(100, parseInt(e.target.value) || 0));
-                  if (v !== (p.progress_pct ?? 0)) patch.mutate({ progress_pct: v });
-                }}
-                className="w-12 text-right border border-gray-200 rounded px-1 py-0.5 text-[10px] focus:outline-none focus:ring-1 focus:ring-dassa-celeste" />
-              <span>%</span>
-            </div>
-          ) : <span>{p.progress_pct != null ? `${p.progress_pct}%` : '—'}</span>}
+      {p.notes && <p className="text-[11px] text-gray-600 leading-snug mb-2">{p.notes}</p>}
+
+      {/* No todo proyecto se mide en porcentaje: una obra o una certificación
+          avanzan por hitos y su estado ya lo dice. La barra aparece cuando hay
+          avance cargado; si no, queda el botón para cargarlo (solo quien edita).
+          Hoy los 30 proyectos están en 0 %, así que la barra no informaba nada. */}
+      {avanceVisible ? (
+        <div className="mt-2">
+          <div className="flex items-center justify-between text-[10px] text-gray-500 mb-0.5">
+            <span>Avance</span>
+            {canEdit ? (
+              <div className="flex items-center gap-1">
+                <input type="number" min={0} max={100} defaultValue={p.progress_pct ?? 0}
+                  onBlur={e => {
+                    const v = Math.max(0, Math.min(100, parseInt(e.target.value) || 0));
+                    if (v !== (p.progress_pct ?? 0)) patch.mutate({ progress_pct: v });
+                  }}
+                  className="w-12 text-right border border-gray-200 rounded px-1 py-0.5 text-[10px] focus:outline-none focus:ring-1 focus:ring-dassa-celeste" />
+                <span>%</span>
+              </div>
+            ) : <span>{p.progress_pct}%</span>}
+          </div>
+          <div className="h-1.5 rounded-full bg-gray-100 overflow-hidden">
+            <div className={`h-full rounded-full transition-all ${finalizado ? 'bg-emerald-500' : 'bg-dassa-celeste-deep'}`}
+              style={{ width: `${finalizado ? 100 : (p.progress_pct || 0)}%` }} />
+          </div>
         </div>
-        <div className="h-1.5 rounded-full bg-gray-100 overflow-hidden">
-          <div className="h-full bg-dassa-celeste-deep rounded-full transition-all" style={{ width: `${p.progress_pct || 0}%` }} />
-        </div>
-      </div>
+      ) : canEdit && !finalizado ? (
+        <button onClick={() => setCargando(true)}
+          className="mt-2 text-[10px] font-bold text-gray-400 hover:text-dassa-celeste-deep">
+          + cargar avance
+        </button>
+      ) : null}
+
       {p.responsible && <div className="text-[10px] text-gray-500 mt-2">👤 {p.responsible}</div>}
     </div>
   );

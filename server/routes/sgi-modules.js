@@ -79,7 +79,7 @@ objectivesRouter.get('/:id', async (req, res) => {
 objectivesRouter.patch('/:id/indicators/:indId', async (req, res) => {
   if (!isLeader(req.user.role)) return res.status(403).json({ error: 'No autorizado' });
   try {
-    const FIELDS = ['enabled','connector_source','connection_status','target_text','baseline_value','unit','indicator_name','frequency','kpi_order'];
+    const FIELDS = ['enabled','connector_source','connection_status','target_text','baseline_value','unit','indicator_name','frequency','kpi_order','item_medido','target_value','direction','admissible_value'];
     const updates = []; const values = []; let i = 1;
     for (const f of FIELDS) if (req.body[f] !== undefined) { updates.push(`${f} = $${i++}`); values.push(req.body[f]); }
     if (!updates.length) return res.status(400).json({ error: 'Sin cambios' });

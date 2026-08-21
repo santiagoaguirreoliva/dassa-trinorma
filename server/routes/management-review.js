@@ -40,7 +40,7 @@ async function compileInputs(year) {
         COUNT(*) FILTER (WHERE status='completada' OR completed_at IS NOT NULL) AS realizadas,
         COUNT(*) FILTER (WHERE is_mandatory) AS obligatorias
       FROM trainings WHERE date_part('year',scheduled_date)=$1`, [year]),
-    query(`SELECT status, COUNT(*)::int AS n FROM change_requests WHERE year=$1 GROUP BY status`, [year]),
+    query(`SELECT status, COUNT(*)::int AS n FROM change_requests WHERE year=$1 AND deleted_at IS NULL GROUP BY status`, [year]),
   ]);
   return {
     objectives: obj.rows,

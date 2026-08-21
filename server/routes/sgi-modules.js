@@ -116,7 +116,8 @@ changesRouter.get('/', async (req, res) => {
   try {
     const year = req.query.year ? parseInt(req.query.year) : null;
     const params = year ? [year] : [];
-    const where = year ? 'WHERE year = $1' : '';
+    // Los dados de baja (objetivos mal registrados como cambios) se conservan pero no se listan
+    const where = year ? 'WHERE year = $1 AND cr.deleted_at IS NULL' : 'WHERE cr.deleted_at IS NULL';
     const { rows } = await query(`
       SELECT cr.*, u.full_name AS responsible_name,
              (SELECT COUNT(*) FROM change_request_items WHERE change_request_id = cr.id) AS num_items

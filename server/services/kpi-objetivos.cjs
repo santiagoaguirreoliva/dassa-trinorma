@@ -2,10 +2,13 @@
 // Recalcula los 2 últimos meses CERRADOS (capta datos cargados tarde) y upsertea
 // en objective_measurements. Sin IA, sin mails: script determinístico.
 //
-// 1. Tiempo de desconsolidación (OBJ-03): prom. horas entre arribo del camión IMPO
-//    (balanza_pesada.entrada) y tally marítimo (tally.fecha_add+hora_add), join
-//    por contenedor con ventana de 45 días.
-// 2. Forzoso en término (OBJ-03): % de traslados IMPO (cordicar) con
+// 1. Desconsolidación TD (OBJ-2026-06): % de contenedores IMPO coordinados como
+//    TD (cordicar.operacion='TD'): horas promedio entre el ingreso del camión a
+//    balanza y el alta en stock de la mercadería, con marca en 72 h. Definición de Santi 2026-08-24
+//    para la auditoría BV: el hito es el alta en stock del subrenglón, no el
+//    cierre del tally (van casi juntos, pero el stock es cuándo la mercadería
+//    quedó realmente disponible).
+// 2. Forzoso en término (OBJ-2026-05): % de traslados IMPO (cordicar) con
 //    fechaarrib - fecha_buq <= 10 días corridos. Solo carga meses con muestra
 //    confiable (>= 50 ctns con fecha_buq): Depofis no siempre la carga.
 // 3. Nuevos clientes (OBJ-01): 1ª aparición histórica del nombre en el campo
@@ -23,29 +26,46 @@ const IND = {
 const MIN_CASOS_FORZOSO = 50;
 
 const SQL_DESCONSOLIDACION = `
-WITH tly AS (
-  SELECT btrim(contenedor) ctn, min(fecha) f_tally,
-         min(fecha_add + COALESCE(NULLIF(btrim(hora_add),'')::time,'12:00')) ts_tally
-  FROM depofis_mirror.tally
-  WHERE fecha >= $1::date - interval '45 days' AND fecha < $2::date
-    AND COALESCE(us_del,'')='' AND btrim(COALESCE(contenedor,'')) <> ''
-  GROUP BY 1
-), bal AS (
-  SELECT btrim(contenedor) ctn, COALESCE(entrada, fecha) ts_arribo
-  FROM depofis_mirror.balanza_pesada
-  WHERE tipo_oper ILIKE '%IMPO%' AND btrim(COALESCE(contenedor,'')) <> ''
-    AND COALESCE(us_del,'') = '' AND fecha >= $1::date - interval '90 days'
-), pair AS (
-  SELECT DISTINCT ON (t.ctn, t.f_tally) t.ts_tally, b.ts_arribo
-  FROM tly t JOIN bal b ON b.ctn = t.ctn
-   AND b.ts_arribo <= t.ts_tally AND b.ts_arribo >= t.ts_tally - interval '45 days'
-  ORDER BY t.ctn, t.f_tally, b.ts_arribo DESC
+WITH td AS (   -- universo: contenedores IMPO coordinados como TD (baja a piso)
+  SELECT DISTINCT replace(upper(btrim(contenedor)),' ','') ctn
+    FROM depofis_mirror.cordicar
+   WHERE tipo_oper ILIKE '%IMPO%' AND btrim(coalesce(operacion,''))='TD'
+     AND coalesce(btrim(us_del),'')='' AND btrim(coalesce(contenedor,''))<>''
+     AND fecha >= $1::date - 45 AND fecha < $2::date
+), bal AS (    -- t0: entrada a balanza. Agrupa por repesada: son el mismo camión.
+  SELECT replace(upper(btrim(contenedor)),' ','') ctn, min(entrada) t0
+    FROM depofis_mirror.balanza_pesada
+   WHERE tipo_oper ILIKE '%IMPO%' AND coalesce(btrim(us_del),'')=''
+     AND entrada > '1990-01-01' AND btrim(coalesce(contenedor,''))<>''
+     AND fecha >= $1::date - 45 AND fecha < $2::date
+   GROUP BY 1, coalesce(repesada,0)
+), oi AS (     -- contenedor → orden_ing. suborden 0 es el encabezado de la
+               -- operación (se crea al entrar el camión), no es mercadería.
+  SELECT DISTINCT replace(upper(btrim(contenedor)),' ','') ctn, orden_ing
+    FROM depofis_mirror.ingresadas_en_stock
+   WHERE tipo_oper='IMPORTACION' AND suborden > 0
+     AND fecha_ing >= $1::date - 60
+), stk AS (    -- t1: alta en stock del ÚLTIMO subrenglón — el desco terminó
+               -- cuando entró toda la mercadería del contenedor.
+  SELECT orden_ing, max(fecha_add + coalesce(nullif(btrim(hora_add),'')::time,'12:00')) t1
+    FROM depofis_mirror.stock
+   WHERE suborden > 0 AND fecha_add > '1990-01-01'
+   GROUP BY 1
+), par AS (
+  SELECT DISTINCT ON (b.ctn,b.t0) b.ctn, b.t0,
+         EXTRACT(epoch FROM s.t1 - b.t0)/3600 AS horas
+    FROM bal b JOIN td ON td.ctn = b.ctn JOIN oi ON oi.ctn = b.ctn
+    JOIN stk s ON s.orden_ing = oi.orden_ing
+             AND s.t1 > b.t0 AND s.t1 <= b.t0 + interval '45 days'
+   ORDER BY b.ctn, b.t0, s.t1
 )
-SELECT to_char(ts_tally,'YYYY-MM') mes, count(*)::int casos,
-       round(avg(EXTRACT(epoch FROM ts_tally - ts_arribo)/3600)::numeric,1) valor
-FROM pair
-WHERE ts_tally >= $1::date AND ts_tally < $2::date
-GROUP BY 1 ORDER BY 1`;
+SELECT to_char(t0,'YYYY-MM') mes, count(*)::int casos,
+       round(avg(horas)::numeric,1) valor,                      -- la marca es 72 h promedio
+       count(*) FILTER (WHERE horas <= 72)::int en_termino,
+       round(100.0*count(*) FILTER (WHERE horas <= 72)/count(*),1) pct_72,
+       round((percentile_cont(0.5) WITHIN GROUP (ORDER BY horas))::numeric,1) mediana_hs
+  FROM par WHERE t0 >= $1::date AND t0 < $2::date
+ GROUP BY 1 ORDER BY 1`;
 
 const SQL_FORZOSO = `
 SELECT to_char(fecha,'YYYY-MM') mes,
@@ -113,15 +133,21 @@ async function runKpisObjetivos() {
       `INSERT INTO objective_measurements (indicator_id, period, value, notes)
        VALUES ($1, $2, $3, $4)
        ON CONFLICT (indicator_id, period) DO UPDATE
-         SET value = EXCLUDED.value, notes = EXCLUDED.notes`,
+         SET value = EXCLUDED.value, notes = EXCLUDED.notes
+       -- Sólo pisa lo que escribió el propio cron. Una medición cargada a mano
+       -- (F-TRI-04 con el listado de coordinación) es el dato nuevo, no el viejo.
+       WHERE COALESCE(objective_measurements.notes,'') LIKE '%auto'`,
       [indicatorId, `${mes}-25`, valor, nota]
     );
 
     let cargadas = 0;
+    const ops = await idsPorCodigo(sgi, ['OBJ-2026-02', 'OBJ-2026-03', 'OBJ-2026-04', 'OBJ-2026-05', 'OBJ-2026-06']);
     for (const r of (await mirror.query(SQL_DESCONSOLIDACION, params)).rows) {
-      await upsert(IND.desconsolidacion, r.mes, r.valor,
-        `real ${r.mes.slice(0, 4)} · prom. h balanza→tally (${r.casos} ctns) · auto`);
-      console.log(`[kpi-obj] desconsolidación ${r.mes}: ${r.valor} h (${r.casos} ctns)`);
+      const dest = ops['OBJ-2026-06'] || IND.desconsolidacion;
+      await upsert(dest, r.mes, r.valor,
+        `real ${r.mes.slice(0, 4)} · ${r.casos} CNTs TD · mediana ${r.mediana_hs} h · `
+        + `${r.en_termino} de ${r.casos} dentro de 72 h (${r.pct_72}%) · balanza→alta en stock · auto`);
+      console.log(`[kpi-obj] desconsolidación TD ${r.mes}: ${r.valor} h prom (${r.casos} ctns, ${r.pct_72}% ≤72h)`);
       cargadas++;
     }
     for (const r of (await mirror.query(SQL_FORZOSO, params)).rows) {
@@ -129,8 +155,9 @@ async function runKpisObjetivos() {
         console.log(`[kpi-obj] forzoso ${r.mes}: SKIP, muestra chica (${r.casos} ctns con fecha_buq)`);
         continue;
       }
-      await upsert(IND.forzoso, r.mes, r.valor,
-        `real ${r.mes.slice(0, 4)} · cordicar ≤10 días (${r.casos} ctns c/dato) · auto`);
+      await upsert(ops['OBJ-2026-05'] || IND.forzoso, r.mes, r.valor,
+        `real ${r.mes.slice(0, 4)} · ${Math.round(r.casos * r.valor / 100)}/${r.casos} ctns `
+        + `≤10 días desde fecha de buque · auto`);
       console.log(`[kpi-obj] forzoso ${r.mes}: ${r.valor}% (${r.casos} ctns)`);
       cargadas++;
     }
@@ -141,15 +168,17 @@ async function runKpisObjetivos() {
       cargadas++;
     }
     // Operaciones IMPO/EXPO: año completo en curso (incluye el mes corriente, parcial)
-    const ops = await idsPorCodigo(sgi, ['OBJ-2026-02', 'OBJ-2026-03', 'OBJ-2026-04']);
     if (ops['OBJ-2026-02'] || ops['OBJ-2026-03']) {
       const anio = now.getFullYear();
       const finVentana = new Date(anio, now.getMonth() + 1, 1);
       const mesActual = `${anio}-${String(now.getMonth() + 1).padStart(2, '0')}`;
       const filas = (await mirror.query(SQL_OPERACIONES, [`${anio}-01-01`, iso(finVentana)])).rows;
       for (const r of filas) {
-        const parcial = r.mes === mesActual ? ' · mes en curso, parcial' : '';
-        const nota = (t) => `real ${anio} · ${t} desde cordicar${parcial} · auto`;
+        // El mes en curso no se carga: la serie del F-TRI-04 muestra meses
+        // cerrados, y un parcial mezclado con el listado de coordinación
+        // (que es la fuente declarada del indicador) no es comparable.
+        if (r.mes === mesActual) continue;
+        const nota = (t) => `real ${anio} · ${t} desde cordicar · auto`;
         if (ops['OBJ-2026-02']) await upsert(ops['OBJ-2026-02'], r.mes, r.impo, nota('CNTs IMPO'));
         if (ops['OBJ-2026-03']) await upsert(ops['OBJ-2026-03'], r.mes, r.expo, nota('CNTs EXPO'));
         const total = r.impo + r.expo;

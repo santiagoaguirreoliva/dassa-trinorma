@@ -9,6 +9,16 @@ interface Doc {
   id: string; code: string | null; title: string; content_md: string | null;
   proceso: string | null; norma: string | null; parent_document_id: string | null;
   needs_source: boolean; keywords: string[] | null;
+  version?: number; effective_date?: string | null; approved_at?: string | null; updated_at?: string;
+}
+
+// "Rev.02 · 12/08/2026" — misma leyenda que el resto del SGI.
+function revLabel(d: Doc): string {
+  const iso = (d.effective_date || d.approved_at || d.updated_at || '').slice(0, 10);
+  const rev = `Rev.${String(d.version ?? 1).padStart(2, '0')}`;
+  if (!iso) return rev;
+  const [y, m, dd] = iso.split('-');
+  return `${rev} · ${dd}/${m}/${y}`;
 }
 
 const CATEGORIAS: { key: string; procesos: string[] }[] = [
@@ -150,6 +160,7 @@ export default function ProcedimientosPublico() {
                     <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', marginBottom: 6 }}>
                       {sel.code && <span style={{ fontSize: 11, fontFamily: 'monospace', fontWeight: 700, background: '#F2F2F2', color: '#5E5E5E', padding: '2px 8px', borderRadius: 5 }}>{sel.code}</span>}
                       {sel.norma && <span style={{ fontSize: 10, fontWeight: 700, color: '#fff', background: NORMA_COLOR[sel.norma] || '#5E5E5E', padding: '2px 8px', borderRadius: 5 }}>{sel.norma}</span>}
+                      <span style={{ fontSize: 10, fontWeight: 700, color: '#0F1A4A', background: '#E6E9F2', padding: '2px 8px', borderRadius: 5 }}>{revLabel(sel)}</span>
                       {sel.needs_source && <span style={{ fontSize: 10, fontWeight: 700, color: '#B26A00', background: '#FBF0DD', padding: '2px 8px', borderRadius: 5 }}>sin documento fuente</span>}
                     </div>
                     <h1 style={{ fontSize: 22, fontWeight: 800, color: '#0F1A4A', margin: '4px 0 2px', lineHeight: 1.15 }}>{sel.title}</h1>

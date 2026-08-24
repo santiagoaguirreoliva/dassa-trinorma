@@ -51,7 +51,7 @@ function buildNav(openFindings: number, legalAlerts: number, role?: string): Nav
         { path: '/proyectos',       label: 'Proyectos',           icon: <GitBranch size={15} /> },
         { path: '/inversiones',     label: 'Inversiones',         icon: <Wallet size={15} /> },
         { path: '/cambios',         label: 'Cambios',             icon: <GitMerge size={15} /> },
-        { path: '/sistema-gestion', label: 'ISO NORMAS',          icon: <Settings size={15} /> },
+        { path: '/sistema-gestion', label: 'Política Integrada', icon: <Settings size={15} /> },
         { path: '/committee',       label: 'Comité Mixto',        icon: <Building2 size={15} /> },
       ],
     },

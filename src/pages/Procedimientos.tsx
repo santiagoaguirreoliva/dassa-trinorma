@@ -12,6 +12,18 @@ interface Doc {
   parent_document_id: string | null; keywords: string[] | null;
   needs_source: boolean; file_url: string | null; file_name: string | null;
   responsible_name?: string | null; updated_at?: string;
+  version?: number; effective_date?: string | null; approved_at?: string | null;
+}
+
+// "Rev.2 · 12/08/2026" — misma leyenda que el Header usa en el resto del SGI.
+// La fecha de la revisión vigente sale de la vigencia o la aprobación cuando
+// están cargadas; si no, de la última actualización del texto en la app.
+function revLabel(d: Doc): string {
+  const iso = (d.effective_date || d.approved_at || d.updated_at || '').slice(0, 10);
+  const rev = `Rev.${String(d.version ?? 1).padStart(2, '0')}`;
+  if (!iso) return rev;
+  const [y, m, dd] = iso.split('-');
+  return `${rev} · ${dd}/${m}/${y}`;
 }
 
 // Macro-categorías del mapa de procesos (orden de arriba hacia abajo)
@@ -167,6 +179,7 @@ export default function Procedimientos() {
                     {sel.code && <span className="text-[11px] font-mono font-bold bg-gray-100 text-gray-600 px-2 py-0.5 rounded">{sel.code}</span>}
                     {sel.norma && <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${NORMA_COLOR[sel.norma] || 'bg-gray-100 text-gray-600'}`}>{sel.norma}</span>}
                     <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-gray-100 text-gray-500 capitalize">{sel.status}</span>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-dassa-navy/10 text-dassa-navy">{revLabel(sel)}</span>
                     {sel.needs_source && <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-100 text-amber-700">sin documento fuente</span>}
                   </div>
                   <h2 className="text-[22px] font-extrabold text-dassa-navy mt-2 leading-tight">{sel.title}</h2>

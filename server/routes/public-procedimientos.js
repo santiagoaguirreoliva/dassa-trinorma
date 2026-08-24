@@ -13,7 +13,8 @@ router.use(limiter);
 router.get('/', async (_req, res) => {
   try {
     const { rows } = await query(
-      `SELECT id, code, title, content_md, proceso, norma, parent_document_id, needs_source, keywords
+      `SELECT id, code, title, content_md, proceso, norma, parent_document_id, needs_source, keywords,
+              version, effective_date, approved_at, updated_at
          FROM documents
         WHERE doc_type = 'procedimiento' AND status = 'aprobado'
         ORDER BY proceso, code`

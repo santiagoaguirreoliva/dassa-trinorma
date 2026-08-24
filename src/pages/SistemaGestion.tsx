@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Save, Loader2, Target, Compass, Edit3, X, ScrollText,
   Award, Handshake, GraduationCap, Sparkles, HeartPulse, Leaf, Users,
-  Lock, Puzzle, Cpu, Truck, Eye, CheckCircle2, type LucideIcon,
+  Lock, Puzzle, Cpu, Truck, Eye, CheckCircle2, Building2, MapPin, type LucideIcon,
 } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
@@ -112,6 +112,9 @@ export default function SistemaGestion() {
   const vision = data?.vision ?? '';
   const valores = parseContent(data?.valores ?? '');
   const politica = parseContent(data?.politica_gestion ?? '');
+  // El alcance son dos líneas sueltas (la declaración certificada y el domicilio),
+  // no el formato "Título: cuerpo" que usan valores y política.
+  const alcance = (data?.alcance ?? '').split('\n').map((l) => l.trim()).filter(Boolean);
 
   return (
     <>
@@ -140,6 +143,36 @@ export default function SistemaGestion() {
                 ))}
               </div>
             </div>
+
+            {/* ── Alcance del SGI (ISO 9001/14001/45001 · 4.3) ── */}
+            <section className="bg-white rounded-2xl border border-dassa-navy/20 p-6 shadow-sm">
+              <div className="flex items-center justify-between gap-3 mb-4">
+                <div className="flex items-center gap-3">
+                  <span className="w-11 h-11 rounded-xl bg-dassa-navy/10 text-dassa-navy flex items-center justify-center"><Building2 size={20} /></span>
+                  <div>
+                    <h3 className="text-lg font-extrabold text-gray-800 leading-none">Alcance del Sistema de Gestión Integrado</h3>
+                    <p className="text-[11px] font-semibold text-gray-400 mt-1">Qué actividades y qué sitio cubre la certificación</p>
+                  </div>
+                </div>
+                <EditToggle editing={editSection === 'alcance'} onToggle={() => toggle('alcance')} />
+              </div>
+              {editSection === 'alcance' ? (
+                <SectionEdit section="alcance" content={data?.alcance ?? ''} onDone={onSaved} />
+              ) : alcance.length ? (
+                <>
+                  <p className="text-[15px] text-gray-700 leading-relaxed pl-4 border-l-4 border-dassa-red font-medium">
+                    {alcance[0]}
+                  </p>
+                  {alcance.slice(1).map((l, i) => (
+                    <p key={i} className="flex items-start gap-2 text-[13px] text-gray-500 leading-relaxed mt-3">
+                      <MapPin size={15} className="shrink-0 mt-0.5 text-gray-400" />{l}
+                    </p>
+                  ))}
+                </>
+              ) : (
+                <p className="text-[14px] text-gray-300 italic">Sin contenido.</p>
+              )}
+            </section>
 
             {/* ── Misión + Visión ── */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

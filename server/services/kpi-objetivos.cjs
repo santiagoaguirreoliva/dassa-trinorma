@@ -141,7 +141,7 @@ async function runKpisObjetivos() {
     );
 
     let cargadas = 0;
-    const ops = await idsPorCodigo(sgi, ['OBJ-2026-02', 'OBJ-2026-03', 'OBJ-2026-04', 'OBJ-2026-05', 'OBJ-2026-06']);
+    const ops = await idsPorCodigo(sgi, ['OBJ-2026-02', 'OBJ-2026-03', 'OBJ-2026-04', 'OBJ-2026-05', 'OBJ-2026-06', 'OBJ-2026-17']);
     for (const r of (await mirror.query(SQL_DESCONSOLIDACION, params)).rows) {
       const dest = ops['OBJ-2026-06'] || IND.desconsolidacion;
       await upsert(dest, r.mes, r.valor,
@@ -162,7 +162,7 @@ async function runKpisObjetivos() {
       cargadas++;
     }
     for (const r of (await mirror.query(SQL_NUEVAS_AGENCIAS, params)).rows) {
-      await upsert(IND.nuevos_clientes, r.mes, r.valor,
+      await upsert(ops['OBJ-2026-17'] || IND.nuevos_clientes, r.mes, r.valor,
         `real ${r.mes.slice(0, 4)} · 1ª op como AGENCIA (cliente comercial) · auto`);
       console.log(`[kpi-obj] nuevas agencias ${r.mes}: ${r.valor}`);
       cargadas++;

@@ -8,6 +8,9 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Header } from '@/components/layout/Header';
 import { Spinner, KPICard, PageContent } from '@/components/ui';
 import { SEVERITY } from '@/lib/severity';
+import ExportExcelButton from '@/components/ExportExcelButton';
+import SearchInput from '@/components/SearchInput';
+import { matchesQuery } from '@/lib/textSearch';
 
 // ─── Tipos ──────────────────────────────────────────────────
 interface EnvironmentalAspect {
@@ -145,6 +148,7 @@ export default function Environmental() {
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState<EnvironmentalAspect | undefined>();
   const [filterSig, setFilterSig] = useState('');
+  const [q, setQ] = useState('');
   const qc = useQueryClient();
 
   const { data: aspects = [], isLoading } = useQuery<EnvironmentalAspect[]>({
@@ -159,6 +163,7 @@ export default function Environmental() {
   });
 
   const filtered = aspects.filter(a => {
+    if (!matchesQuery(q, a.aspect, a.activity, a.impact, a.control_measure)) return false;
     if (filterSig === 'significant' && !a.is_significant) return false;
     if (filterSig === 'not_significant' && a.is_significant) return false;
     return true;
@@ -203,6 +208,7 @@ export default function Environmental() {
 
             {/* Filters */}
             <div className="bg-white rounded-xl border border-gray-200 px-4 py-3 flex items-center gap-3 flex-wrap">
+              <SearchInput value={q} onChange={setQ} placeholder="Buscar aspecto…" />
               <select value={filterSig} onChange={e => setFilterSig(e.target.value)}
                 className="border border-gray-200 rounded-lg px-2.5 py-1.5 text-xs focus:outline-none">
                 <option value="">Todos</option>
@@ -216,6 +222,17 @@ export default function Environmental() {
                 </button>
               )}
               <span className="ml-auto text-xs text-gray-400">{filtered.length} aspectos</span>
+              <ExportExcelButton<EnvironmentalAspect> filename="F-TRI-44-aspectos-ambientales" sheetName="Aspectos Ambientales" rows={filtered} columns={[
+                { header: 'Aspecto Ambiental', value: a => a.aspect },
+                { header: 'Actividad', value: a => a.activity || '' },
+                { header: 'Impacto', value: a => a.impact || '' },
+                { header: 'F', value: a => a.frequency },
+                { header: 'G', value: a => a.severity },
+                { header: 'P', value: a => a.detection },
+                { header: 'IPR (F×G×P)', value: a => a.significance },
+                { header: 'Significancia', value: a => getSigLevel(a.significance, a.is_significant).label },
+                { header: 'Control', value: a => a.control_measure || '' },
+              ]}/>
             </div>
 
             {/* Table */}

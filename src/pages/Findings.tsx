@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Plus, LayoutGrid, List, Search, Loader2, X, AlertTriangle, Download, FileText, ArrowRightLeft } from 'lucide-react';
+import { Plus, LayoutGrid, List, Search, Loader2, X, AlertTriangle, FileText, ArrowRightLeft } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { Header } from '@/components/layout/Header';
@@ -8,7 +8,7 @@ import { Badge, FINDING_STATUS, FINDING_TYPE, Avatar, Spinner, PageContent } fro
 import FindingDetail from '@/components/findings/FindingDetail';
 import FindingsReports from '@/components/findings/FindingsReports';
 import ConvertModal from '@/components/findings/ConvertModal';
-import { exportToCSV } from '@/lib/exportCsv';
+import ExportExcelButton from '@/components/ExportExcelButton';
 
 // ─── Tipos ──────────────────────────────────────────────────
 interface Finding {
@@ -293,22 +293,20 @@ export default function Findings() {
                 <FileText size={15} />
               </button>
             </div>
-            <button
-              onClick={() => exportToCSV(filtered as unknown as Record<string, unknown>[], `hallazgos-${new Date().toISOString().slice(0,10)}`, [
-                { key: 'code', header: 'Código' },
-                { key: 'title', header: 'Título' },
-                { key: 'finding_type', header: 'Tipo' },
-                { key: 'status', header: 'Estado' },
-                { key: 'area', header: 'Área' },
-                { key: 'due_date', header: 'Fecha límite' },
-                { key: 'assigned_to_name', header: 'Responsable' },
-                { key: 'created_at', header: 'Creado' },
-              ])}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-200 text-gray-700 rounded-lg text-xs font-bold hover:bg-gray-50 transition-colors"
-              title="Exportar CSV"
-            >
-              <Download size={14} /> CSV
-            </button>
+            <ExportExcelButton<Finding> filename="hallazgos-nc" sheetName="NC y Hallazgos" rows={filtered} columns={[
+              { header: 'Código', value: f => f.code },
+              { header: 'Título', value: f => f.title },
+              { header: 'Descripción', value: f => f.description || '' },
+              { header: 'Registro', value: f => f.report_kind === 'hallazgo' ? 'Aviso/Hallazgo' : 'NC' },
+              { header: 'Tipo', value: f => f.finding_type },
+              { header: 'Estado', value: f => f.status },
+              { header: 'Origen', value: f => f.origin || '' },
+              { header: 'Área', value: f => f.area || '' },
+              { header: 'Fecha límite', value: f => f.due_date ? f.due_date.slice(0,10).split('-').reverse().join('/') : '' },
+              { header: 'Responsable', value: f => f.assigned_to_name || '' },
+              { header: 'Días abierto', value: f => f.days_open },
+              { header: 'Creado', value: f => f.created_at ? f.created_at.slice(0,10).split('-').reverse().join('/') : '' },
+            ]}/>
             {isAdmin && (
               <button
                 onClick={() => setShowNew(true)}

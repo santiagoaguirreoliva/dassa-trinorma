@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Plus, X, Loader2, Save, CheckCircle2, XCircle,
   Play, Package, Lock, BarChart3, ShoppingCart,
-  Eye, ExternalLink, FileText, MessageSquare, Image as ImageIcon, Sparkles, Wand2, Download
+  Eye, ExternalLink, FileText, MessageSquare, Image as ImageIcon, Sparkles, Wand2
 } from 'lucide-react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid,
@@ -13,7 +13,9 @@ import { api } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { Header } from '@/components/layout/Header';
 import { Avatar, Spinner, KPICard, PageContent } from '@/components/ui';
-import { exportToCSV } from '@/lib/exportCsv';
+import ExportExcelButton from '@/components/ExportExcelButton';
+import SearchInput from '@/components/SearchInput';
+import { matchesQuery } from '@/lib/textSearch';
 
 // ─── Tipos ──────────────────────────────────────────────────
 interface Purchase {
@@ -750,6 +752,7 @@ export default function Purchases() {
   const [detailingId, setDetailingId] = useState<string | null>(null);
   const [receiving, setReceiving] = useState<Purchase | null>(null);
   const [filterStatus, setFilterStatus] = useState('');
+  const [q, setQ] = useState('');
   const [filterCat, setFilterCat] = useState('');
 
   const qc = useQueryClient();
@@ -773,7 +776,7 @@ export default function Purchases() {
   const filtered = purchases.filter(p => {
     const ms = !filterStatus || p.status === filterStatus;
     const mc = !filterCat || p.category === filterCat;
-    return ms && mc;
+    return ms && mc && matchesQuery(q, p.code, p.description, p.category, p.priority, p.status, p.requested_by_name, p.supplier_name);
   });
 
   const pendingAuth = purchases.filter(p => p.status === 'borrador').length;
@@ -787,25 +790,19 @@ export default function Purchases() {
         alerts={pendingAuth}
         actions={
           <div className="flex items-center gap-2">
-            <button
-              onClick={() => exportToCSV(purchases as unknown as Record<string, unknown>[], `compras-${new Date().toISOString().slice(0,10)}`, [
-                { key: 'code', header: 'Código' },
-                { key: 'description', header: 'Descripción' },
-                { key: 'status', header: 'Estado' },
-                { key: 'priority', header: 'Prioridad' },
-                { key: 'category', header: 'Categoría' },
-                { key: 'estimated_budget', header: 'Presupuesto' },
-                { key: 'amount', header: 'Monto real' },
-                { key: 'requested_by_name', header: 'Solicitante' },
-                { key: 'approved_by_name', header: 'Autorizó' },
-                { key: 'supplier_name', header: 'Proveedor' },
-                { key: 'created_at', header: 'Creado' },
-              ])}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-200 text-gray-700 rounded-lg text-xs font-bold hover:bg-gray-50"
-              title="Exportar CSV"
-            >
-              <Download size={14} /> CSV
-            </button>
+            <ExportExcelButton<Purchase> filename="compras" sheetName="Compras" rows={filtered} columns={[
+              { header: 'Código', value: c => c.code },
+              { header: 'Descripción', value: c => c.description },
+              { header: 'Estado', value: c => c.status },
+              { header: 'Prioridad', value: c => c.priority },
+              { header: 'Categoría', value: c => c.category },
+              { header: 'Presupuesto', value: c => c.estimated_budget ?? '' },
+              { header: 'Monto real', value: c => c.amount ?? '' },
+              { header: 'Solicitante', value: c => c.requested_by_name || '' },
+              { header: 'Autorizó', value: c => c.approved_by_name || '' },
+              { header: 'Proveedor', value: c => c.supplier_name || '' },
+              { header: 'Creado', value: c => c.created_at ? c.created_at.slice(0,10).split('-').reverse().join('/') : '' },
+            ]}/>
             <button
               onClick={() => {
                 const url = `${window.location.origin}/solicitud-compra`;
@@ -856,6 +853,7 @@ export default function Purchases() {
           <div className="space-y-4">
             {/* Filters */}
             <div className="bg-white rounded-xl border border-gray-200 px-4 py-3 flex items-center gap-3 flex-wrap">
+              <SearchInput value={q} onChange={setQ} placeholder="Buscar compra…" />
               <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)}
                 className="border border-gray-200 rounded-lg px-2.5 py-1.5 text-xs focus:outline-none">
                 <option value="">Todos los estados</option>

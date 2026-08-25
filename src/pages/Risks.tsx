@@ -11,6 +11,9 @@ import { api } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { Header } from '@/components/layout/Header';
 import { Spinner, KPICard, PageContent, Avatar } from '@/components/ui';
+import ExportExcelButton from '@/components/ExportExcelButton';
+import SearchInput from '@/components/SearchInput';
+import { matchesQuery } from '@/lib/textSearch';
 
 // ─── Tipos ──────────────────────────────────────────────────
 interface Risk {
@@ -338,6 +341,7 @@ export default function Risks() {
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState<Risk | undefined>();
   const [filterLevel, setFilterLevel] = useState('');
+  const [q, setQ] = useState('');
   const [filterType, setFilterType] = useState('');
 
   const { data: risks = [], isLoading } = useQuery<Risk[]>({
@@ -354,6 +358,7 @@ export default function Risks() {
   const withIR = risks.map(r => ({ ...r, ir: r.ir ?? r.probability * r.severity }));
 
   const filtered = withIR.filter(r => {
+    if (!matchesQuery(q, r.code, r.activity, r.hazard, r.area, r.current_controls, r.recommended_action, r.responsible_name)) return false;
     if (filterLevel) {
       const level = getIRLevel(r.ir!);
       if (filterLevel === 'critical' && level !== IR_LEVELS.critical) return false;
@@ -442,6 +447,7 @@ export default function Risks() {
           <div className="space-y-4">
             {/* Filters */}
             <div className="bg-white rounded-xl border border-gray-200 px-4 py-3 flex items-center gap-3 flex-wrap">
+              <SearchInput value={q} onChange={setQ} placeholder="Buscar riesgo…" />
               <select value={filterLevel} onChange={e => setFilterLevel(e.target.value)}
                 className="border border-gray-200 rounded-lg px-2.5 py-1.5 text-xs focus:outline-none">
                 <option value="">Todos los niveles</option>
@@ -462,6 +468,23 @@ export default function Risks() {
                 </button>
               )}
               <span className="ml-auto text-xs text-gray-400">{filtered.length} riesgos</span>
+              <ExportExcelButton<Risk & { ir?: number }> filename="matriz-de-riesgos" sheetName="Riesgos" rows={filtered} columns={[
+                { header: 'Código', value: r => r.code },
+                { header: 'Actividad', value: r => r.activity },
+                { header: 'Peligro', value: r => r.hazard },
+                { header: 'Área', value: r => r.area || '' },
+                { header: 'Condición', value: r => r.condition || '' },
+                { header: 'P', value: r => r.probability },
+                { header: 'S', value: r => r.severity },
+                { header: 'IR', value: r => r.ir ?? '' },
+                { header: 'Nivel', value: r => getIRLevel(r.ir ?? r.probability * r.severity).label },
+                { header: 'Riesgo residual', value: r => r.residual_probability && r.residual_severity ? r.residual_probability * r.residual_severity : '' },
+                { header: 'Req. legal', value: r => r.legal_req ? 'Sí' : 'No' },
+                { header: 'Controles', value: r => r.current_controls || '' },
+                { header: 'Acción de mitigación', value: r => r.recommended_action || '' },
+                { header: 'Estado', value: r => (ESTADO[r.control_status ?? 0] ?? ESTADO[0]).label },
+                { header: 'Responsable', value: r => r.responsible_name || '' },
+              ]}/>
             </div>
 
             {/* Table */}

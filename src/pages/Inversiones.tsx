@@ -1,10 +1,14 @@
 // /inversiones — Plan de Inversiones (Sistema Integral de Gestión · Nivel 3)
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { Wallet, Target, GitBranch } from 'lucide-react';
 import { api } from '@/lib/api';
 import { Header } from '@/components/layout/Header';
 import { Spinner, PageContent, KPICard, Badge } from '@/components/ui';
+import ExportExcelButton from '@/components/ExportExcelButton';
+import SearchInput from '@/components/SearchInput';
+import { matchesQuery } from '@/lib/textSearch';
 
 interface Investment {
   id: string; project: string; area?: string; priority?: string;
@@ -27,6 +31,8 @@ export default function Inversiones() {
   if (isLoading) return <PageContent><Header title="💰 Plan de Inversiones" icon={<Wallet size={20} />} /><div className="flex justify-center py-10"><Spinner /></div></PageContent>;
 
   const inv = data?.investments || [];
+  const [q, setQ] = useState('');
+  const rows = inv.filter(i => matchesQuery(q, i.project, i.area, i.priority, i.status, i.roi_expected, i.notes));
   const total = data?.total_usd || 0;
   const enEjec = inv.filter(i => i.status === 'En ejecución').length;
 
@@ -46,6 +52,20 @@ export default function Inversiones() {
         <KPICard label="Con monto" value={inv.filter(i => i.amount_usd != null).length} sub={`${inv.filter(i => i.amount_usd == null).length} internos`} />
       </div>
 
+      <div className="flex justify-end items-center gap-2 mb-3">
+        <SearchInput value={q} onChange={setQ} placeholder="Buscar proyecto…" />
+        <ExportExcelButton<Investment> filename="plan-de-inversiones" sheetName="Inversiones" rows={rows} columns={[
+          { header: 'Proyecto', value: i => i.project },
+          { header: 'Área', value: i => i.area || '' },
+          { header: 'Prioridad', value: i => i.priority || '' },
+          { header: 'Monto', value: i => i.amount_usd != null ? i.amount_usd : (i.amount_label || '') },
+          { header: 'Estado', value: i => i.status || '' },
+          { header: 'Fecha planificada', value: i => i.planned_date || '' },
+          { header: 'Fecha real', value: i => i.real_date || '' },
+          { header: 'ROI esperado', value: i => i.roi_expected || '' },
+          { header: 'Notas', value: i => i.notes || '' },
+        ]}/>
+      </div>
       <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
         <table className="w-full text-sm">
           <thead className="bg-gray-50 text-[10px] uppercase tracking-wider text-gray-500">
@@ -59,7 +79,7 @@ export default function Inversiones() {
             </tr>
           </thead>
           <tbody>
-            {inv.map(i => (
+            {rows.map(i => (
               <tr key={i.id} className="border-t border-gray-100 hover:bg-gray-50">
                 <td className="px-3 py-2 font-semibold text-gray-900">{i.project}</td>
                 <td className="px-3 py-2 text-xs text-gray-600">{i.area || '—'}</td>

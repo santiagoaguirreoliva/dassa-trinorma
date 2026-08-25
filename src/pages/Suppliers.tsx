@@ -6,6 +6,7 @@ import {
   Paperclip, Upload, FileText, Trash2, ExternalLink
 } from 'lucide-react';
 import { api } from '@/lib/api';
+import ExportExcelButton from '@/components/ExportExcelButton';
 import { useAuth } from '@/contexts/AuthContext';
 import { Header } from '@/components/layout/Header';
 import { Spinner, KPICard, PageContent, Avatar } from '@/components/ui';
@@ -573,6 +574,19 @@ export default function Suppliers() {
                 </button>
               )}
               <span className="ml-auto text-xs text-gray-400">{visibles.length} proveedores</span>
+              <ExportExcelButton<Supplier> filename="F-TRI-17-proveedores" sheetName="Proveedores" rows={visibles} columns={[
+                { header: 'Proveedor', value: s2 => s2.name },
+                { header: 'CUIT', value: s2 => s2.cuit || '' },
+                { header: 'Rubro', value: s2 => s2.category || '' },
+                { header: 'Crítico', value: s2 => s2.is_critical ? 'Sí' : 'No' },
+                { header: 'Contacto', value: s2 => s2.contact_name || '' },
+                { header: 'Email', value: s2 => s2.contact_email || '' },
+                { header: 'Teléfono', value: s2 => s2.contact_phone || '' },
+                { header: 'Dirección', value: s2 => s2.address || '' },
+                { header: 'Estado', value: s2 => STATUS_CONFIG[estadoDe(s2)]?.label ?? '' },
+                { header: 'Última evaluación', value: s2 => s2.latest_eval_year ? `${s2.latest_eval_result ?? ''} (${s2.latest_eval_year})` : '' },
+                { header: 'Notas', value: s2 => s2.notes || '' },
+              ]}/>
             </div>
 
             {/* Table */}

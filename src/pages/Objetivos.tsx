@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Target, Plus, Loader2, X } from 'lucide-react';
 import { useState } from 'react';
 import { api } from '@/lib/api';
+import ExportExcelButton from '@/components/ExportExcelButton';
 import { useAuth } from '@/contexts/AuthContext';
 import { Header } from '@/components/layout/Header';
 import { Spinner, PageContent, KPICard } from '@/components/ui';
@@ -137,10 +138,29 @@ export default function Objetivos() {
     <PageContent>
       <Header title="🎯 Objetivos Corporativos" subtitle={`Año ${year} · ${total} objetivos`} doc="F-TRI-04" icon={<Target size={20}/>}/>
       <div className="flex items-center justify-between mb-4">
-        <div className="flex gap-2">
+        <div className="flex gap-2 items-center">
           {[2024,2025,2026].map(y=>(
             <button key={y} onClick={()=>setYear(y)} className={`px-3 py-1 text-xs font-bold rounded ${year===y?'bg-dassa-red text-white':'bg-gray-100 text-gray-600'}`}>{y}</button>
           ))}
+          <ExportExcelButton<Objective> filename={`F-TRI-04-objetivos-${year}`} sheetName={`Objetivos ${year}`} rows={data.objectives} columns={[
+            { header: 'Código', value: o => o.code },
+            { header: 'Objetivo', value: o => o.name },
+            { header: 'Descripción', value: o => o.description || '' },
+            { header: 'Área', value: o => o.area || '' },
+            { header: 'Indicador', value: o => o.kpis?.[0]?.indicator_name || o.target_metric || '' },
+            { header: 'Ítem a medir', value: o => o.kpis?.[0]?.item_medido || '' },
+            { header: 'Meta', value: o => o.target_value || '' },
+            { header: 'Admisible', value: o => o.admissible_value || '' },
+            { header: 'Frecuencia', value: o => o.plazo_frecuencia || '' },
+            { header: 'Responsable', value: o => o.responsible_text || '' },
+            { header: 'Estado', value: o => o.status },
+            ...MESES.map((m, i) => ({ header: `${m}`, value: (o: Objective) => {
+              const med = (o.kpis?.[0]?.mediciones || []).find(x => x.anio === year && Number(x.mes?.slice(5, 7)) === i + 1);
+              return med?.valor ?? '';
+            } })),
+            { header: 'Cumplimiento', value: o => o.cumplimiento_nota || '' },
+            { header: 'Acciones si no llega', value: o => o.acciones_si_no_llega || '' },
+          ]}/>
         </div>
         {isLeader && (
           <button onClick={()=>setShowNew(true)} className="flex items-center gap-1 px-3 py-1.5 bg-dassa-red text-white text-xs font-bold rounded-lg hover:bg-dassa-red-deep">

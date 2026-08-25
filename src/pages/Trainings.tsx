@@ -6,6 +6,9 @@ import {
   Paperclip, Trash2, Upload, Shield, Pencil, Target, Printer
 } from 'lucide-react';
 import { api } from '@/lib/api';
+import ExportExcelButton from '@/components/ExportExcelButton';
+import SearchInput from '@/components/SearchInput';
+import { matchesQuery } from '@/lib/textSearch';
 import { useAuth } from '@/contexts/AuthContext';
 import { Header } from '@/components/layout/Header';
 import { Avatar, Spinner, PageContent, KPICard } from '@/components/ui';
@@ -989,6 +992,7 @@ export default function Trainings() {
   const [newDate, setNewDate] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
   const [filterType, setFilterType] = useState('');
+  const [q, setQ] = useState('');
 
   const { data: trainings = [], isLoading } = useQuery<Training[]>({
     queryKey: ['trainings'],
@@ -999,7 +1003,7 @@ export default function Trainings() {
   const filtered = trainings.filter(t => {
     const ms = !filterStatus || t.status === filterStatus;
     const mt = !filterType || t.training_type === filterType;
-    return ms && mt;
+    return ms && mt && matchesQuery(q, t.title, t.description, t.instructor, t.location, t.legal_framework, t.category);
   });
 
   const upcoming = trainings.filter(t => t.status === 'programada' && new Date(t.scheduled_date) >= new Date());
@@ -1079,7 +1083,22 @@ export default function Trainings() {
                   <X size={12} /> Limpiar
                 </button>
               )}
+              <SearchInput value={q} onChange={setQ} placeholder="Buscar capacitación…" />
               <span className="ml-auto text-xs text-gray-400">{filtered.length} capacitaciones</span>
+              <ExportExcelButton<Training> filename="capacitaciones" sheetName="Capacitaciones" rows={filtered} columns={[
+                { header: 'Título', value: t => t.title },
+                { header: 'Tipo', value: t => TYPE_CONFIG[t.training_type]?.label ?? t.training_type },
+                { header: 'Estado', value: t => STATUS_CONFIG[t.status]?.label ?? t.status },
+                { header: 'Fecha', value: t => t.scheduled_date ? t.scheduled_date.slice(0,10).split('-').reverse().join('/') : '' },
+                { header: 'Lugar', value: t => t.location || '' },
+                { header: 'Instructor', value: t => t.instructor || '' },
+                { header: 'Horas', value: t => t.duration_hours ?? '' },
+                { header: 'Obligatoria', value: t => t.is_mandatory ? 'Sí' : 'No' },
+                { header: 'Participantes', value: t => t.participants_count },
+                { header: 'Asistieron', value: t => t.attended_count },
+                { header: 'Eficacia', value: t => t.efficacy_result || '' },
+                { header: 'Marco legal', value: t => t.legal_framework || '' },
+              ]}/>
             </div>
 
             {view === 'competencias' ? (

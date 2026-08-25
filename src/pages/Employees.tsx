@@ -6,6 +6,7 @@ import {
   GraduationCap, AlertTriangle, Link2, Copy, Check, RefreshCw, KeyRound,
 } from 'lucide-react';
 import { api } from '@/lib/api';
+import ExportExcelButton from '@/components/ExportExcelButton';
 import { useAuth } from '@/contexts/AuthContext';
 import { Header } from '@/components/layout/Header';
 import { Spinner, KPICard, PageContent, Avatar } from '@/components/ui';
@@ -947,6 +948,15 @@ export default function Employees() {
                 </button>
               )}
               <span className="ml-auto text-xs text-gray-400">{employees.length} empleados</span>
+              <ExportExcelButton<Employee> filename="empleados" sheetName="Empleados" rows={employees} columns={[
+                { header: 'Nombre completo', value: e => e.full_name },
+                { header: 'Puesto', value: e => e.position || '' },
+                { header: 'Sector', value: e => e.sector || '' },
+                { header: 'Email', value: e => e.email || '' },
+                { header: 'Teléfono', value: e => e.phone || '' },
+                { header: 'WhatsApp', value: e => e.whatsapp || '' },
+                { header: 'Estado', value: e => e.is_active ? 'Activo' : 'Inactivo' },
+              ]}/>
             </div>
 
             {/* Tabla — dotación humana */}

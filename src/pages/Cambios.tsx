@@ -6,6 +6,9 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Header } from '@/components/layout/Header';
 import { Spinner, PageContent, KPICard } from '@/components/ui';
 import { SimpleBar, SimplePie } from '@/components/charts';
+import ExportExcelButton from '@/components/ExportExcelButton';
+import SearchInput from '@/components/SearchInput';
+import { matchesQuery } from '@/lib/textSearch';
 
 interface Change { id:string; code:string; title:string; purpose:string; status:string; plazo_target:string; recursos:string|null; verificacion:string|null; year:number; num_items:number; }
 const STATUS_BG: Record<string,string> = { propuesto:'bg-amber-100 text-amber-700', aprobado:'bg-blue-100 text-blue-700', en_curso:'bg-violet-100 text-violet-700', completado:'bg-emerald-100 text-emerald-700', cancelado:'bg-red-100 text-red-700', postpuesto:'bg-gray-100 text-gray-600' };
@@ -16,6 +19,7 @@ export default function Cambios() {
   const { user } = useAuth();
   const qc = useQueryClient();
   const isLeader = ['master_admin','director','sgi_leader'].includes(user?.role||'');
+  const [q, setQ] = useState('');
   const [showNew, setShowNew] = useState(false);
   const [editing, setEditing] = useState<Change|null>(null);
   const { data, isLoading } = useQuery<{ok:boolean;changes:Change[]}>({
@@ -46,7 +50,18 @@ export default function Cambios() {
           }))}
         />
       </div>
-      <div className="flex justify-end mb-3">
+      <div className="flex justify-end items-center gap-2 mb-3">
+        <SearchInput value={q} onChange={setQ} placeholder="Buscar cambio…" />
+        <ExportExcelButton<Change> filename="F-TRI-14-gestion-de-cambios" sheetName="Cambios" rows={data.changes.filter(c => matchesQuery(q, c.code, c.title, c.purpose, c.status, c.recursos, c.verificacion))} columns={[
+          { header: 'Código', value: c => c.code },
+          { header: 'Título', value: c => c.title },
+          { header: 'Propósito', value: c => c.purpose || '' },
+          { header: 'Estado', value: c => c.status },
+          { header: 'Plazo', value: c => c.plazo_target ? c.plazo_target.slice(0,10).split('-').reverse().join('/') : '' },
+          { header: 'Recursos', value: c => c.recursos || '' },
+          { header: 'Verificación', value: c => c.verificacion || '' },
+          { header: 'Año', value: c => c.year },
+        ]}/>
         {isLeader && <button onClick={()=>setShowNew(true)} className="flex items-center gap-1 px-3 py-1.5 bg-dassa-red text-white text-xs font-bold rounded-lg"><Plus size={12}/> Nuevo cambio</button>}
       </div>
       <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
@@ -61,7 +76,7 @@ export default function Cambios() {
             <th className="text-left px-4 py-2 text-[11px] font-bold text-gray-500 uppercase">Año</th>
           </tr></thead>
           <tbody>
-            {data.changes.map(c=>(
+            {data.changes.filter(c => matchesQuery(q, c.code, c.title, c.purpose, c.status, c.recursos, c.verificacion)).map(c=>(
               <tr key={c.id} className={`border-b hover:bg-gray-50 ${isLeader?'cursor-pointer':''}`} onClick={()=>isLeader&&setEditing(c)}>
                 <td className="px-4 py-2"><code className="text-[10px] font-bold text-dassa-celeste-deep">{c.code}</code></td>
                 <td className="px-4 py-2"><div className="text-xs font-semibold text-gray-900">{c.title}</div><div className="text-[10px] text-gray-500">{c.purpose}</div></td>

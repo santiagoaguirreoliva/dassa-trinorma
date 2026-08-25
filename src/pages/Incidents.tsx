@@ -5,6 +5,7 @@ import {
   Search, Shield
 } from 'lucide-react';
 import { api } from '@/lib/api';
+import ExportExcelButton from '@/components/ExportExcelButton';
 import { useAuth } from '@/contexts/AuthContext';
 import { Header } from '@/components/layout/Header';
 import { Spinner, KPICard, PageContent } from '@/components/ui';
@@ -369,6 +370,22 @@ export default function Incidents() {
                 </button>
               )}
               <span className="ml-auto text-xs text-gray-400">{incidents.length} registros</span>
+              <ExportExcelButton<Incident> filename="incidentes" sheetName="Incidentes" rows={incidents} columns={[
+                { header: 'Código', value: i => i.code },
+                { header: 'Tipo', value: i => TYPE_CONFIG[i.incident_type]?.label ?? i.incident_type },
+                { header: 'Fecha', value: i => i.date ? i.date.slice(0,10).split('-').reverse().join('/') : '' },
+                { header: 'Hora', value: i => i.time || '' },
+                { header: 'Área', value: i => i.area || '' },
+                { header: 'Severidad', value: i => SEVERITY_CONFIG[i.severity]?.label ?? i.severity },
+                { header: 'Estado', value: i => STATUS_CONFIG[i.status]?.label ?? i.status },
+                { header: 'Descripción', value: i => i.description || '' },
+                { header: 'Persona lesionada', value: i => i.injured_person || '' },
+                { header: 'Causa inmediata', value: i => i.immediate_cause || '' },
+                { header: 'Causa raíz', value: i => i.root_cause || '' },
+                { header: 'Acción correctiva', value: i => i.corrective_action || '' },
+                { header: 'Denuncia ART', value: i => i.art_reported ? 'Sí' : 'No' },
+                { header: 'Días perdidos', value: i => i.lost_time_days ?? '' },
+              ]}/>
             </div>
 
             {/* Table */}

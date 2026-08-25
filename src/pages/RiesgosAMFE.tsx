@@ -6,6 +6,9 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Header } from '@/components/layout/Header';
 import { Spinner, PageContent, KPICard } from '@/components/ui';
 import { SimpleBar, RiskLevelPie } from '@/components/charts';
+import ExportExcelButton from '@/components/ExportExcelButton';
+import SearchInput from '@/components/SearchInput';
+import { matchesQuery } from '@/lib/textSearch';
 
 interface Risk {
   id:string; code:string; activity:string; hazard:string;
@@ -23,6 +26,7 @@ export default function RiesgosAMFE() {
   const { user } = useAuth();
   const isAdmin = ['master_admin','director','sgi_leader'].includes(user?.role||'');
   const [proc, setProc] = useState<string>('');
+  const [q, setQ] = useState('');
   const [suggestions, setSuggestions] = useState<any[]>([]);
   const [openId, setOpenId] = useState<string|null>(null);
 
@@ -41,6 +45,7 @@ export default function RiesgosAMFE() {
   const promNPR = data.risks.length ? Math.round(data.risks.reduce((s,r)=>s+(r.npr||0),0)/data.risks.length) : 0;
   const processes = Array.from(new Set(data.risks.map(r=>r.process).filter(Boolean)));
   const meta = data.risks[0];
+  const rows = data.risks.filter(r => matchesQuery(q, r.code, r.activity, r.hazard, r.process, r.responsible_text, r.recommended_action, r.causes));
 
   return (
     <PageContent>
@@ -83,6 +88,7 @@ export default function RiesgosAMFE() {
         />
       </div>
       <div className="flex items-center gap-2 mb-4">
+        <SearchInput value={q} onChange={setQ} placeholder="Buscar riesgo…" />
         <select value={proc} onChange={e=>setProc(e.target.value)} className="input-field text-xs">
           <option value="">Todos los procesos</option>
           {processes.map(p=><option key={p} value={p}>{p}</option>)}
@@ -94,6 +100,28 @@ export default function RiesgosAMFE() {
             Sugerir riesgos con IA
           </button>
         )}
+        <ExportExcelButton<Risk> filename="F-TRI-08-matriz-amfe" sheetName="AMFE" rows={rows} columns={[
+          { header: 'Código', value: r => r.code },
+          { header: 'Riesgo / Oportunidad', value: r => r.activity },
+          { header: 'Efecto', value: r => r.hazard },
+          { header: 'Tipo', value: r => r.ro_type === 'oportunidad' ? 'Oportunidad' : 'Riesgo' },
+          { header: 'G', value: r => r.severity },
+          { header: 'O', value: r => r.probability },
+          { header: 'D', value: r => r.detection ?? '' },
+          { header: 'NPR', value: r => r.npr ?? '' },
+          { header: 'Nivel', value: r => r.npr_level === 'significativo' ? 'Significativo' : 'No significativo' },
+          { header: 'NPR residual', value: r => r.residual_severity && r.residual_probability && r.residual_detection ? r.residual_severity * r.residual_probability * r.residual_detection : '' },
+          { header: 'Proceso', value: r => r.process || '' },
+          { header: 'Responsable', value: r => r.responsible_text || '' },
+          { header: 'Acción recomendada', value: r => r.recommended_action || '' },
+          { header: 'Causas', value: r => r.causes || '' },
+          { header: 'Controles actuales', value: r => r.current_controls_text || '' },
+          { header: 'Partes interesadas', value: r => r.affected_parties?.join(', ') || '' },
+          { header: 'Oportunidades / riesgos', value: r => r.opportunity || '' },
+          { header: 'Plazo', value: r => r.plazo ? fmtDate(r.plazo) : '' },
+          { header: 'Eficacia verificada', value: r => r.eficacia_verificada || '' },
+          { header: 'Acciones implementadas', value: r => r.resultado_acciones || '' },
+        ]}/>
       </div>
 
       {suggestions.length>0 && (
@@ -131,7 +159,7 @@ export default function RiesgosAMFE() {
             </tr>
           </thead>
           <tbody>
-            {data.risks.map(r=>(
+            {rows.map(r=>(
               <Fragment key={r.id}>
               <tr className="border-b hover:bg-gray-50 cursor-pointer" onClick={()=>setOpenId(openId===r.id?null:r.id)}>
                 <td className="px-3 py-2"><code className="text-[10px] font-bold text-dassa-red-deep">{r.code}</code></td>

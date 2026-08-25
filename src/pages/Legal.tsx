@@ -8,6 +8,9 @@ import { api } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { Header } from '@/components/layout/Header';
 import { Spinner, KPICard, PageContent, Avatar } from '@/components/ui';
+import ExportExcelButton from '@/components/ExportExcelButton';
+import SearchInput from '@/components/SearchInput';
+import { matchesQuery } from '@/lib/textSearch';
 
 // ─── Tipos ──────────────────────────────────────────────────
 interface LegalReq {
@@ -235,6 +238,7 @@ export default function Legal() {
   const [filterStatus, setFilterStatus] = useState('');
   const [filterCat, setFilterCat] = useState('');
   const [filterCompliance, setFilterCompliance] = useState('');
+  const [q, setQ] = useState('');
 
   const { data: items = [], isLoading } = useQuery<LegalReq[]>({
     queryKey: ['legal'],
@@ -248,6 +252,7 @@ export default function Legal() {
   });
 
   const filtered = items.filter(r => {
+    if (!matchesQuery(q, r.code, r.title, r.description, CAT_LABELS[r.category] || r.category, r.issuing_authority, r.applicable_area, r.responsible_name, r.compliance_evaluation, r.evidence_notes)) return false;
     if (filterStatus && r.computed_status !== filterStatus) return false;
     if (filterCat && r.category !== filterCat) return false;
     if (filterCompliance && (r.compliance_status || 'sin_evaluar') !== filterCompliance) return false;
@@ -300,6 +305,7 @@ export default function Legal() {
 
             {/* Filters */}
             <div className="bg-white rounded-xl border border-gray-200 px-4 py-3 flex items-center gap-3 flex-wrap">
+              <SearchInput value={q} onChange={setQ} placeholder="Buscar requisito…" />
               <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)}
                 className="border border-gray-200 rounded-lg px-2.5 py-1.5 text-xs focus:outline-none">
                 <option value="">Todos los estados</option>
@@ -322,6 +328,22 @@ export default function Legal() {
                 </button>
               )}
               <span className="ml-auto text-xs text-gray-400">{filtered.length} requisitos</span>
+              <ExportExcelButton<LegalReq> filename="F-TRI-10-requisitos-legales" sheetName="Requisitos Legales" rows={filtered} columns={[
+                { header: 'Código', value: r => r.code },
+                { header: 'Título', value: r => r.title },
+                { header: 'Descripción', value: r => r.description || '' },
+                { header: 'Categoría', value: r => CAT_LABELS[r.category] || r.category },
+                { header: 'Organismo', value: r => r.issuing_authority || '' },
+                { header: 'Área aplicable', value: r => r.applicable_area || '' },
+                { header: 'Vigencia', value: r => fmtDate(r.effective_date) },
+                { header: 'Vencimiento', value: r => fmtDate(r.expiration_date) },
+                { header: 'Estado', value: r => STATUS_CONFIG[r.computed_status ?? 'vigente']?.label ?? '' },
+                { header: 'Cumplimiento', value: r => COMPLIANCE[r.compliance_status || 'sin_evaluar']?.label ?? '' },
+                { header: 'Fundamento de la evaluación', value: r => r.compliance_evaluation || '' },
+                { header: 'Fecha de evaluación', value: r => fmtDate(r.last_verification_date) },
+                { header: 'Responsable', value: r => r.responsible_name || '' },
+                { header: 'Evidencia / notas', value: r => r.evidence_notes || '' },
+              ]}/>
             </div>
 
             {/* Table */}

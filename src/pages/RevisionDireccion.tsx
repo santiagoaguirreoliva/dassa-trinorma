@@ -4,12 +4,13 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
-  ClipboardCheck, Target, GitMerge, PlusCircle, Trash2, PenLine, CheckCircle2, Lock,
+  ClipboardCheck, Target, GitMerge, PlusCircle, Trash2, PenLine, CheckCircle2, Lock, Printer,
 } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { Header } from '@/components/layout/Header';
 import { Spinner, PageContent, KPICard, Badge } from '@/components/ui';
+import { docRef } from '@/lib/docRevisions';
 
 const YEAR = 2026;
 
@@ -75,6 +76,157 @@ const SALIDAS: { key: keyof Review; label: string }[] = [
   { key: 'integration_opportunities', label: 'Oportunidades de mejorar la integración del SGI a otros procesos de negocio' },
   { key: 'strategic_implications', label: 'Implicaciones para la dirección estratégica de la organización' },
 ];
+
+// Documento entregable del acta (F-TRI-05): membrete DASSA, las tres secciones de
+// la norma y el pie de firmas. Se abre en una ventana de impresión para guardar
+// como PDF — mismo patrón que la planilla F-TRI-36 de Capacitaciones.
+function printActa(review: Review, inp: Inputs, year: number) {
+  const esc = (v?: string | null) => String(v ?? '')
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  // Un campo sin completar se muestra como tal: el acta debe dejar ver qué falta.
+  const val = (v?: string | null) => {
+    const t = String(v ?? '').trim();
+    return t ? esc(t) : '<i class="vacio">Sin completar</i>';
+  };
+  const fecha = (d?: string) => d ? new Date(d + (d.length === 10 ? 'T12:00:00' : '')).toLocaleDateString('es-AR') : '—';
+
+  const bloque = (campos: { key: keyof Review; label: string }[]) => campos.map(c => `
+    <div class="campo">
+      <div class="lbl">${esc(c.label)}</div>
+      <div class="txt">${val(review[c.key] as string)}</div>
+    </div>`).join('');
+
+  const objRows = (inp.objectives || []).map(o => {
+    const meds = (o.kpis || []).filter(k => k.last_value != null)
+      .map(k => `${esc(k.kpi)}: <b>${k.last_value}</b>${k.last_period ? ` <span class="per">(${esc(k.last_period)})</span>` : ''}`).join(' · ');
+    return `<tr><td class="cod">${esc(o.code)}</td><td>${esc(o.name)}</td><td>${meds || '<i class="vacio">sin medición</i>'}</td></tr>`;
+  }).join('');
+
+  const acciones = (review.improvement_actions || []).filter(a => (a.description || '').trim());
+  const accRows = acciones.length
+    ? acciones.map(a => `<tr><td>${esc(a.description)}</td><td>${esc(a.owner) || '—'}</td><td>${esc(a.deadline) || '—'}</td></tr>`).join('')
+    : '<tr><td colspan="3"><i class="vacio">Sin acciones de mejora cargadas.</i></td></tr>';
+
+  // Un mismo firmante puede tener más de un registro (re-firmas): en el acta va una vez.
+  const firmantes = Array.from(new Map((review.signatures || []).map(f => [f.name, f])).values());
+  const firmas = firmantes.length
+    ? `<p class="firmado">Acta cerrada y firmada digitalmente por ${firmantes.map(f =>
+        `${esc(f.name)}${f.signed_at ? ` (${fecha(f.signed_at.slice(0, 10))})` : ''}`).join(', ')}.</p>`
+    : '';
+
+  const html = `<!doctype html><html lang="es"><head><meta charset="utf-8">
+<title>F-TRI-05 Revisión por la Dirección ${year} — DASSA</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Arial, Helvetica, sans-serif; color: #111; padding: 22px; font-size: 11.5px; line-height: 1.45; }
+  .head { display: flex; justify-content: space-between; align-items: center; gap: 16px;
+          border: 2px solid #111; border-bottom: none; padding: 10px 14px; }
+  .brand { display: flex; align-items: center; gap: 11px; }
+  .brand img { width: 46px; height: 46px; object-fit: contain; }
+  .brand b { font-size: 16px; letter-spacing: 1px; }
+  .brand small { display: block; font-size: 8px; color: #555; margin-top: 1px; }
+  .doc { text-align: right; }
+  .doc b { font-size: 12px; }
+  .doc span { display: block; font-size: 8px; color: #555; margin-top: 2px; }
+  h1 { text-align: center; font-size: 13px; letter-spacing: 2.5px; text-transform: uppercase;
+       border: 1px solid #111; border-top: none; padding: 8px; background: #e9e9e9; }
+  table.meta { width: 100%; border-collapse: collapse; margin-bottom: 16px; }
+  table.meta td { border: 1px solid #111; padding: 5px 9px; vertical-align: top; }
+  table.meta td.k { background: #f3f3f3; font-weight: bold; width: 118px; white-space: nowrap; }
+  h2 { font-size: 11.5px; text-transform: uppercase; letter-spacing: 1.2px; color: #fff;
+       background: #C8202C; padding: 5px 9px; margin: 16px 0 8px; page-break-after: avoid; }
+  h3 { font-size: 10px; text-transform: uppercase; letter-spacing: .8px; color: #0F1A4A;
+       margin: 12px 0 6px; page-break-after: avoid; }
+  table.datos { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
+  table.datos th, table.datos td { border: 1px solid #bbb; padding: 4px 7px; text-align: left; vertical-align: top; }
+  table.datos th { background: #f3f3f3; font-size: 9.5px; text-transform: uppercase; letter-spacing: .5px; }
+  table.datos td.cod { font-family: monospace; font-size: 9px; color: #555; width: 78px; }
+  .per { color: #777; font-size: 9px; }
+  .kpis { display: flex; gap: 7px; margin-bottom: 12px; }
+  .kpi { flex: 1; border: 1px solid #bbb; padding: 6px 8px; }
+  .kpi .n { font-size: 15px; font-weight: bold; }
+  .kpi .t { font-size: 8.5px; text-transform: uppercase; color: #555; letter-spacing: .4px; }
+  .kpi .s { font-size: 8px; color: #777; margin-top: 2px; }
+  .campo { border: 1px solid #ddd; border-left: 3px solid #C8202C; padding: 6px 9px; margin-bottom: 6px; page-break-inside: avoid; }
+  .campo .lbl { font-size: 9px; font-weight: bold; text-transform: uppercase; color: #0F1A4A; letter-spacing: .4px; margin-bottom: 2px; }
+  .campo .txt { white-space: pre-line; text-align: justify; }
+  .vacio { color: #999; }
+  .firmado { margin-top: 12px; font-size: 10px; color: #333; font-style: italic; }
+  .pie { display: flex; gap: 26px; margin-top: 34px; page-break-inside: avoid; }
+  .pie div { flex: 1; border-top: 1px solid #111; padding-top: 4px; text-align: center; font-size: 9.5px; color: #444; }
+  .foot { margin-top: 16px; border-top: 1px solid #ddd; padding-top: 5px; font-size: 8px; color: #888; text-align: center; }
+  @page { size: A4 portrait; margin: 12mm 10mm; }
+  @media print { body { padding: 0; } }
+</style></head><body>
+  <div class="head">
+    <div class="brand">
+      <img src="${window.location.origin}/ds/logos/dassa-isotipo.png" alt="DASSA">
+      <div><b>DASSA</b><small>DEPÓSITO AVELLANEDA SUR S.A. · Sistema de Gestión Integrado TRINORMA<br>ISO 9001:2015 · ISO 14001:2015 · ISO 45001:2018</small></div>
+    </div>
+    <div class="doc">
+      <b>F-TRI-05 INFORME DE REVISIÓN POR LA DIRECCIÓN</b>
+      <span>${esc(docRef('F-TRI-05'))}</span>
+      <span>Emitido: ${new Date().toLocaleDateString('es-AR')}</span>
+    </div>
+  </div>
+  <h1>Revisión por la Dirección ${year} · ISO 9.3</h1>
+
+  <table class="meta">
+    <tr><td class="k">Período</td><td colspan="3">${val(review.period_label)}</td></tr>
+    <tr>
+      <td class="k">Fecha de reunión</td><td>${fecha(review.meeting_date?.slice(0, 10))}</td>
+      <td class="k">Estado</td><td>${review.status === 'cerrada' ? 'Cerrada y firmada' : 'Borrador'}</td>
+    </tr>
+    <tr><td class="k">Lugar</td><td colspan="3">${val(review.location)}</td></tr>
+    <tr><td class="k">Participantes</td><td colspan="3">${val(review.attendees)}</td></tr>
+  </table>
+
+  <h2>1 · Entradas de desempeño del período</h2>
+  <div class="kpis">
+    <div class="kpi"><div class="t">NC abiertas</div><div class="n">${esc(inp.findings.abiertas)}</div><div class="s">${esc(inp.findings.cerradas_periodo)} cerradas · ${esc(inp.findings.de_auditoria)} de auditoría</div></div>
+    <div class="kpi"><div class="t">Incidentes</div><div class="n">${esc(inp.incidents.total)}</div><div class="s">${esc(inp.incidents.dias_perdidos)} días perdidos</div></div>
+    <div class="kpi"><div class="t">Req. legales</div><div class="n">${esc(inp.legal.vigentes)}/${esc(inp.legal.total)}</div><div class="s">${esc(inp.legal.vencidos)} vencidos · ${esc(inp.legal.por_vencer)} por vencer</div></div>
+    <div class="kpi"><div class="t">Capacitaciones</div><div class="n">${esc(inp.trainings.realizadas)}/${esc(inp.trainings.total)}</div><div class="s">${esc(inp.trainings.obligatorias)} obligatorias</div></div>
+    <div class="kpi"><div class="t">Cambios</div><div class="n">${(inp.changes || []).reduce((a, c) => a + c.n, 0)}</div><div class="s">${(inp.changes || []).map(c => `${c.n} ${esc(c.status)}`).join(' · ') || '—'}</div></div>
+  </div>
+  <h3>Desempeño de los objetivos del SGI</h3>
+  <table class="datos">
+    <thead><tr><th>Código</th><th>Objetivo</th><th>Última medición</th></tr></thead>
+    <tbody>${objRows || '<tr><td colspan="3"><i class="vacio">Sin objetivos habilitados.</i></td></tr>'}</tbody>
+  </table>
+
+  <h2>2 · Análisis de las entradas (ISO 9001 · 9.3.2)</h2>
+  ${bloque(ENTRADAS)}
+  <h3>Entradas propias de ISO 14001 y ISO 45001</h3>
+  ${bloque(ENTRADAS_MA_SST)}
+
+  <h2>3 · Decisiones y acciones (ISO 9001 · 9.3.3)</h2>
+  <div class="campo">
+    <div class="lbl">Decisiones de la Dirección (mejora, cambios al SGI, necesidades de recursos)</div>
+    <div class="txt">${val(review.decisions)}</div>
+  </div>
+  <h3>Salidas propias de ISO 14001 y ISO 45001</h3>
+  ${bloque(SALIDAS)}
+  <h3>Acciones de mejora</h3>
+  <table class="datos">
+    <thead><tr><th>Acción</th><th style="width:22%">Responsable</th><th style="width:18%">Plazo</th></tr></thead>
+    <tbody>${accRows}</tbody>
+  </table>
+  ${firmas}
+
+  <div class="pie">
+    <div>Dirección</div>
+    <div>Responsable del SGI</div>
+  </div>
+  <div class="foot">${esc(docRef('F-TRI-05'))} · DASSA — Depósito Avellaneda Sur S.A. · Documento generado desde la App Trinorma</div>
+  <script>window.onload = () => window.print();</script>
+</body></html>`;
+
+  const w = window.open('', '_blank');
+  if (!w) { alert('Habilitá las ventanas emergentes para exportar el acta'); return; }
+  w.document.write(html);
+  w.document.close();
+}
 
 function Field({ label, value, onChange, disabled }: { label: string; value?: string; onChange: (v: string) => void; disabled?: boolean }) {
   return (
@@ -171,6 +323,11 @@ export default function RevisionDireccion() {
               {form.status === 'cerrada'
                 ? <Badge variant="green" label="Cerrada" />
                 : <Badge variant="amber" label="Borrador" />}
+              <button onClick={() => printActa(form, inp, YEAR)}
+                className="ml-1 inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-200 text-gray-700 rounded-lg text-xs font-bold hover:bg-gray-50"
+                title="Exportar el acta con membrete para imprimir o guardar como PDF">
+                <Printer size={14} className="text-dassa-red" /> Exportar acta
+              </button>
             </div>
             {form.status === 'cerrada' && form.signatures?.length
               ? <span className="text-[11px] text-gray-500 inline-flex items-center gap-1"><Lock size={12} /> Firmada por {form.signatures.map(s => s.name).join(', ')}</span>

@@ -128,6 +128,13 @@ function MeetingCard({ meeting }: { meeting: Meeting }) {
             <span className="flex items-center gap-1"><Users className="w-4 h-4" /> {attCount} asistentes</span>
             {sigCount > 0 && <span className="flex items-center gap-1 text-emerald-700"><FileSignature className="w-4 h-4" /> {sigCount} firmas</span>}
           </div>
+          {attCount > 0 && (
+            <div className="flex flex-wrap gap-1 mt-2">
+              {(meeting.attendees || []).map(a => (
+                <span key={a} className="bg-gray-100 text-gray-700 text-[11px] font-semibold px-2 py-0.5 rounded-full">{a}</span>
+              ))}
+            </div>
+          )}
         </div>
         <ChevronRight className="w-5 h-5 text-gray-400" />
       </div>

@@ -10,7 +10,7 @@ import {
   ArrowLeft, Plus, Trash2, Check, Loader2, CheckCircle2, Cloud,
   ClipboardList, ListChecks, Megaphone, AlertTriangle, GraduationCap,
   LineChart, Search, FileText, CalendarDays, UserPlus, ChevronDown, ChevronRight,
-  Mail, Send,
+  Mail, Send, Users,
 } from 'lucide-react';
 
 interface User { id: string; full_name: string; role: string; }
@@ -200,6 +200,22 @@ export default function CommitteeDetail() {
       </header>
 
       <main className="max-w-5xl mx-auto px-4 sm:px-6 py-6 space-y-8 pb-20">
+        {/* Presentes — la lista, no sólo el número (el acta la exige nominal) */}
+        {(meeting.attendees || []).length > 0 && (
+          <section className="bg-white border border-gray-200 rounded-xl p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <Users className="w-4 h-4 text-dassa-red" />
+              <h2 className="text-sm font-bold text-gray-900">Presentes</h2>
+              <span className="text-xs font-bold bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">{(meeting.attendees || []).length}</span>
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              {(meeting.attendees || []).map(a => (
+                <span key={a} className="bg-dassa-red-tint text-dassa-red-deep text-xs font-semibold px-2.5 py-1 rounded-full">{a}</span>
+              ))}
+            </div>
+          </section>
+        )}
+
         {/* PANEL A — Pendientes del comité anterior */}
         <section>
           <div className="flex items-center gap-2 mb-3">
